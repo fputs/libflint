@@ -4,21 +4,21 @@
 
 #include "binarytree.h"
 
-void bintree_init(struct BinTree *tree, void (*destroy)(void *data)) {
+void bintree_init(BinTree *tree, void (*destroy)(void *data)) {
     tree->size = 0;
     tree->destroy = destroy;
     tree->compare = NULL;
     tree->root = NULL;
 }
 
-void bintree_destroy(struct BinTree *tree) {
+void bintree_destroy(BinTree *tree) {
     bintree_rem_left(tree, NULL);
-    memset(tree, 0, sizeof(struct BinTree));
+    memset(tree, 0, sizeof(BinTree));
 }
 
-int bintree_ins_left(struct BinTree *tree, struct BinTreeNode *node, void *data) {
-    struct BinTreeNode *new_node;
-    struct BinTreeNode **pos;
+int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data) {
+    BinTreeNode *new_node;
+    BinTreeNode **pos;
 
     if (node == NULL) {
         if (tree->size > 0) {
@@ -32,7 +32,7 @@ int bintree_ins_left(struct BinTree *tree, struct BinTreeNode *node, void *data)
         pos = &node->left;
     }
 
-    if ((new_node = malloc(sizeof(struct BinTreeNode))) == NULL) {
+    if ((new_node = malloc(sizeof(BinTreeNode))) == NULL) {
         return 2;
     }
 
@@ -45,9 +45,9 @@ int bintree_ins_left(struct BinTree *tree, struct BinTreeNode *node, void *data)
     return 0;
 }
 
-int bintree_ins_right(struct BinTree *tree, struct BinTreeNode *node, void *data) {
-    struct BinTreeNode *new_node;
-    struct BinTreeNode **pos;
+int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data) {
+    BinTreeNode *new_node;
+    BinTreeNode **pos;
 
     if (node == NULL) {
         if (tree->size > 0) {
@@ -61,7 +61,7 @@ int bintree_ins_right(struct BinTree *tree, struct BinTreeNode *node, void *data
         pos = &node->right;
     }
 
-    if ((new_node = malloc(sizeof(struct BinTreeNode))) == NULL) {
+    if ((new_node = malloc(sizeof(BinTreeNode))) == NULL) {
         return 2;
     }
 
@@ -74,12 +74,12 @@ int bintree_ins_right(struct BinTree *tree, struct BinTreeNode *node, void *data
     return 0;
 }
 
-void bintree_rem_left(struct BinTree *tree, struct BinTreeNode *node) {
+void bintree_rem_left(BinTree *tree, BinTreeNode *node) {
     if (tree->size == 0) {
         return;
     }
 
-    struct BinTreeNode **pos;
+    BinTreeNode **pos;
     if (node == NULL) {
         pos = &tree->root;
     } else {
@@ -98,12 +98,12 @@ void bintree_rem_left(struct BinTree *tree, struct BinTreeNode *node) {
     }
 }
 
-void bintree_rem_right(struct BinTree *tree, struct BinTreeNode *node) {
+void bintree_rem_right(BinTree *tree, BinTreeNode *node) {
     if (tree->size == 0) {
         return;
     }
 
-    struct BinTreeNode **pos;
+    BinTreeNode **pos;
     if (node == NULL) {
         pos = &tree->root;
     } else {
@@ -122,7 +122,7 @@ void bintree_rem_right(struct BinTree *tree, struct BinTreeNode *node) {
     }
 }
 
-int bintree_merge(struct BinTree *merge, struct BinTree *left, struct BinTree *right, void *data) {
+int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
     bintree_init(merge, left->destroy);
     if (bintree_ins_left(merge, NULL, data) != 0) {
         bintree_destroy(merge);
@@ -140,7 +140,7 @@ int bintree_merge(struct BinTree *merge, struct BinTree *left, struct BinTree *r
     return 0;
 }
 
-void print_node(char* prefix, struct BinTreeNode *node, int is_left, void (*pfunc)(void* data)) {
+void print_node(char* prefix, BinTreeNode *node, int is_left, void (*pfunc)(void* data)) {
     if (node != NULL) {
         printf("%s%s", prefix, (is_left ? "├──" : "└──" ));
         pfunc(node->data);
@@ -158,6 +158,6 @@ void bintree_debug_pfunc_int(void* data) {
     printf("%d\n", i);
 }
 
-void bintree_debug_print(struct BinTree *tree) {
+void bintree_debug_print(BinTree *tree) {
     print_node("", tree->root, 0, bintree_debug_pfunc_int);
 }

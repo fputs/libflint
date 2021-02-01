@@ -1,24 +1,24 @@
 #include "set.h"
 
-void set_init(struct Set* set, int (*match)(const void* a, const void* b),
+void set_init(Set* set, int (*match)(const void* a, const void* b),
               void (*destroy)(void* data)) {
     ll_init(set, destroy);
     set->match = match;
 }
 
-void set_destroy(struct Set* set) {
+void set_destroy(Set* set) {
     ll_destroy(set);
 }
 
-int set_insert(struct Set* set, const void* data) {
+int set_insert(Set* set, const void* data) {
     if (set_is_member(set, data)) {
         return 1;
     }
     return ll_ins_next(set, set->tail, data);
 }
 
-int set_remove(struct Set* set, void** data) {
-    struct ListNode* node = NULL;
+int set_remove(Set* set, void** data) {
+    ListNode* node = NULL;
 
     for (node = set->head; node != NULL; node = node->next) {
         if (set->match(*data, node->data)) {
@@ -32,8 +32,8 @@ int set_remove(struct Set* set, void** data) {
     return ll_remove_next(set, node, data);
 }
 
-int set_union(struct Set* setu, const struct Set* a, const struct Set* b) {
-    struct ListNode* node;
+int set_union(Set* setu, const Set* a, const Set* b) {
+    ListNode* node;
     void* data;
 
     set_init(setu, a->match, NULL);
@@ -59,8 +59,8 @@ int set_union(struct Set* setu, const struct Set* a, const struct Set* b) {
     return 0;
 }
 
-int set_intersection(struct Set* seti, const struct Set* a, const struct Set* b) {
-    struct ListNode* node;
+int set_intersection(Set* seti, const Set* a, const Set* b) {
+    ListNode* node;
     void* data;
 
     set_init(seti, a->match, NULL);
@@ -77,8 +77,8 @@ int set_intersection(struct Set* seti, const struct Set* a, const struct Set* b)
     return 0;
 }
 
-int set_difference(struct Set* setd, const struct Set* a, const struct Set* b) {
-    struct ListNode* node;
+int set_difference(Set* setd, const Set* a, const Set* b) {
+    ListNode* node;
     void* data;
 
     set_init(setd, a->match, NULL);
@@ -95,8 +95,8 @@ int set_difference(struct Set* setd, const struct Set* a, const struct Set* b) {
     return 0;
 }
 
-int set_is_member(const struct Set* set, const void* data) {
-    for (struct ListNode* node = set->head; node != NULL; node = node->next) {
+int set_is_member(const Set* set, const void* data) {
+    for (ListNode* node = set->head; node != NULL; node = node->next) {
         if (set->match(data, node->data)) {
             return 1;
         }
@@ -104,11 +104,11 @@ int set_is_member(const struct Set* set, const void* data) {
     return 0;
 }
 
-int set_is_subset(const struct Set* a, const struct Set* b) {
+int set_is_subset(const Set* a, const Set* b) {
     if (a->size > b->size) {
         return 0;
     }
-    for (struct ListNode* node = a->head; node != NULL; node = node->next) {
+    for (ListNode* node = a->head; node != NULL; node = node->next) {
         if (!set_is_member(b, node->data)) {
             return 0;
         }
@@ -116,7 +116,7 @@ int set_is_subset(const struct Set* a, const struct Set* b) {
     return 1;
 }
 
-int set_is_equal(const struct Set* a, const struct Set* b) {
+int set_is_equal(const Set* a, const Set* b) {
     if (a->size == b->size) {
         return 0;
     }

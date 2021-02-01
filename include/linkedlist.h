@@ -3,13 +3,13 @@
 
 #include <stddef.h>
 
-struct ListNode {
+typedef struct ListNode {
     void* data;
     struct ListNode* next;
     struct ListNode* prev;
-};
+} ListNode;
 
-struct List {
+typedef struct {
     size_t size;
 
     void (*destroy)(void* data);
@@ -17,14 +17,14 @@ struct List {
 
     struct ListNode* head;
     struct ListNode* tail;
-};
+} List;
 
-void ll_init(struct List* list, void (*destroy)(void *data));
-void ll_destroy(struct List* list);
-int ll_ins_next(struct List* list, struct ListNode* node, const void* data);
-int ll_ins_prev(struct List* list, struct ListNode* node, const void* data);
-int ll_remove(struct List* list, struct ListNode* node, void** data);
-int ll_remove_next(struct List* list, struct ListNode* node, void** data);
-int ll_remove_prev(struct List* list, struct ListNode* node, void** data);
+void ll_init(List* list, void (*destroy)(void *data));
+void ll_destroy(List* list);
+int ll_ins_next(List* list, ListNode* node, const void* data);
+int ll_ins_prev(List* list, ListNode* node, const void* data);
+int ll_remove(List* list, ListNode* node, void** data);
+int ll_remove_next(List* list, ListNode* node, void** data);
+int ll_remove_prev(List* list, ListNode* node, void** data);
 
 #endif

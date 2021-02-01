@@ -6,8 +6,8 @@
 #include "stack.h"
 #include "binarytree.h"
 
-void print_ll(struct List* list) {
-    for (struct ListNode* node = list->head; node != NULL; node = node->next) {
+void print_ll(List* list) {
+    for (ListNode* node = list->head; node != NULL; node = node->next) {
         printf(" %d", *((int*)node->data));
     }
     printf("\n");
@@ -15,7 +15,7 @@ void print_ll(struct List* list) {
 
 void test_ll() {
     printf("\n--- LIST TEST ---\n");
-    struct List* list = malloc(sizeof(struct List));
+    List* list = malloc(sizeof(List));
     ll_init(list, NULL);
 
     int i = 1;
@@ -26,13 +26,13 @@ void test_ll() {
     ll_ins_next(list, list->tail, (void*)&j);
     ll_ins_next(list, list->tail, (void*)&k);
 
-    printf("struct List: ");
+    printf("List: ");
     print_ll(list);
 
     void* data;
     ll_remove_next(list, list->head, &data);
 
-    printf("struct List: ");
+    printf("List: ");
     print_ll(list);
     printf("Removed: %d\n", *((int*)data));
 
@@ -46,7 +46,7 @@ int int_match(const void* a, const void* b) {
 
 void test_set() {
     printf("\n--- SET TEST ---\n");
-    struct Set* set = malloc(sizeof(struct Set));
+    Set* set = malloc(sizeof(Set));
     set_init(set, int_match, NULL);
 
     int i = 1;
@@ -60,22 +60,22 @@ void test_set() {
     int i2 = 1;
     int j2 = 4;
 
-    struct Set* set2 = malloc(sizeof(struct Set));
+    Set* set2 = malloc(sizeof(Set));
     set_init(set2, int_match, NULL);
 
     set_insert(set2, (void*)&i2);
     set_insert(set2, (void*)&j2);
 
-    printf("struct Set 1:");
+    printf("Set 1:");
     print_ll(set);
 
-    printf("struct Set 2:");
+    printf("Set 2:");
     print_ll(set2);
     printf("\n");
 
-    struct Set* set_u = malloc(sizeof(struct Set));
-    struct Set* set_i = malloc(sizeof(struct Set));
-    struct Set* set_d = malloc(sizeof(struct Set));
+    Set* set_u = malloc(sizeof(Set));
+    Set* set_i = malloc(sizeof(Set));
+    Set* set_d = malloc(sizeof(Set));
 
     set_union(set_u, set, set2);
     printf("Union:");
@@ -103,13 +103,13 @@ void test_set() {
 
 void test_stack() {
     printf("\n--- STACK TEST ---\n");
-    struct Stack *stack = malloc(sizeof(struct Stack));
+    Stack *stack = malloc(sizeof(Stack));
     stack_init(stack, NULL);
 
     int a = 1, b = 2;
     stack_push(stack, &a);
     stack_push(stack, &b);
-    printf("struct Stack size: %lu\n", stack->size);
+    printf("Stack size: %lu\n", stack->size);
 
     int *p = NULL;
     stack_pop(stack, (void **)&p);
@@ -117,14 +117,14 @@ void test_stack() {
 
     stack_pop(stack, (void **)&p);
     printf("a = %d\n", *p);
-    printf("struct Stack size: %lu\n", stack->size);
+    printf("Stack size: %lu\n", stack->size);
 
     stack_destroy(stack);
 }
 
 void test_bintree() {
     printf("\n--- BINARY TREE TEST ---\n");
-    struct BinTree *tree = malloc(sizeof(struct BinTree));
+    BinTree *tree = malloc(sizeof(BinTree));
     bintree_init(tree, NULL);
 
     int root = 0;

@@ -3,29 +3,29 @@
 
 #include "linkedlist.h"
 
-void ll_init(struct List* list, void (*destroy)(void *data)) {
+void ll_init(List* list, void (*destroy)(void *data)) {
     list->size = 0;
     list->destroy = destroy;
     list->head = NULL;
     list->tail = NULL;
 }
 
-void ll_destroy(struct List* list) {
+void ll_destroy(List* list) {
     void* data;
     while (list->size > 0) {
         if (ll_remove(list, list->tail, (void**)&data) == 0 && list->destroy != NULL) {
             list->destroy(data);
         }
     }
-    memset(list, 0, sizeof(struct List));
+    memset(list, 0, sizeof(List));
 }
 
-int ll_ins_next(struct List* list, struct ListNode* node, const void* data) {
-    struct ListNode* new_node;
+int ll_ins_next(List* list, ListNode* node, const void* data) {
+    ListNode* new_node;
     if (node == NULL && list->size != 0) {
         return -1;
     }
-    if ((new_node = malloc(sizeof(struct ListNode))) == NULL) {
+    if ((new_node = malloc(sizeof(ListNode))) == NULL) {
         return -1;
     }
 
@@ -50,12 +50,12 @@ int ll_ins_next(struct List* list, struct ListNode* node, const void* data) {
     return 0;
 }
 
-int ll_ins_prev(struct List* list, struct ListNode* node, const void* data) {
-    struct ListNode* new_node;
+int ll_ins_prev(List* list, ListNode* node, const void* data) {
+    ListNode* new_node;
     if (node == NULL && list->size != 0) {
         return -1;
     }
-    if ((new_node = malloc(sizeof(struct ListNode))) == NULL) {
+    if ((new_node = malloc(sizeof(ListNode))) == NULL) {
         return -1;
     }
 
@@ -80,7 +80,7 @@ int ll_ins_prev(struct List* list, struct ListNode* node, const void* data) {
     return 0;
 }
 
-int ll_remove(struct List* list, struct ListNode* node, void** data) {
+int ll_remove(List* list, ListNode* node, void** data) {
     if (node == NULL || list->size == 0) {
         return -1;
     }
@@ -106,14 +106,14 @@ int ll_remove(struct List* list, struct ListNode* node, void** data) {
     return 0;
 }
 
-int ll_remove_next(struct List* list, struct ListNode* node, void** data) {
+int ll_remove_next(List* list, ListNode* node, void** data) {
     if (node->next == NULL) {
         return -1;
     }
     return ll_remove(list, node->next, data);
 }
 
-int ll_remove_prev(struct List* list, struct ListNode* node, void** data) {
+int ll_remove_prev(List* list, ListNode* node, void** data) {
     if (node->prev == NULL) {
         return -1;
     }

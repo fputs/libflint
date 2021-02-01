@@ -5,10 +5,10 @@
 
 #define Stack List
 
-void stack_init(struct Stack* stack, void (*destroy)(void* data));
-void stack_destroy(struct Stack* stack);
-int stack_push(struct Stack* stack, void *data);
-void *stack_peek(struct Stack *stack);
-int stack_pop(struct Stack *stack, void **data);
+void stack_init(Stack* stack, void (*destroy)(void* data));
+void stack_destroy(Stack* stack);
+int stack_push(Stack* stack, void *data);
+void *stack_peek(Stack *stack);
+int stack_pop(Stack *stack, void **data);
 
 #endif
