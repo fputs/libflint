@@ -36,7 +36,7 @@ char *get_input(const char *path) {
     return buf;
 }
 
-char **split(const char *s, size_t *lsz, const char *delim) {
+char **split(char *s, size_t *lsz, const char *delim) {
     char **lines = NULL;
     char *t = strtok(s, delim);
     size_t n = 0;
