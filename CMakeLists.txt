@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
 project(flint C)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_STANDARD 99)
 include_directories(include)
@@ -9,6 +10,7 @@ set(SOURCES
     src/set.c
     src/stack.c
     src/binarytree.c
+    src/input.c
 )
 
 add_library(flint ${SOURCES})
