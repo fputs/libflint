@@ -7,7 +7,7 @@
 #include <bsd/stdlib.h>
 #endif
 
-#include "input.h"
+#include "lfinput.h"
 
 char *get_input(const char *path) {
     FILE *fp = NULL;
@@ -67,7 +67,7 @@ int *get_ints(const char *path, size_t *sz) {
     for (size_t idx = 0; idx < *sz; idx++) {
         int n;
         const char *errstr;
-        n = strtonum(lines[idx], INT_MIN, INT_MAX, &errstr);
+        n = (int)strtonum(lines[idx], INT_MIN, INT_MAX, &errstr);
         if (errstr) {
             printf("Failed to convert %s to int. Returning NULL\n", lines[idx]);
             exit(1);

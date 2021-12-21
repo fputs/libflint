@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "linkedlist.h"
-#include "set.h"
-#include "stack.h"
-#include "binarytree.h"
+#include "lflinkedlist.h"
+#include "lfset.h"
+#include "lfstack.h"
+#include "lfbinarytree.h"
+#include "lfmath.h"
 
 void print_ll(List* list) {
     for (ListNode* node = list->head; node != NULL; node = node->next) {
@@ -146,10 +147,22 @@ void test_bintree() {
     bintree_destroy(tree);
 }
 
+void test_math() {
+    printf("\n--- MATH TEST ---\n");
+    int i = 1, j = 2;
+    printf("Between %d and %d, %d is larger\n", i, j, max_int(i, j));
+    printf("Between %d and %d, %d is smaller\n", i, j, min_int(i, j));
+
+    char *s = "1010110";
+    printf("Binary: %s\n", s);
+    printf("Decimal: %d\n", binstr_to_int(s));
+}
+
 int main() {
     test_ll();
     test_set();
     test_stack();
     test_bintree();
+    test_math();
     return 0;
 }

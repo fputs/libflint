@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "binarytree.h"
+#include "lfbinarytree.h"
 
 void bintree_init(BinTree *tree, void (*destroy)(void *data)) {
     tree->size = 0;

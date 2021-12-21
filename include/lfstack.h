@@ -1,7 +1,7 @@
 #ifndef LIBFLINT_STACK_H
 #define LIBFLINT_STACK_H
 
-#include "linkedlist.h"
+#include "lflinkedlist.h"
 
 #define Stack List
 
