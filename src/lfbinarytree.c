@@ -140,9 +140,9 @@ int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
     return 0;
 }
 
-void print_node(char* prefix, BinTreeNode *node, int is_left, void (*pfunc)(void* data)) {
+void print_node(char *prefix, BinTreeNode *node, int is_left, void (*pfunc)(void *data)) {
     if (node != NULL) {
-        printf("%s%s", prefix, (is_left ? "├──" : "└──" ));
+        printf("%s%s", prefix, (is_left ? "├──" : "└──"));
         pfunc(node->data);
         char new_prefix[64];
         memset(new_prefix, 0, 64);
@@ -153,8 +153,8 @@ void print_node(char* prefix, BinTreeNode *node, int is_left, void (*pfunc)(void
     }
 }
 
-void bintree_debug_pfunc_int(void* data) {
-    int i = *((int*)data);
+void bintree_debug_pfunc_int(void *data) {
+    int i = *((int *) data);
     printf("%d\n", i);
 }
 

@@ -4,7 +4,9 @@
 #include <limits.h>
 
 #ifdef __linux__
+
 #include <bsd/stdlib.h>
+
 #endif
 
 #include "lfinput.h"
@@ -21,7 +23,7 @@ char *get_input(const char *path) {
     size_t fsz = ftell(fp);
     rewind(fp);
 
-    char* buf = NULL;
+    char *buf = NULL;
     buf = malloc(fsz + 1);
     if (buf == NULL) {
         fprintf(stderr, "Failed to malloc buf. Returning NULL\n");
@@ -67,7 +69,7 @@ int *get_ints(const char *path, size_t *sz) {
     for (size_t idx = 0; idx < *sz; idx++) {
         int n;
         const char *errstr;
-        n = (int)strtonum(lines[idx], INT_MIN, INT_MAX, &errstr);
+        n = (int) strtonum(lines[idx], INT_MIN, INT_MAX, &errstr);
         if (errstr) {
             printf("Failed to convert %s to int. Returning NULL\n", lines[idx]);
             exit(1);

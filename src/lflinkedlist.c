@@ -3,25 +3,25 @@
 
 #include "lflinkedlist.h"
 
-void ll_init(List* list, void (*destroy)(void *data)) {
+void ll_init(List *list, void (*destroy)(void *data)) {
     list->size = 0;
     list->destroy = destroy;
     list->head = NULL;
     list->tail = NULL;
 }
 
-void ll_destroy(List* list) {
-    void* data;
+void ll_destroy(List *list) {
+    void *data;
     while (list->size > 0) {
-        if (ll_remove(list, list->tail, (void**)&data) == 0 && list->destroy != NULL) {
+        if (ll_remove(list, list->tail, (void **) &data) == 0 && list->destroy != NULL) {
             list->destroy(data);
         }
     }
     memset(list, 0, sizeof(List));
 }
 
-int ll_ins_next(List* list, ListNode* node, const void* data) {
-    ListNode* new_node;
+int ll_ins_next(List *list, ListNode *node, const void *data) {
+    ListNode *new_node;
     if (node == NULL && list->size != 0) {
         return -1;
     }
@@ -29,7 +29,7 @@ int ll_ins_next(List* list, ListNode* node, const void* data) {
         return -1;
     }
 
-    new_node->data = (void*)data;
+    new_node->data = (void *) data;
     if (list->size == 0) {
         list->head = new_node;
         list->head->prev = NULL;
@@ -50,8 +50,8 @@ int ll_ins_next(List* list, ListNode* node, const void* data) {
     return 0;
 }
 
-int ll_ins_prev(List* list, ListNode* node, const void* data) {
-    ListNode* new_node;
+int ll_ins_prev(List *list, ListNode *node, const void *data) {
+    ListNode *new_node;
     if (node == NULL && list->size != 0) {
         return -1;
     }
@@ -59,7 +59,7 @@ int ll_ins_prev(List* list, ListNode* node, const void* data) {
         return -1;
     }
 
-    new_node->data = (void*)data;
+    new_node->data = (void *) data;
     if (list->size == 0) {
         list->head = new_node;
         list->head->prev = NULL;
@@ -80,7 +80,7 @@ int ll_ins_prev(List* list, ListNode* node, const void* data) {
     return 0;
 }
 
-int ll_remove(List* list, ListNode* node, void** data) {
+int ll_remove(List *list, ListNode *node, void **data) {
     if (node == NULL || list->size == 0) {
         return -1;
     }
@@ -106,14 +106,14 @@ int ll_remove(List* list, ListNode* node, void** data) {
     return 0;
 }
 
-int ll_remove_next(List* list, ListNode* node, void** data) {
+int ll_remove_next(List *list, ListNode *node, void **data) {
     if (node->next == NULL) {
         return -1;
     }
     return ll_remove(list, node->next, data);
 }
 
-int ll_remove_prev(List* list, ListNode* node, void** data) {
+int ll_remove_prev(List *list, ListNode *node, void **data) {
     if (node->prev == NULL) {
         return -1;
     }

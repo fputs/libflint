@@ -1,14 +1,14 @@
 #include "lfstack.h"
 
-void stack_init(Stack* stack, void (*destroy)(void* data)) {
+void stack_init(Stack *stack, void (*destroy)(void *data)) {
     ll_init(stack, destroy);
 }
 
-void stack_destroy(Stack* stack) {
+void stack_destroy(Stack *stack) {
     ll_destroy(stack);
 }
 
-int stack_push(Stack* stack, void *data) {
+int stack_push(Stack *stack, void *data) {
     if (stack->size == 0) {
         return ll_ins_next(stack, NULL, data);
     } else {
