@@ -15,10 +15,13 @@ set(SOURCES
 )
 
 add_library(flint ${SOURCES})
+if (NOT (${CMAKE_SYSTEM_NAME} STREQUAL "OpenBSD") AND NOT (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD"))
+    target_link_libraries(flint bsd)
+endif()
 
 if(${CMAKE_PROJECT_NAME} STREQUAL flint)
     add_executable(tests tests/tests.c)
     target_include_directories(tests PRIVATE include)
-    target_link_libraries(tests flint)
+    target_link_libraries(tests flint bsd)
 endif()
 

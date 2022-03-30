@@ -29,7 +29,7 @@ void bintree_rem_left(BinTree *tree, BinTreeNode *node);
 
 void bintree_rem_right(BinTree *tree, BinTreeNode *node);
 
-int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data);
+//int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data);
 
 void bintree_debug_print(BinTree *tree);
 
