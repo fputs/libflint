@@ -121,6 +121,8 @@ void test_stack() {
     printf("Stack size: %lu\n", stack->size);
 
     stack_destroy(stack);
+    free(stack);
+    stack = NULL;
 }
 
 void test_bintree() {
@@ -144,7 +146,13 @@ void test_bintree() {
 
     bintree_debug_print(tree);
 
+    printf("Changing r2\n");
+    r2 = 100;
+    bintree_debug_print(tree);
+
     bintree_destroy(tree);
+    free(tree);
+    tree = NULL;
 }
 
 void test_math() {
@@ -156,6 +164,15 @@ void test_math() {
     char *s = "1010110";
     printf("Binary: %s\n", s);
     printf("Decimal: %d\n", binstr_to_int(s));
+
+    printf("\nGenerate line from 0,0 to 2,5\n");
+    size_t sz = 0;
+    Point *line = bresenham(0, 0, 2, 5, &sz);
+    for (size_t idx = 0; idx < sz; idx++) {
+        printf("%d,%d ", line[idx].x, line[idx].y);
+    }
+    printf("\n");
+    free(line);
 }
 
 int main() {
