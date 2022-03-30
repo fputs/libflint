@@ -71,8 +71,10 @@ int *get_ints(const char *path, size_t *sz) {
         const char *errstr;
         n = (int) strtonum(lines[idx], INT_MIN, INT_MAX, &errstr);
         if (errstr) {
-            printf("Failed to convert %s to int. Returning NULL\n", lines[idx]);
-            exit(1);
+            fprintf(stderr, "Failed to convert %s to int. Returning NULL\n", lines[idx]);
+            free(i);
+            del_lines(lines);
+            return NULL;
         }
         i[idx] = n;
     }
