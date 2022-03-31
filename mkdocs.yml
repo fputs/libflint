@@ -1,0 +1,16 @@
+site_name: libflint
+site_url: https://example.com
+theme:
+  name: readthedocs
+nav:
+  - 'index.md'
+  - 'Modules':
+    - 'Boolean': 'lfbool.md'
+    - 'Input': 'lfinput.md'
+    - 'Math': 'lfmath.md'
+    - 'Utility': 'lfutility.md'
+  - 'Data Structures':
+    - 'Binary Tree': 'lfbinarytree.md'
+    - 'Linked List': 'lflinkedlist.md'
+    - 'Set': 'lfset.md'
+    - 'Stack': 'lfstack.md'
