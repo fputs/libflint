@@ -139,7 +139,8 @@ void bintree_init(BinTree *tree, void (*destroy)(void *data))
 
 ### bintree_destroy
 
-Destroys the nodes inside a tree and calls the deallaction function on the data if one was provided. Does not deallocate the tree itself, that is left to the user
+Destroys the nodes inside a tree and calls the deallaction function on the data if one was provided. Does not deallocate
+the tree itself, that is left to the user.
 
 ```c
 void bintree_destroy(BinTree *tree)
@@ -147,7 +148,7 @@ void bintree_destroy(BinTree *tree)
 
 ### bintree_ins_left
 
-Creates a new node containing `data` and inserts it as the left child of `node`
+Creates a new node containing `data` and inserts it as the left child of `node`.
 
 ```c
 int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data)
@@ -163,7 +164,7 @@ int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data)
 
 ### bintree_rem_left
 
-Removes and deallocates the left child node of `node`. Calls the deallocation function on the data if one was provided
+Removes and deallocates the left child node of `node`. Calls the deallocation function on the data if one was provided.
 
 ```c
 void bintree_rem_left(BinTree *tree, BinTreeNode *node)
@@ -171,7 +172,7 @@ void bintree_rem_left(BinTree *tree, BinTreeNode *node)
 
 ### bintree_rem_right
 
-Removes and deallocates the right child node of `node`. Calls the deallocation function on the data if one was provided
+Removes and deallocates the right child node of `node`. Calls the deallocation function on the data if one was provided.
 
 ```c
 void bintree_rem_right(BinTree *tree, BinTreeNode *node)
@@ -179,7 +180,7 @@ void bintree_rem_right(BinTree *tree, BinTreeNode *node)
 
 ### bintree_debug_print
 
-Prints a representation of the tree to stdout. Gets very messy with large trees
+Prints a representation of the tree to stdout. Gets very messy with large trees.
 
 ```c
 void bintree_debug_print(BinTree *tree)
@@ -187,7 +188,7 @@ void bintree_debug_print(BinTree *tree)
 
 ### bintree_is_eob
 
-Utility macro that checks if the node is the End Of Branch
+Utility macro that checks if the node is the End Of Branch.
 
 ```c
 #define bintree_is_eob(node) ((node) == NULL)
@@ -195,7 +196,7 @@ Utility macro that checks if the node is the End Of Branch
 
 ### bintree_is_leaf
 
-Utility macro that checks if a node has children
+Utility macro that checks if a node has children.
 
 ```c
 #define bintree_is_leaf(node) ((node)->left == NULL && (node)->right == NULL)

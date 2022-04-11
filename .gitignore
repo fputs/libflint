@@ -2,3 +2,5 @@ cmake*
 .cache
 build
 compile_commands.json
+site/
+web.sh

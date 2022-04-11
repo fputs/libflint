@@ -84,5 +84,5 @@ void del_split(char **sp);
 /* Usage */
 size_t sp_sz = 0;
 char **sp = split("Delete Me!", &sp_sz, " ");
-void del_split(char **sp);
+void del_split(sp);
 ```
