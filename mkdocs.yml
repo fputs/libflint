@@ -1,5 +1,5 @@
 site_name: libflint
-site_url: https://example.com
+site_url: https://docs.fputs.com/libflint
 theme:
   name: readthedocs
 nav:

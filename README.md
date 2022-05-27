@@ -4,8 +4,9 @@ My personal library of common C data structures and algorithms. Supports Linux, 
 
 ## Documentation
 
-Extensive documentation can be found [here](https://docs.fputs.com/libflint/index.html)
+Extensive documentation can be found [here](https://fputs.com/docs/libflint/)
 
 ## Requirements
 
 Building on Linux requires `libbsd`.
+
