@@ -15,7 +15,7 @@ set(SOURCES
 )
 
 add_library(flint ${SOURCES})
-if (NOT (${CMAKE_SYSTEM_NAME} STREQUAL "OpenBSD") AND NOT (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD"))
+if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux"))
     target_link_libraries(flint bsd)
 endif()
 
