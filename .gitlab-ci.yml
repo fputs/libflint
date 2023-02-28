@@ -1,0 +1,17 @@
+image: polinux/mkdocs
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+docs:
+  timeout: 5 minutes
+  script:
+    - apk add openssh-client
+    - mkdir -p ~/.ssh
+    - ssh-keyscan -H fputs.com >> ~/.ssh/known_hosts
+    - echo "$ssh_key" >> ~/.ssh/id_rsa
+    - chmod -R 700 ~/.ssh
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh debian@fputs.com mkdir -p /var/www/fputs.com/docs
+    - scp -r ./site/* debian@fputs.com:/var/www/fputs.com/docs/
