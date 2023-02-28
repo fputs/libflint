@@ -14,5 +14,7 @@ docs:
     - eval "$(ssh-agent -s)"
     - ssh-add ~/.ssh/id_rsa
     - mkdocs build
-    - ssh debian@fputs.com rm -rf /var/www/fputs/docs/libflint; mkdir -p /var/www/fputs.com/docs/libflint
+    - ssh debian@fputs.com rm -rf /var/www/fputs/docs/libflint
+    - ssh debian@fputs.com mkdir -p /var/www/fputs.com/docs/libflint
+    - ssh debian@fputs.com chmod 755 /var/www/fputs/docs/libflint
     - scp -r ./site/* debian@fputs.com:/var/www/fputs.com/docs/libflint/
