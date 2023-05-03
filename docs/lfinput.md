@@ -4,6 +4,20 @@ I/O module to assist with consuming data from files
 
 ## Functions
 
+### get_binary
+
+Reads a file at `path` and returns the contents as a char* buffer. The buffer is allocated inside the function and
+the user is responsible for freeing it when finished.
+
+```c
+char *get_binary(const char *path);
+
+/* Usage */
+char *buf = get_binary("/home/evan/binfile");
+free(buf);
+```
+
+
 ### get_input
 
 Reads a file at `path` and returns the contents as a single string. The string is allocated inside the function and

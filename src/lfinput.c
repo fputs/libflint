@@ -11,7 +11,7 @@
 
 #include "lfinput.h"
 
-char *get_input(const char *path) {
+static FILE* open_file(const char *path, size_t *fsz) {
     FILE *fp = NULL;
     fp = fopen(path, "r");
     if (fp == NULL) {
@@ -20,8 +20,39 @@ char *get_input(const char *path) {
     }
 
     fseek(fp, 0, SEEK_END);
-    size_t fsz = ftell(fp);
+    *fsz = ftell(fp);
     rewind(fp);
+
+    return fp;
+}
+
+char *get_binary(const char *path) {
+    size_t fsz = 0;
+    FILE *fp = open_file(path, &fsz);
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    char *buf = NULL;
+    buf = malloc(fsz);
+    if (buf == NULL) {
+        fprintf(stderr, "Failed to malloc buf. Returning NULL\n");
+        fclose(fp);
+        return NULL;
+    }
+
+    fread(buf, 1, fsz, fp);
+    fclose(fp);
+
+    return buf;
+}
+
+char *get_input(const char *path) {
+    size_t fsz = 0;
+    FILE *fp = open_file(path, &fsz);
+    if (fp == NULL) {
+        return NULL;
+    }
 
     char *buf = NULL;
     buf = malloc(fsz + 1);
