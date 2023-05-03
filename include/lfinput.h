@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+char *get_binary(const char *);
+
 char *get_input(const char *);
 
 char **split(char *, size_t *, const char *);
