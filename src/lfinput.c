@@ -26,22 +26,21 @@ static FILE* open_file(const char *path, size_t *fsz) {
     return fp;
 }
 
-char *get_binary(const char *path) {
-    size_t fsz = 0;
-    FILE *fp = open_file(path, &fsz);
+char *get_binary(const char *path, size_t *fsz) {
+    FILE *fp = open_file(path, fsz);
     if (fp == NULL) {
         return NULL;
     }
 
     char *buf = NULL;
-    buf = malloc(fsz);
+    buf = malloc(*fsz);
     if (buf == NULL) {
         fprintf(stderr, "Failed to malloc buf. Returning NULL\n");
         fclose(fp);
         return NULL;
     }
 
-    fread(buf, 1, fsz, fp);
+    fread(buf, 1, *fsz, fp);
     fclose(fp);
 
     return buf;

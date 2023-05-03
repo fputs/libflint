@@ -6,14 +6,15 @@ I/O module to assist with consuming data from files
 
 ### get_binary
 
-Reads a file at `path` and returns the contents as a char* buffer. The buffer is allocated inside the function and
-the user is responsible for freeing it when finished.
+Reads a file at `path` and returns the contents as a char* buffer. The `fsz` parameter stores the length of the
+returned array. The buffer is allocated inside the function, so the user is responsible for freeing it when finished.
 
 ```c
-char *get_binary(const char *path);
+char *get_binary(const char *path, size_t *fsz);
 
 /* Usage */
-char *buf = get_binary("/home/evan/binfile");
+size_t fsz = 0;
+char *buf = get_binary("/home/evan/binfile", &fsz);
 free(buf);
 ```
 
