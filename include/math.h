@@ -1,7 +1,7 @@
 #ifndef LIBFLINT_H_MATH
 #define LIBFLINT_H_MATH
 
-#include "lfutility.h"
+#include "utility.h"
 
 int max_int(int a, int b);
 

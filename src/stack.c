@@ -1,4 +1,4 @@
-#include "lfstack.h"
+#include "stack.h"
 
 void stack_init(Stack *stack, void (*destroy)(void *data)) {
     ll_init(stack, destroy);

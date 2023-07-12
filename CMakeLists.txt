@@ -6,12 +6,12 @@ set(CMAKE_C_STANDARD 99)
 include_directories(include)
 
 set(SOURCES
-    src/lflinkedlist.c
-    src/lfset.c
-    src/lfstack.c
-    src/lfbinarytree.c
-    src/lfinput.c
-    src/lfmath.c
+        src/linkedlist.c
+        src/set.c
+        src/stack.c
+        src/binarytree.c
+        src/input.c
+        src/math.c
 )
 
 add_library(flint ${SOURCES})

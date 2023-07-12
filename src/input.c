@@ -9,7 +9,7 @@
 
 #endif
 
-#include "lfinput.h"
+#include "input.h"
 
 static FILE* open_file(const char *path, size_t *fsz) {
     FILE *fp = NULL;

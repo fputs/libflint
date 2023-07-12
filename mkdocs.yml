@@ -5,12 +5,12 @@ theme:
 nav:
   - 'index.md'
   - 'Modules':
-    - 'Boolean': 'lfbool.md'
-    - 'Input': 'lfinput.md'
-    - 'Math': 'lfmath.md'
-    - 'Utility': 'lfutility.md'
+    - 'Boolean': 'bool.md'
+    - 'Input': 'input.md'
+    - 'Math': 'math.md'
+    - 'Utility': 'utility.md'
   - 'Data Structures':
-    - 'Binary Tree': 'lfbinarytree.md'
-    - 'Linked List': 'lflinkedlist.md'
-    - 'Set': 'lfset.md'
-    - 'Stack': 'lfstack.md'
+    - 'Binary Tree': 'binarytree.md'
+    - 'Linked List': 'linkedlist.md'
+    - 'Set': 'set.md'
+    - 'Stack': 'stack.md'

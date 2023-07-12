@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "lflinkedlist.h"
-#include "lfset.h"
-#include "lfstack.h"
-#include "lfbinarytree.h"
-#include "lfmath.h"
+#include "linkedlist.h"
+#include "set.h"
+#include "stack.h"
+#include "binarytree.h"
+#include "math.h"
 
 void print_ll(List *list) {
     LL_ITER(list) {
