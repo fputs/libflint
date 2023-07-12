@@ -1,4 +1,4 @@
-# lfbinarytree
+# binarytree
 
 Binary tree with standard leaf operations
 

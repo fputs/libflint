@@ -1,4 +1,4 @@
-# lfinput
+# input
 
 I/O module to assist with consuming data from files
 

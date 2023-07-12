@@ -1,4 +1,4 @@
-# lfbool
+# bool
 
 Macro representation of truthy values
 

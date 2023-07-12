@@ -1,4 +1,4 @@
-# lfutility
+# utility
 
 Utility code that does not fit anywhere else
 

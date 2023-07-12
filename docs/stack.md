@@ -1,3 +1,3 @@
-# lfstack
+# stack
 
 Coming soon

@@ -1,4 +1,4 @@
-# lflinkedlist
+# linkedlist
 
 A dual sided linked list structure. Used as the foundation for many of the structures in `libflint`
 

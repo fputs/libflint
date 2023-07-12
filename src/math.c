@@ -29,6 +29,9 @@ int clamp_int(int i, int low, int high) {
 int binstr_to_int(const char *s) {
     int n = 0, m = 1;
     for (int i = (int) strlen(s) - 1; i >= 0; --i) {
+        if (s[i] == '_') {
+            continue;
+        }
         if (s[i] == '1') {
             n += m;
         }

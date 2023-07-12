@@ -161,9 +161,13 @@ void test_math() {
     printf("Between %d and %d, %d is larger\n", i, j, max_int(i, j));
     printf("Between %d and %d, %d is smaller\n", i, j, min_int(i, j));
 
-    char *s = "1010110";
+    char *s = "10101101";
     printf("Binary: %s\n", s);
     printf("Decimal: %d\n", binstr_to_int(s));
+
+    char *s2 = "1010_1101";
+    printf("Binary: %s\n", s2);
+    printf("Decimal: %d\n", binstr_to_int(s2));
 
     printf("\nGenerate line from 0,0 to 2,5\n");
     size_t sz = 0;
