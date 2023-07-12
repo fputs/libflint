@@ -1,9 +1,19 @@
-image: polinux/mkdocs
-
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
+test:
+  image: danger89/cmake:latest
+  script:
+    - apt update
+    - apt install -y libbsd-dev
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
+    - ./tests
+
 docs:
+  image: polinux/mkdocs
   timeout: 5 minutes
   script:
     - apk add openssh-client
