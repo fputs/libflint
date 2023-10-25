@@ -40,8 +40,6 @@ void vec_destroy(Vector *vec) {
             vec->destroy(vec->elements[i]);
         }
     }
-    free(vec);
-    vec = NULL;
 }
 
 int vec_insert(Vector *vec, void *data, size_t index) {

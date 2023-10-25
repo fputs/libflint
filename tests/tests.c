@@ -37,6 +37,7 @@ void test_ll() {
 
     printf("List: ");
     print_ll(list);
+    assert(*(int*)data == 2);
     printf("Removed: %d\n", *((int *) data));
 
     ll_destroy(list);
@@ -236,6 +237,7 @@ void test_vector() {
     assert(t == NULL);
 
     vec_destroy(v);
+    free(v);
 }
 
 int main() {
