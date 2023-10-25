@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef __linux__
+#include <bsd/stdlib.h>
+#endif
+
 #include "vector.h"
 
 #define VEC_INIT_CAP 2

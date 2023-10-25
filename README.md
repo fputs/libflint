@@ -1,6 +1,6 @@
 # libflint
 
-My personal library of common C data structures and algorithms. Supports Linux, OpenBSD, and FreeBSD.
+My personal library of common C data structures and algorithms. Supports Linux, macOS, OpenBSD, and FreeBSD.
 
 ## Documentation
 
