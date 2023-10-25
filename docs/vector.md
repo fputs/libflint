@@ -1,203 +1,144 @@
-# binarytree
+# vector
 
-Binary tree with standard leaf operations
-
-## Usage
-
-Create the tree. The user is responsible for memory management of the `BinTree` struct.
-
-```c
-BinTree *tree = malloc(sizeof(BinTree));
-```
-
-After the tree is created, init it. The second argument on `bintree_init()` is an optional memory freeing function pointer
-with signature `void (*destroy)(void *data)`. Use `free()` from the stdlib if you are creating the data with `malloc()`.
-If allocation of your data is more complex, you can pass your own memory deallocation function as long as it fits the
-signature.
-
-In this example, we are passing `NULL` because all memory will be stack allocated.
-
-```c
-bintree_init(tree, NULL);
-int root = 0;
-int l1 = 1;
-int l2 = 2;
-int r1 = 12;
-int r2 = 200;
-```
-
-Next lets insert our data into the tree. The insert functions signature is `bintree_ins_...(tree, parent, data)`. If you
-are inserting data at the root of the tree, you may use either `bintree_ins_left()` or `bintree_ins_right()` as long as
-`NULL` is passed as the parent argument.
-
-```c
-bintree_ins_left(tree, NULL, &root);
-bintree_ins_left(tree, tree->root, &l1);
-bintree_ins_left(tree, tree->root->left, &l2);
-bintree_ins_right(tree, tree->root->left, &r2);
-bintree_ins_right(tree, tree->root, &r1);
-bintree_ins_right(tree, tree->root->right, &r2);
-bintree_ins_left(tree, tree->root->right, &l1);
-```
-
-We can use `bintree_debug_print(tree)` to print a graphical representation of the tree to `stdout`
-```plaintext
-└──0
-    ├──1
-    │   ├──2
-    │   └──200
-    └──12
-        ├──1
-        └──200
-```
-
-To cleanup the tree, first destroy the nodes. If you passed a deallocation function, it will be called on
-the data member of each node before the node itself is freed. `bintree_destroy()` does not free the tree itself, just the
-nodes inside of it, hence we must also call `free()` on the tree.
-
-```c
-bintree_destroy(tree);
-free(tree);
-tree = NULL;
-```
-
-Here is the entire example:
-
-```c
-BinTree *tree = malloc(sizeof(BinTree));
-bintree_init(tree, NULL);
-
-int root = 0;
-int l1 = 1;
-int l2 = 2;
-int r1 = 12;
-int r2 = 200;
-
-bintree_ins_left(tree, NULL, &root);
-bintree_ins_left(tree, tree->root, &l1);
-bintree_ins_left(tree, tree->root->left, &l2);
-bintree_ins_right(tree, tree->root->left, &r2);
-bintree_ins_right(tree, tree->root, &r1);
-bintree_ins_right(tree, tree->root->right, &r2);
-bintree_ins_left(tree, tree->root->right, &l1);
-
-bintree_debug_print(tree);
-
-bintree_destroy(tree);
-free(tree);
-tree = NULL;
-```
+Simple type-agnostic dynamic array
 
 ## Structs
 
-### BinTree
+### Vector
 
-Binary tree struct
+Vector struct
 
 ```c
-typedef struct {
-    int size;
-    int (*compare)(const void *a, const void *b);
-    void (*destroy)(void *data);
-    struct BinTreeNode *root;
-} BinTree;
+typedef struct Vector {
+size_t capacity;
+size_t length;
+void **elements;
+void (*destroy)(void *data);
+} Vector;
 ```
 
 Members:
 
-- `size`: How many nodes the tree contains
-- `compare`: Comparison function between data in two nodes. Currently not used for anything
+- `capacity`: The size of `elements` in memory
+- `length`: The number of real elements stored in the backing `elements` array
+- `elements`: The dynamic array of `void *` that holds the vector's members
 - `destroy`: Optional deallocation function for data inside a node. Typical usage is `NULL` for stack allocated data and `free()` for data created with `malloc()`
-- `root`: The root node of the tree
-
-### BinTreeNode
-
-Node of the tree
-
-```c
-typedef struct BinTreeNode {
-    void *data;
-    struct BinTreeNode *left;
-    struct BinTreeNode *right;
-} BinTreeNode;
-```
-
-Members:
-- `data`: void pointer to data the node contains
-- `left`: left facing leaf of the node
-- `right`: right facing leaf of the node
 
 ## Functions
 
-### bintree_init
+### vec_init
 
-Initialize the binary tree. User is responsible for freeing memory with `bintree_destroy()`.
+Initialize the vector with a default capacity of 2. User is responsible for freeing elements of the vector with `vec_destroy()`. Returns a non-zero integer if there is an error
 
 ```c
-void bintree_init(BinTree *tree, void (*destroy)(void *data))
+int vec_init(Vector *vec, void (*destroy)(void *data));
 ```
 
-### bintree_destroy
+### vec_init_with_capacity
 
-Destroys the nodes inside a tree and calls the deallaction function on the data if one was provided. Does not deallocate
-the tree itself, that is left to the user.
+Initialize the vector with a user-specified capacity. User is responsible for freeing elements of the vector with `vec_destroy()`. Returns a non-zero integer if there is an error
 
 ```c
-void bintree_destroy(BinTree *tree)
+int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t cap);
 ```
 
-### bintree_ins_left
+### vec_destroy
 
-Creates a new node containing `data` and inserts it as the left child of `node`.
+Frees the underlying array inside a `Vector`. If `destroy` was provided when creating the vector, then it is called against each element in the array before the array is freed. Does not destroy the vector itself, that is left up to the user
+
 
 ```c
-int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data)
+void vec_destroy(Vector *vec);
+
+/* Usage */
+vec_destroy(vec);
+free(vec);
 ```
 
-### bintree_ins_right
+### vec_insert
 
-Creates a new node containing `data` and inserts it as the right child of `node`.
+Insert `data` into the vector at a specified index. Any elements at that array and beyond will be moved up to make room. Returns a non-zero integer if there is an error
 
 ```c
-int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data)
+int vec_insert(Vector *vec, void *data, size_t index);
+
+/* Usage */
+
+// vec: 1 2 3 4
+int i = 99;
+vec_insert(vec, &i, 2);
+// vec: 1 2 99 3 4
 ```
 
-### bintree_rem_left
+### vec_push
 
-Removes and deallocates the left child node of `node`. Calls the deallocation function on the data if one was provided.
+Insert `data` at the end of the vector. Returns a non-zero integer if there is an error
 
 ```c
-void bintree_rem_left(BinTree *tree, BinTreeNode *node)
+int vec_push(Vector *vec, void *data);
+
+/* Usage */
+
+// vec: 1 2 3
+int *i = malloc(sizeof(int));
+*i = 4;
+vec_push(vec, i);
+// vec: 1 2 3 4
 ```
 
-### bintree_rem_right
+### vec_safe_at
 
-Removes and deallocates the right child node of `node`. Calls the deallocation function on the data if one was provided.
+Gets the stored data at a specified index. Uses safety checks to make sure `index` is not out of bounds. Returns `NULL` if there is an error
 
 ```c
-void bintree_rem_right(BinTree *tree, BinTreeNode *node)
+void *vec_safe_at(Vector *vec, size_t index);
 ```
 
-### bintree_debug_print
+### vec_remove
 
-Prints a representation of the tree to stdout. Gets very messy with large trees.
+Removes an element from the array and returns the pointer, then moves elements to shrink the array accordingly. Returns `NULL` if the index is not valid
 
 ```c
-void bintree_debug_print(BinTree *tree)
+void *vec_remove(Vector *vec, size_t index);
+
+/* Usage */
+// vec: 1 2 3 4
+int *t = NULL;
+t = (int*)vec_remove(vec, 2);
+assert(*t == 3);
+// vec: 1 2 4
 ```
 
-### bintree_is_eob
+### vec_shrink
 
-Utility macro that checks if the node is the End Of Branch.
+Shrinks the capacity of the vector down to the current length. Returns a non-zero integer if there is an error
 
 ```c
-#define bintree_is_eob(node) ((node) == NULL)
+int vec_shrink(Vector *vec);
 ```
 
-### bintree_is_leaf
+## Macros
 
-Utility macro that checks if a node has children.
+### vec_at
+
+Grabs the element at index `i` without safety checks for better performance.
 
 ```c
-#define bintree_is_leaf(node) ((node)->left == NULL && (node)->right == NULL)
+#define vec_at(v, i) (v)->elements[(i)]
+```
+
+### vec_len
+
+Returns the length of the vector
+
+```c
+#define vec_len(v) (v)->length
+```
+
+### vec_cap
+
+Returns the capacity of the vector
+
+```c
+#define vec_cap(v) (v)->capacity
 ```
