@@ -1,6 +1,6 @@
 # linkedlist
 
-A dual sided linked list structure. Used as the foundation for many of the structures in `libflint`
+A dual sided linked list structure. Used as the foundation for many other modules in `libflint`
 
 ## Usage
 
@@ -146,16 +146,24 @@ Members:
 
 ### ll_init
 
-Initalize the list. User is responsible for freeing memory with `ll_destroy()`.
+Initialize the list. User is responsible for creating the initial `List` structure and freeing memory with `ll_destroy()`. `destroy` is a deallocation function for the members of `List`, pass `NULL` if the memory is stack-allocated
 
 ```c
 void ll_init(List *list, void (*destroy)(void *data));
+
+/* Usage */
+List *list = malloc(sizeof(Stack));
+
+// Pass NULL for stack-allocated memory
+ll_init(list, NULL);
+
+// Pass free or a custom freeing function for heap allocated memory
+ll_init(list, free);
 ```
 
 ### ll_destroy
 
-Destroys the nodes inside a list and calls the deallocation funciton on the data if one was provided. Does not destroy
-the list itself, that is left up to the user.
+Destroys the nodes inside a list and calls the deallocation funciton on the data if one was provided. Does not destroy the list itself, that is left up to the user.
 
 ```c
 void ll_destroy(List *list);
