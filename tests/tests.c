@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "linkedlist.h"
 #include "set.h"
 #include "stack.h"
 #include "binarytree.h"
+#include "vector.h"
 #include "math.h"
 
 void print_ll(List *list) {
@@ -158,6 +160,7 @@ void test_bintree() {
 void test_math() {
     printf("\n--- MATH TEST ---\n");
     int i = 1, j = 2;
+    assert(max_int(i, j) == j);
     printf("Between %d and %d, %d is larger\n", i, j, max_int(i, j));
     printf("Between %d and %d, %d is smaller\n", i, j, min_int(i, j));
 
@@ -179,11 +182,68 @@ void test_math() {
     free(line);
 }
 
+void print_vector(Vector *vec) {
+    for (size_t i = 0; i < vec->length; ++i) {
+        int t = *(int*)vec_at(vec, i);
+        printf("%d ", t);
+    }
+    printf("\n");
+}
+
+void test_vector() {
+    printf("\n--- VECTOR TEST ---\n");
+    Vector *v = malloc(sizeof(Vector));
+    vec_init(v, NULL);
+
+    int e0 = 0;
+    int e1 = 1;
+    int e2 = 2;
+    int e3 = 3;
+    int e4 = 4;
+
+    vec_push(v, &e0);
+    assert(v->length == 1);
+    int *t = (int*)vec_at(v, 0);
+    assert(*t == 0);
+
+    vec_push(v, &e1);
+    vec_push(v, &e2);
+    assert(v->length == 3);
+
+    // test access outside bounds
+    t = (int*)vec_safe_at(v, 3);
+    assert(t == NULL);
+
+    printf("Before insert: ");
+    print_vector(v);
+    vec_push(v, &e4);
+    vec_insert(v, &e3, 3);
+    printf("After insert:  ");
+    print_vector(v);
+
+    t = (int*)vec_at(v, 3);
+    assert(*t == e3);
+    t = (int*)vec_at(v, 4);
+    assert(*t == e4);
+
+    t = (int*)vec_remove(v, 1);
+    assert(t != NULL);
+    assert(*t == 1);
+    printf("After removal: ");
+    print_vector(v);
+
+    t = (int*)vec_remove(v, 10);
+    assert(t == NULL);
+
+    vec_destroy(v);
+}
+
 int main() {
     test_ll();
     test_set();
     test_stack();
     test_bintree();
     test_math();
+    test_vector();
     return 0;
 }

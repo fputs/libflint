@@ -12,6 +12,7 @@ set(SOURCES
         src/binarytree.c
         src/input.c
         src/math.c
+        src/vector.c
 )
 
 add_library(flint ${SOURCES})
