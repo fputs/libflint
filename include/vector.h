@@ -24,8 +24,12 @@ void *vec_safe_at(Vector *vec, size_t index);
 
 void *vec_remove(Vector *vec, size_t index);
 
+int vec_shrink(Vector *vec);
+
 #define vec_at(v, i) (v)->elements[(i)]
 
 #define vec_len(v) (v)->length
+
+#define vec_cap(v) (v)->capacity
 
 #endif // LIBFLINT_H_VECTOR

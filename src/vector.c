@@ -95,3 +95,17 @@ void *vec_remove(Vector *vec, size_t index) {
     vec->length -= 1;
     return r;
 }
+
+int vec_shrink(Vector *vec) {
+    if (vec_len(vec) == vec_cap(vec)) {
+        return 0;
+    }
+
+    vec->capacity = vec_len(vec);
+    vec->elements = reallocf(vec, sizeof(void*) * vec_cap(vec));
+    if (vec->elements == NULL) {
+        return -1;
+    }
+
+    return 0;
+}

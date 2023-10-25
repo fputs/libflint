@@ -236,6 +236,11 @@ void test_vector() {
     t = (int*)vec_remove(v, 10);
     assert(t == NULL);
 
+    printf("\ncap before shrink: %zu\n", vec_cap(v));
+    vec_shrink(v);
+    assert(vec_len(v) == vec_cap(v));
+    printf("cap after shrink: %zu\n", vec_cap(v));
+
     vec_destroy(v);
     free(v);
 }
