@@ -31,7 +31,13 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
 
 static int vec_grow(Vector *const vec) {
     vec->capacity *= 2;
+
+#ifdef __OpenBSD__
+    vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
+#else
     vec->elements = reallocf(vec->elements, sizeof(void *) * vec->capacity);
+#endif
+
     if (vec->elements == NULL) {
         return -1;
     }
@@ -106,7 +112,13 @@ int vec_shrink(Vector *vec) {
     }
 
     vec->capacity = vec_len(vec);
-    vec->elements = reallocf(vec, sizeof(void*) * vec_cap(vec));
+
+#ifdef __OpenBSD__
+    vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
+#else
+    vec->elements = reallocf(vec->elements, sizeof(void *) * vec->capacity);
+#endif
+
     if (vec->elements == NULL) {
         return -1;
     }

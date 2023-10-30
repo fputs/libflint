@@ -76,3 +76,4 @@ Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
 Point *bresenham_p(Point p1, Point p2, size_t *sz) {
     return bresenham(p1.x, p1.y, p2.x, p2.y, sz);
 }
+
