@@ -26,4 +26,7 @@ uninstall:
 
 clean:
 	rm -f $(TARGET)
+	rm -f test
 
+test:
+	cc $(CFLAGS) -o test tests/tests.c src/*.c
