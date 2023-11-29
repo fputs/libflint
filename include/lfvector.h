@@ -26,6 +26,14 @@ void *vec_remove(Vector *vec, size_t index);
 
 int vec_shrink(Vector *vec);
 
+const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b));
+
+const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b));
+
+int vec_cmp_int(const void *a, const void *b);
+
+int vec_cmp_char(const void *a, const void *b);
+
 #define vec_at(v, i) (v)->elements[(i)]
 
 #define vec_len(v) (v)->length

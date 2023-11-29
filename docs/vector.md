@@ -117,11 +117,41 @@ Shrinks the capacity of the vector down to the current length. Returns a non-zer
 int vec_shrink(Vector *vec);
 ```
 
+## vec_max
+
+Finds the largest value in the vector and returns a void pointer to the underlying data. Requires a 
+comparison function to compare the data in the vector. This function must return `1` if `a > b`, `-1` if 
+`a < b`, or `0` if `a == b`. See the supplied comparison functions below for reference
+
+```c
+const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b));
+```
+
+## vec_min
+
+Finds the smallest value in the vector and returns a void pointer to the underlying data. Requires a 
+comparison function to compare the data in the vector. This function must return `1` if `a > b`, `-1` if
+`a < b`, or `0` if `a == b`. See the supplied comparison functions below for reference
+
+```c
+const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b));
+```
+
+## Comparison Functions
+
+Comparison functions to compare data in a vector. These functions must return `1` if `a > b`, `-1` if
+`a < b`, or `0` if `a == b`.
+
+```c
+int vec_cmp_int(const void *a, const void *b);
+int vec_cmp_char(const void *a, const void *b);
+```
+
 ## Macros
 
 ### vec_at
 
-Grabs the element at index `i` without safety checks for better performance.
+Grabs the element at index `i` without safety checks for better performance. Use with caution
 
 ```c
 #define vec_at(v, i) (v)->elements[(i)]

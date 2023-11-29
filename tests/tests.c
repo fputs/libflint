@@ -227,6 +227,13 @@ void test_vector() {
     t = (int*)vec_at(v, 4);
     assert(*t == e4);
 
+    const int *min = vec_min(v, vec_cmp_int);
+    const int *max = vec_max(v, vec_cmp_int);
+    printf("min: %d\n", *min);
+    printf("max: %d\n", *max);
+    assert(*min == e0);
+    assert(*max == e4);
+
     t = (int*)vec_remove(v, 1);
     assert(t != NULL);
     assert(*t == 1);
