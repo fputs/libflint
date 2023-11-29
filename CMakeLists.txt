@@ -13,6 +13,7 @@ set(SOURCES
         src/input.c
         src/math.c
         src/vector.c
+        src/utility.c
 )
 
 add_library(flint ${SOURCES})
