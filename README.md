@@ -8,8 +8,8 @@ Extensive documentation can be found [here](https://fputs.com/docs/libflint/)
 
 ## Requirements
 
-Building on Linux requires `libbsd`.
+Building on Linux requires `libbsd`. Building on macOS, OpenBSD, or FreeBSD requires no extra dependencies.
 
 ## Libraries
 
-`libflint` uses [uthash](https://github.com/troydhanson/uthash) for its hash table implementation. `uthash` is a single header file included in the source code of `libflint`. See the top of `include/uthash.h` for license information
+`libflint` includes [uthash](https://github.com/troydhanson/uthash) for a hash table implementation. `uthash` is a single header file included in the source code of `libflint`. See the top of `include/uthash.h` for license information

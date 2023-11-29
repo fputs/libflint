@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "linkedlist.h"
+#include "lflinkedlist.h"
 
 void ll_init(List *list, void (*destroy)(void *data)) {
     list->size = 0;

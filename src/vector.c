@@ -5,7 +5,7 @@
 #include <bsd/stdlib.h>
 #endif
 
-#include "vector.h"
+#include "lfvector.h"
 
 #define VEC_INIT_CAP 2
 

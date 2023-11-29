@@ -1,7 +1,7 @@
 #ifndef LIBFLINT_SET_H
 #define LIBFLINT_SET_H
 
-#include "linkedlist.h"
+#include "lflinkedlist.h"
 
 #define Set List
 

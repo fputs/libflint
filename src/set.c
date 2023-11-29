@@ -1,4 +1,4 @@
-#include "set.h"
+#include "lfset.h"
 
 void set_init(Set *set, int (*match)(const void *a, const void *b),
               void (*destroy)(void *data)) {

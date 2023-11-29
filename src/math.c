@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "math.h"
+#include "lfmath.h"
 
 int max_int(int a, int b) {
     if (a > b) {

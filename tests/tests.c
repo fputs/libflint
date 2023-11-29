@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "linkedlist.h"
-#include "set.h"
-#include "stack.h"
-#include "binarytree.h"
-#include "vector.h"
-#include "math.h"
+#include "lflinkedlist.h"
+#include "lfset.h"
+#include "lfstack.h"
+#include "lfbinarytree.h"
+#include "lfvector.h"
+#include "lfmath.h"
 
 void print_ll(List *list) {
     LL_ITER(list) {
