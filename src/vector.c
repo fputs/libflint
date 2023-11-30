@@ -129,7 +129,7 @@ int vec_shrink(Vector *vec) {
 const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b)) {
     void *a = vec->elements[0];
     for (size_t i = 1; i < vec_len(vec); ++i) {
-        if (!cmp(a, vec->elements[i])) {
+        if (cmp(a, vec->elements[i]) > 0) {
             a = vec->elements[i];
         }
     }
@@ -139,7 +139,7 @@ const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b)) 
 const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b)) {
     void *a = vec->elements[0];
     for (size_t i = 1; i < vec_len(vec); ++i) {
-        if (cmp(a, vec->elements[i])) {
+        if (cmp(a, vec->elements[i]) < 0) {
             a = vec->elements[i];
         }
     }
