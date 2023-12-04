@@ -4,7 +4,12 @@
 
 #include "lfstring.h"
 
-size_t *find_substrings(const char* haystack, const char* needle, size_t *num_substrings) {
+int find_substrings(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings) {
+    if (*substrings != NULL) {
+        fprintf(stderr, "substrings was not NULL in find_substring\n");
+        return 1;
+    }
+
     size_t sz_h = strlen(haystack);
     size_t sz_n = strlen(needle);
 
@@ -15,20 +20,24 @@ size_t *find_substrings(const char* haystack, const char* needle, size_t *num_su
         }
     }
 
-    size_t *indicies = malloc(sizeof(size_t) * *num_substrings);
-    if (indicies == NULL) {
+    if (*num_substrings == 0) {
+        return 0;
+    }
+
+    *substrings = malloc(sizeof(size_t) * *num_substrings);
+    if (*substrings == NULL) {
         fprintf(stderr, "Memory allocation failed in find_substrings\n");
-        return NULL;
+        return -1;
     }
 
     size_t idx = 0;
     for (size_t i = 0; i <= sz_h - sz_n; ++i) {
         if (strncmp(haystack + i, needle, sz_n) == 0) {
-            indicies[idx++] = i;
+            (*substrings)[idx++] = i;
         }
     }
 
-    return indicies;
+    return 0;
 }
 
 const char* substr(const char* str, size_t idx, size_t len) {

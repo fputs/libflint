@@ -262,7 +262,9 @@ void test_string() {
     };
 
     size_t sub_sz = 0;
-    size_t *subs = find_substrings(haystack, needles[0], &sub_sz);
+    size_t *subs = NULL;
+    find_substrings(haystack, needles[0], &sub_sz, &subs);
+
     assert(sub_sz == 3);
     assert(subs[0] == 5);
     assert(subs[1] == 13);
@@ -273,10 +275,18 @@ void test_string() {
 
     free(s);
     free(subs);
+    subs = NULL;
 
-    subs = find_substrings(haystack, needles[1], &sub_sz);
+    find_substrings(haystack, needles[1], &sub_sz, &subs);
     assert(sub_sz == 2);
     assert(subs[0] == 9);
+
+    free(subs);
+    subs = NULL;
+
+    find_substrings("test one two", "nope", &sub_sz, &subs);
+    free(subs);
+    subs = NULL;
 
     printf("Passes all string tests\n");
 }

@@ -5,20 +5,26 @@ C string helpers
 ## Functions
 
 ### find_substrings
-Finds the indexes of all locations of the given needle in the haystack. The returned array of `size_t` is allocated by
-this function and memory cleanup is managed by the user. `num_substrings` is a pointer to a pre-allocated `size_t` that will
-be modified to contain the number of found substrings and subsequently the size of the returned array of `size_t`.
-Returns `NULL` and prints to `stderr` if there is an error.
+Finds the indicies of all locations of the given needle in the haystack. `substrings` is an array of `size_t` indicies that
+the substring is found at. This function allocates the memory for `substrings` and memory cleanup is managed by the user. 
+`num_substrings` is a pointer to a pre-allocated `size_t` that will be modified to contain the number of found substrings 
+and subsequently the size of `substrings`.
+
+If no substrings are found, `substrings` will not be allocated and left set to `NULL`, `num_substrings` will be `0`, and
+the function will return `0`.
+
+Returns 0 if the function is successful, returns a non-zero value and prints to `stderr` if there is an error.
 
 ```c
-size_t *find_substrings(const char* haystack, const char* needle, size_t *num_substrings);
+int find_substrings(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings);
 
 /* Usage */
 const char* haystack = "One two three two";
 const char* needle = "two";
-size_t subs_sz = 0;
 
-size_t *subs = find_substrings(haystack, needle, &subs_sz);
+size_t subs_sz = 0;
+size_t *subs = NULL;
+size_t *subs = find_substrings(haystack, needle, &subs_sz, &subs);
 // subs: [ 4, 14 ]
 // subs_sz: 2
 
