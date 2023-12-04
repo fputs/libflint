@@ -285,6 +285,14 @@ void test_string() {
     subs = NULL;
 
     find_substrings("test one two", "nope", &sub_sz, &subs);
+    assert(sub_sz == 0);
+    assert(subs == NULL);
+    free(subs);
+    subs = NULL;
+
+    find_substrings("123", "nopes", &sub_sz, &subs);
+    assert(sub_sz == 0);
+    assert(subs == NULL);
     free(subs);
     subs = NULL;
 

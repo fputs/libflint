@@ -12,6 +12,9 @@ int find_substrings(const char* haystack, const char* needle, size_t *num_substr
 
     size_t sz_h = strlen(haystack);
     size_t sz_n = strlen(needle);
+    if ((int)sz_h - (int)sz_n < 0) {
+        return 0;
+    }
 
     *num_substrings = 0;
     for (size_t i = 0; i <= sz_h - sz_n; ++i) {
