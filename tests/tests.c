@@ -8,6 +8,7 @@
 #include "lfbinarytree.h"
 #include "lfvector.h"
 #include "lfmath.h"
+#include "lfstring.h"
 
 void print_ll(List *list) {
     LL_ITER(list) {
@@ -251,6 +252,34 @@ void test_vector() {
     vec_destroy(v);
     free(v);
 }
+void test_string() {
+    printf("\n--- STRING TEST ---\n");
+    const char* haystack = "Test one two one and also maybe two but not Gabe's least favorite number, which is not one.";
+    const char* needles[] = {
+            "one",
+            "two",
+            "Gabe"
+    };
+
+    size_t sub_sz = 0;
+    size_t *subs = find_substrings(haystack, needles[0], &sub_sz);
+    assert(sub_sz == 3);
+    assert(subs[0] == 5);
+    assert(subs[1] == 13);
+    assert(subs[2] == 87);
+
+    const char *s = substr(haystack, subs[0], strlen(needles[0]));
+    assert(strcmp(s, needles[0]) == 0);
+
+    free(s);
+    free(subs);
+
+    subs = find_substrings(haystack, needles[1], &sub_sz);
+    assert(sub_sz == 2);
+    assert(subs[0] == 9);
+
+    printf("Passes all string tests\n");
+}
 
 int main() {
     test_ll();
@@ -259,5 +288,6 @@ int main() {
     test_bintree();
     test_math();
     test_vector();
+    test_string();
     return 0;
 }

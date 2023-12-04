@@ -12,6 +12,7 @@ set(SOURCES
         src/binarytree.c
         src/input.c
         src/math.c
+        src/string.c
         src/vector.c
         src/utility.c
 )

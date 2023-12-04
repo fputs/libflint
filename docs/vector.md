@@ -117,7 +117,7 @@ Shrinks the capacity of the vector down to the current length. Returns a non-zer
 int vec_shrink(Vector *vec);
 ```
 
-## vec_max
+### vec_max
 
 Finds the largest value in the vector and returns a void pointer to the underlying data. Requires a 
 comparison function to compare the data in the vector. This function must return `1` if `a > b`, `-1` if 
@@ -127,7 +127,7 @@ comparison function to compare the data in the vector. This function must return
 const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b));
 ```
 
-## vec_min
+### vec_min
 
 Finds the smallest value in the vector and returns a void pointer to the underlying data. Requires a 
 comparison function to compare the data in the vector. This function must return `1` if `a > b`, `-1` if
