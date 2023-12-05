@@ -13,7 +13,7 @@ and subsequently the size of `substrings`.
 If no substrings are found, `substrings` will not be allocated and left set to `NULL`, `num_substrings` will be `0`, and
 the function will return `0`.
 
-Returns 0 if the function is successful, returns a non-zero value and prints to `stderr` if there is an error.
+Returns 0 if the function is successful. Returns a non-zero value if there is an error.
 
 ```c
 int find_substrings(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings);
@@ -34,7 +34,7 @@ free(subs);
 ### substr
 
 Extracts a substring at a specific index and length. This function returns a copy of the substring in a heap allocated
-buffer that the user is responsible for freeing. Returns `NULL` and prints to `stderr` if there is an error.
+buffer that the user is responsible for freeing. Returns `NULL` if there is an error.
 
 ```c
 const char* substr(const char* str, size_t idx, size_t len);

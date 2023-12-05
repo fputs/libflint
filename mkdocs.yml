@@ -12,5 +12,6 @@ nav:
     - 'Math': 'math.md'
     - 'Set': 'set.md'
     - 'Stack': 'stack.md'
+    - 'String': 'string.md'
     - 'Utility': 'utility.md'
     - 'Vector': 'vector.md'
