@@ -26,14 +26,14 @@ static FILE* open_file(const char *path, size_t *fsz) {
     return fp;
 }
 
-char *get_binary(const char *path, size_t *fsz) {
+unsigned char *get_binary(const char *path, size_t *fsz) {
     FILE *fp = open_file(path, fsz);
     if (fp == NULL) {
         return NULL;
     }
 
-    char *buf = NULL;
-    buf = malloc(*fsz);
+    unsigned char *buf = NULL;
+    buf = (unsigned char*)malloc(sizeof(unsigned char) * (*fsz));
     if (buf == NULL) {
         fprintf(stderr, "Failed to malloc buf. Returning NULL\n");
         fclose(fp);

@@ -25,7 +25,7 @@ Reads a file at `path` and returns the contents as a single string. The string i
 the user is responsible for freeing it when finished.
 
 ```c
-char *get_input(const char *path);
+unsigned char *get_input(const char *path);
 
 /* Usage */
 char *str = get_input("/home/evan/textfile");

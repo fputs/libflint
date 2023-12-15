@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-char *get_binary(const char *, size_t *fsz);
+unsigned char *get_binary(const char *, size_t *fsz);
 
 char *get_input(const char *);
 
