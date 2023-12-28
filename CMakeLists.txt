@@ -15,10 +15,14 @@ set(SOURCES
         src/string.c
         src/vector.c
         src/utility.c
-        src/macos.c
 )
 
-add_library(flint ${SOURCES})
+if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
+    add_library(flint ${SOURCES} src/macos.c)
+else()
+    add_library(flint ${SOURCES})
+endif()
+
 if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux"))
     target_link_libraries(flint bsd)
 endif()

@@ -304,6 +304,7 @@ void test_string() {
     printf("Passes all string tests\n");
 }
 
+#if defined(__APPLE__) || defined(__MACH__)
 void test_macos() {
     printf("\n--- macOS TEST ---\n");
 
@@ -316,6 +317,7 @@ void test_macos() {
     }
     free(pd);
 }
+#endif
 
 int main() {
     test_ll();
