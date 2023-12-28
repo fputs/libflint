@@ -10,6 +10,7 @@ nav:
     - 'Input': 'input.md'
     - 'Linked List': 'linkedlist.md'
     - 'Math': 'math.md'
+    - 'macOS': 'macos.md'
     - 'Set': 'set.md'
     - 'Stack': 'stack.md'
     - 'String': 'string.md'

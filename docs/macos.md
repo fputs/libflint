@@ -1,6 +1,6 @@
 # macOS
 
-Platform-specific code for macOS. Everything in this library, including the headers, is wrapped in the following
+Platform-specific code for macOS. Everything in this module, including the headers, is wrapped in the following
 preprocessor macro
 
 ```c
