@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "lflinkedlist.h"
 #include "lfset.h"
@@ -9,6 +10,10 @@
 #include "lfvector.h"
 #include "lfmath.h"
 #include "lfstring.h"
+
+#if defined(__APPLE__) || defined(__MACH__)
+#include "lfmacos.h"
+#endif /* defined(__APPLE__) || defined(__MACH__) */
 
 void print_ll(List *list) {
     LL_ITER(list) {
@@ -299,6 +304,19 @@ void test_string() {
     printf("Passes all string tests\n");
 }
 
+void test_macos() {
+    printf("\n--- macOS TEST ---\n");
+
+    pid_t pid = getpid();
+    ProcessData *pd = new_ProcessData();
+    for (int i = 0; i < 4; i++) {
+        update_process(pid, pd);
+        printf("CPU: %.2f\n", pd->percent_cpu);
+        sleep(1);
+    }
+    free(pd);
+}
+
 int main() {
     test_ll();
     test_set();
@@ -307,5 +325,10 @@ int main() {
     test_math();
     test_vector();
     test_string();
+
+#if defined(__APPLE__) || defined(__MACH__)
+    test_macos();
+#endif
+
     return 0;
 }

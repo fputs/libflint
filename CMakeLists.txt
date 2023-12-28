@@ -15,6 +15,7 @@ set(SOURCES
         src/string.c
         src/vector.c
         src/utility.c
+        src/macos.c
 )
 
 add_library(flint ${SOURCES})
