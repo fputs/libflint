@@ -179,6 +179,10 @@ void test_math() {
     printf("Binary: %s\n", s2);
     printf("Decimal: %d\n", binstr_to_int(s2));
 
+    i = 10;
+    i = clamp_int(i, 2, 5);
+    assert(i == 5);
+
     printf("\nGenerate line from 0,0 to 2,5\n");
     size_t sz = 0;
     Point *line = bresenham(0, 0, 2, 5, &sz);
