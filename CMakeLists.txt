@@ -15,6 +15,7 @@ set(SOURCES
         src/string.c
         src/vector.c
         src/utility.c
+        src/crypto.c
 )
 
 if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))

@@ -7,6 +7,7 @@ nav:
   - 'Modules':
     - 'Binary Tree': 'binarytree.md'
     - 'Boolean': 'bool.md'
+    - 'Crypto': 'crypto.md'
     - 'Input': 'input.md'
     - 'Linked List': 'linkedlist.md'
     - 'Math': 'math.md'

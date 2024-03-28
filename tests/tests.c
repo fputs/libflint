@@ -10,6 +10,7 @@
 #include "lfvector.h"
 #include "lfmath.h"
 #include "lfstring.h"
+#include "lfcrypto.h"
 
 #if defined(__APPLE__) || defined(__MACH__)
 #include "lfmacos.h"
@@ -308,6 +309,25 @@ void test_string() {
     printf("Passes all string tests\n");
 }
 
+void test_crypto() {
+    char *in = "BUTT";
+    char *s = b64_encode(in, strlen(in));
+    assert(strcmp(s, "QlVUVA==") == 0);
+    free(s);
+
+    char *in2 = "a longer base64 test, apparently";
+    s = b64_encode(in2, strlen(in2));
+    assert(strcmp(s, "YSBsb25nZXIgYmFzZTY0IHRlc3QsIGFwcGFyZW50bHk=") == 0);
+    free(s);
+
+    char *out2 = "YSBsb25nZXIgYmFzZTY0IHRlc3QsIGFwcGFyZW50bHk=";
+    size_t s_sz = 0;
+    s = (char *)b64_decode(out2, strlen(out2), &s_sz);
+    assert(strcmp(s, "a longer base64 test, apparently") == 0);
+    assert(strlen(s) == s_sz);
+    free(s);
+}
+
 #if defined(__APPLE__) || defined(__MACH__)
 void test_macos() {
     printf("\n--- macOS TEST ---\n");
@@ -331,6 +351,7 @@ int main() {
     test_math();
     test_vector();
     test_string();
+    test_crypto();
 
 #if defined(__APPLE__) || defined(__MACH__)
     test_macos();
