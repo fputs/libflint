@@ -45,7 +45,7 @@ static int resize_b64_buf(b64_buf *b, size_t sz) {
     return 0;
 }
 
-unsigned char *b64_encode(const unsigned char *s, size_t sz) {
+const char *b64_encode(const unsigned char *s, size_t sz) {
     int i = 0;
     b64_buf encbuf;
     size_t size = 0;
@@ -110,7 +110,7 @@ unsigned char *b64_encode(const unsigned char *s, size_t sz) {
     }
     encbuf.ptr[size] = '\0';
 
-    return encbuf.ptr;
+    return (char *)encbuf.ptr;
 }
 
 unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
@@ -228,4 +228,18 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
 
     free(buf);
     return hex;
+}
+
+const char *hex_encode(const unsigned char *hex, size_t sz) {
+    size_t ssz = sz * 2 + 1;
+    char *s = malloc(sizeof(char) * ssz);
+    char *pos = s;
+
+    for (size_t i = 0; i < sz; ++i) {
+        snprintf(pos, 3, "%2X", hex[i]);
+        pos += 2;
+    }
+    s[ssz - 1] = '\0';
+
+    return s;
 }

@@ -345,6 +345,10 @@ void test_crypto() {
         assert(s[i] == h2[i]);
     }
     free(s);
+
+    s = hex_encode(h, 4);
+    assert(strcmp(s, "DEADBEEF") == 0);
+    free(s);
 }
 
 #if defined(__APPLE__) || defined(__MACH__)
