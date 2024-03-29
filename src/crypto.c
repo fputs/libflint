@@ -209,7 +209,12 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
     }
 
     char *buf = malloc(sizeof(char) * buf_sz);
-    strcpy(buf, orig);
+    if (strlen(orig) % 2 != 0) {
+        strcpy(buf + 1, orig);
+        buf[0] = '0';
+    } else {
+        strcpy(buf, orig);
+    }
     buf[buf_sz - 1] = '\0';
 
     *sz = buf_sz / 2;

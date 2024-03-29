@@ -335,6 +335,16 @@ void test_crypto() {
         assert(s[i] == h[i]);
     }
     free(s);
+
+    // Odd number of characters
+    s = hex_decode("f00f5", &s_sz);
+    unsigned char h2[4] = {
+            0x0F, 0x00, 0xF5
+    };
+    for (size_t i = 0; i < 3; ++i) {
+        assert(s[i] == h2[i]);
+    }
+    free(s);
 }
 
 #if defined(__APPLE__) || defined(__MACH__)
