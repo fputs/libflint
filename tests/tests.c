@@ -349,6 +349,14 @@ void test_crypto() {
     s = hex_encode(h, 4);
     assert(strcmp(s, "DEADBEEF") == 0);
     free(s);
+
+    // "Sup?"
+    unsigned char hexsup[4] = {
+            0x53, 0x75, 0x70, 0x3F
+    };
+    s = hex_to_str(hexsup, 4);
+    assert(strcmp(s, "Sup?") == 0);
+    free(s);
 }
 
 #if defined(__APPLE__) || defined(__MACH__)

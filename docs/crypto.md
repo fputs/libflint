@@ -57,3 +57,12 @@ for (size_t i = 0; i < 4; ++i) {
 }
 free(s);
 ```
+
+### hex_to_str
+
+Converts an array of `unsigned char` into a string based on the ASCII values of each byte. User is
+responsible for freeing the returned string.
+
+```c
+const char *hex_to_str(const unsigned char *hex, size_t sz);
+```

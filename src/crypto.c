@@ -243,3 +243,12 @@ const char *hex_encode(const unsigned char *hex, size_t sz) {
 
     return s;
 }
+
+const char *hex_to_str(const unsigned char *hex, size_t sz) {
+    char *s = malloc(sizeof(char) * (sz + 1));
+    for (size_t i = 0; i < sz; ++i) {
+        s[i] = (char)hex[i];
+    }
+    s[sz] = '\0';
+    return s;
+}
