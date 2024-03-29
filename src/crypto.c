@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "lfcrypto.h"
 
@@ -18,7 +19,7 @@ static const char b64_table[] = {
 };
 
 typedef struct {
-    char *ptr;
+    unsigned char *ptr;
     int count;
 } b64_buf;
 
@@ -44,7 +45,7 @@ static int resize_b64_buf(b64_buf *b, size_t sz) {
     return 0;
 }
 
-char *b64_encode(const unsigned char *s, size_t sz) {
+unsigned char *b64_encode(const unsigned char *s, size_t sz) {
     int i = 0;
     b64_buf encbuf;
     size_t size = 0;
@@ -198,5 +199,28 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
         *decode_sz = size;
     }
 
-    return (unsigned char*)decbuf.ptr;
+    return decbuf.ptr;
+}
+
+unsigned char *hex_decode(const char *orig, size_t *sz) {
+    size_t buf_sz = strlen(orig) + 1;
+    if (strlen(orig) % 2 != 0) {
+        buf_sz += 1;
+    }
+
+    char *buf = malloc(sizeof(char) * buf_sz);
+    strcpy(buf, orig);
+    buf[buf_sz - 1] = '\0';
+
+    *sz = buf_sz / 2;
+    unsigned char *hex = malloc(sizeof(unsigned char) * *sz);
+    const char *pos = buf;
+
+    for (size_t i = 0; i < *sz; ++i) {
+        sscanf(pos, "%2hhx", &hex[i]);
+        pos += 2;
+    }
+
+    free(buf);
+    return hex;
 }

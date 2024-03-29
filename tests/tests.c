@@ -311,7 +311,7 @@ void test_string() {
 
 void test_crypto() {
     char *in = "BUTT";
-    char *s = b64_encode(in, strlen(in));
+    unsigned char *s = b64_encode(in, strlen(in));
     assert(strcmp(s, "QlVUVA==") == 0);
     free(s);
 
@@ -325,6 +325,15 @@ void test_crypto() {
     s = (char *)b64_decode(out2, strlen(out2), &s_sz);
     assert(strcmp(s, "a longer base64 test, apparently") == 0);
     assert(strlen(s) == s_sz);
+    free(s);
+
+    s = hex_decode("DEADBEEF", &s_sz);
+    unsigned char h[4] = {
+            0xDE, 0xAD, 0xBE, 0xEF
+    };
+    for (size_t i = 0; i < 4; ++i) {
+        assert(s[i] == h[i]);
+    }
     free(s);
 }
 

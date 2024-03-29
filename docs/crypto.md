@@ -22,3 +22,22 @@ in case you need to know the size of the decoded data, otherwise you can just pa
 ```c
 unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz);
 ```
+
+### hex_decode
+
+Decodes a string of characters representing hexadecimal bytes into an array of `unsigned char`.
+For example, converts `"DEADBEEF"` into `[0xDE, 0xAD, 0xBE, 0xEF]`.
+
+```c
+unsigned char *hex_decode(const char *orig, size_t *sz);
+
+// Example
+s = hex_decode("DEADBEEF", &s_sz);
+unsigned char h[4] = {
+    0xDE, 0xAD, 0xBE, 0xEF
+};
+for (size_t i = 0; i < 4; ++i) {
+    assert(s[i] == h[i]);
+}
+free(s);
+```
