@@ -11,6 +11,7 @@
 #include "lfmath.h"
 #include "lfstring.h"
 #include "lfcrypto.h"
+#include "lfparsing.h"
 
 #if defined(__APPLE__) || defined(__MACH__)
 #include "lfmacos.h"
@@ -310,6 +311,8 @@ void test_string() {
 }
 
 void test_crypto() {
+    printf("\n--- CRYPTO TEST ---\n");
+
     char *in = "BUTT";
     unsigned char *s = b64_encode(in, strlen(in));
     assert(strcmp(s, "QlVUVA==") == 0);
@@ -357,6 +360,18 @@ void test_crypto() {
     s = hex_to_str(hexsup, 4);
     assert(strcmp(s, "Sup?") == 0);
     free(s);
+
+    printf("Passes all crypto tests\n");
+}
+
+void test_parsing() {
+    printf("\n--- PARSING TEST ---\n");
+
+    char *nonsense = "8d82jI|dms~<>s2d";
+    char *english = "This is an English sentence!";
+    assert(simple_english_scoring(english) > simple_english_scoring(nonsense));
+
+    printf("Passes all parsing tests\n");
 }
 
 #if defined(__APPLE__) || defined(__MACH__)
@@ -383,6 +398,7 @@ int main() {
     test_vector();
     test_string();
     test_crypto();
+    test_parsing();
 
 #if defined(__APPLE__) || defined(__MACH__)
     test_macos();
