@@ -2,12 +2,13 @@
 
 static int ses_score_sw(char c) {
     switch (c) {
-        case 'e': case 'E': return 12;
-        case 't': case 'T': return 11;
-        case 'a': case 'A': return 10;
-        case 'o': case 'O': return 9;
-        case 'i': case 'I': return 8;
-        case 'n': case 'N': return 7;
+        case 'e': case 'E': return 13;
+        case 't': case 'T': return 12;
+        case 'a': case 'A': return 11;
+        case 'o': case 'O': return 10;
+        case 'i': case 'I': return 9;
+        case 'n': case 'N': return 8;
+        case ' ': return 7;
         case 's': case 'S': return 6;
         case 'h': case 'H': return 5;
         case 'r': case 'R': return 4;
