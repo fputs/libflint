@@ -236,7 +236,7 @@ const char *hex_encode(const unsigned char *hex, size_t sz) {
     char *pos = s;
 
     for (size_t i = 0; i < sz; ++i) {
-        snprintf(pos, 3, "%02X", hex[i]);
+        snprintf(pos, 3, "%02x", hex[i]);
         pos += 2;
     }
     s[ssz - 1] = '\0';
