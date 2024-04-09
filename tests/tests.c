@@ -350,7 +350,7 @@ void test_crypto() {
     free(s);
 
     s = hex_encode(h, 4);
-    assert(strcmp(s, "DEADBEEF") == 0);
+    assert(strcmp(s, "deadbeef") == 0);
     free(s);
 
     // "Sup?"
@@ -363,7 +363,7 @@ void test_crypto() {
 
     s = repeating_key_xor_s("TEST", "HI");
     const char *enc = hex_encode(s, 4);
-    assert(strcmp(enc, "1C0C1B1D") == 0);
+    assert(strcmp(enc, "1c0c1b1d") == 0);
     free(enc);
     free(s);
 
