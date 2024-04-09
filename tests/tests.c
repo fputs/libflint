@@ -361,6 +361,12 @@ void test_crypto() {
     assert(strcmp(s, "Sup?") == 0);
     free(s);
 
+    s = repeating_key_xor_s("TEST", "HI");
+    const char *enc = hex_encode(s, 4);
+    assert(strcmp(enc, "1C0C1B1D") == 0);
+    free(enc);
+    free(s);
+
     printf("Passes all crypto tests\n");
 }
 

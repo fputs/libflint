@@ -236,7 +236,7 @@ const char *hex_encode(const unsigned char *hex, size_t sz) {
     char *pos = s;
 
     for (size_t i = 0; i < sz; ++i) {
-        snprintf(pos, 3, "%2X", hex[i]);
+        snprintf(pos, 3, "%02X", hex[i]);
         pos += 2;
     }
     s[ssz - 1] = '\0';
@@ -251,4 +251,17 @@ const char *hex_to_str(const unsigned char *hex, size_t sz) {
     }
     s[sz] = '\0';
     return s;
+}
+
+const unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz) {
+    unsigned char* r = malloc(sizeof(unsigned char) * s_sz);
+    for (size_t i = 0, j = 0; i < s_sz; ++i) {
+        r[i] = s[i] ^ key[j];
+        j = (j + 1) % k_sz;
+    }
+    return r;
+}
+
+const unsigned char *repeating_key_xor_s(const char* s, const char* key) {
+    return repeating_key_xor((unsigned char*)s, strlen(s), (unsigned char*)key, strlen(key));
 }

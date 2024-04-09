@@ -1,6 +1,6 @@
 # crypto
 
-Cryptographic library
+Cryptographic tools
 
 ## Functions
 
@@ -65,4 +65,21 @@ responsible for freeing the returned string.
 
 ```c
 const char *hex_to_str(const unsigned char *hex, size_t sz);
+```
+
+###  repeating_key_xor
+
+Performs a repeating-key XOR encryption on an array of bytes. User is responsible for freeing the returned array 
+
+```c
+const unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz);
+```
+
+### repeating_key_xor_s
+
+Performs a repeating-key XOR encryption on a string. Returns the encrypted string as an array of bytes. User is 
+responsible for freeing the returned array
+
+```c
+const unsigned char *repeating_key_xor_s(const char* s, const char* key);
 ```

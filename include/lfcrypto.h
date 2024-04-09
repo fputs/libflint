@@ -10,4 +10,7 @@ const char *hex_encode(const unsigned char *hex, size_t sz);
 unsigned char *hex_decode(const char *orig, size_t *sz);
 const char *hex_to_str(const unsigned char *hex, size_t sz);
 
+const unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz);
+const unsigned char *repeating_key_xor_s(const char* s, const char* key);
+
 #endif // LIBFLINT_CRYPTO_H
