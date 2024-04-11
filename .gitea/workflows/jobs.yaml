@@ -58,8 +58,8 @@ jobs:
 
       - name: Deploy documentation
         run: |
-          ssh debian@burkey.co "rm -rf /var/www/burkey.co/docs/libflint"
-          ssh debian@burkey.co "mkdir -p /var/www/burkey.co/docs/libflint"
-          ssh debian@burkey.co "chmod 755 /var/www/burkey.co/docs/libflint"
-          scp -r ./site/* debian@burkey.co:/var/www/burkey.co/docs/libflint/
+          ssh debian@burkey.co "rm -rf /var/www/docs/libflint"
+          ssh debian@burkey.co "mkdir -p /var/www/docs/libflint"
+          ssh debian@burkey.co "chmod 755 /var/www/docs/libflint"
+          scp -r ./site/* debian@burkey.co:/var/www/docs/libflint/
 
