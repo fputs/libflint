@@ -204,16 +204,22 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
 
 unsigned char *hex_decode(const char *orig, size_t *sz) {
     size_t buf_sz = strlen(orig) + 1;
+    char *sptr = orig;
+    if (strncmp(orig, "0x", 2) == 0) {
+        buf_sz -= 2;
+        sptr += 2;
+    }
+
     if (strlen(orig) % 2 != 0) {
         buf_sz += 1;
     }
 
     char *buf = malloc(sizeof(char) * buf_sz);
-    if (strlen(orig) % 2 != 0) {
-        strcpy(buf + 1, orig);
+    if (strlen(sptr) % 2 != 0) {
+        strcpy(buf+ 1, sptr);
         buf[0] = '0';
     } else {
-        strcpy(buf, orig);
+        strcpy(buf, sptr);
     }
     buf[buf_sz - 1] = '\0';
 

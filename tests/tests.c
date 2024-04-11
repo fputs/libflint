@@ -349,6 +349,13 @@ void test_crypto() {
     }
     free(s);
 
+    // leading 0x
+    s = hex_decode("0xf00f5", &s_sz);
+    for (size_t i = 0; i < 3; ++i) {
+        assert(s[i] == h2[i]);
+    }
+    free(s);
+
     s = hex_encode(h, 4);
     assert(strcmp(s, "deadbeef") == 0);
     free(s);

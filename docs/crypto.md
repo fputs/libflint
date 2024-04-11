@@ -2,6 +2,9 @@
 
 Cryptographic tools
 
+Any functions that return string representations of bytes in hexadecimal format will
+always be formatted with no leading `0x` and lower case letters
+
 ## Functions
 
 ### b64_encode
@@ -26,22 +29,25 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz);
 ### hex_encode
 
 Encodes an array of bytes into a string in hex representation. For example, converts 
-`[0xDE, 0xAD, 0xBE, 0xEF]` into `"DEADBEEF"`. The returned string will always be in capital
-letters with no leading `0x`. User is responsible for the freeing of the returned string
+`[0xDE, 0xAD, 0xBE, 0xEF]` into `"deadbeef"`. User is responsible for freeing the returned string
 
 ```c
 const char *hex_encode(const unsigned char *hex, size_t sz);
 
 // Example
+unsigned char h[4] = {
+    0xde, 0xad, 0xbe, 0xef
+};
 const char *s = hex_encode(h, 4);
-assert(strcmp(s, "DEADBEEF") == 0);
+assert(strcmp(s, "deadbeef") == 0);
 free(s);
 ```
 
 ### hex_decode
 
 Decodes a string of characters representing hexadecimal bytes into an array of `unsigned char`.
-For example, converts `"DEADBEEF"` into `[0xDE, 0xAD, 0xBE, 0xEF]`. User is reponsible for the
+Characters can be in upper or lower case, and can start with a leading `0x` or not.
+For example, converts `"DEADBEEF"` into `[0xde, 0xad, 0xbe, 0xef]`. User is reponsible for the
 freeing of the returned byte array
 
 ```c
