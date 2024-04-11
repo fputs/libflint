@@ -1,9 +1,10 @@
 ---
-name: On Master Push
+name: Test and Deploy
 on:
   push:
-    branch:
+    branches:
       - master
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,10 +13,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libbsd-dev cmake build-essential
+
       - name: Build and test
         run: |
           mkdir build
@@ -23,16 +26,19 @@ jobs:
           cmake ..
           make
           ./tests
+
   docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Install SSH client
         run: |
           sudo apt-get update
           sudo apt-get install -y openssh-client
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -41,12 +47,15 @@ jobs:
           chmod -R 700 ~/.ssh
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
+
       - name: Install mkdocs
         run: |
           pip install mkdocs 
+
       - name: Build documentation
         run: |
           mkdocs build
+
       - name: Deploy documentation
         run: |
           ssh debian@burkey.co "rm -rf /var/www/burkey.co/docs/libflint"
