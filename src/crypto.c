@@ -271,3 +271,25 @@ const unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, cons
 const unsigned char *repeating_key_xor_s(const char* s, const char* key) {
     return repeating_key_xor((unsigned char*)s, strlen(s), (unsigned char*)key, strlen(key));
 }
+
+unsigned int hamming_distance(const char *a, const char *b) {
+    size_t sz = strlen(a);
+    if (sz != strlen(b)) {
+        return -1;
+    }
+
+    unsigned int hamming = 0;
+    for (size_t i = 0; i < sz; ++i) {
+        if (a[i] == b[i]) {
+            continue;
+        }
+        unsigned char c = a[i] ^ b[i];
+        unsigned int count = 0;
+        for (; c; count++) {
+            c &= c - 1;
+        }
+        hamming += count;
+    }
+
+    return hamming;
+}

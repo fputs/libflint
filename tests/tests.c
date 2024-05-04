@@ -374,6 +374,9 @@ void test_crypto() {
     free(enc);
     free(s);
 
+    unsigned int hamming = hamming_distance("this is a test", "wokka wokka!!!");
+    assert(hamming == 37);
+
     printf("Passes all crypto tests\n");
 }
 

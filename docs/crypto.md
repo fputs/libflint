@@ -89,3 +89,11 @@ responsible for freeing the returned array
 ```c
 const unsigned char *repeating_key_xor_s(const char* s, const char* key);
 ```
+
+### hamming_distance
+
+Calculates the Hamming Distance (the number of differing bits) between two strings
+
+```c
+unsigned int hamming_distance(const char *a, const char *b);
+```
