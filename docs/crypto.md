@@ -92,8 +92,16 @@ const unsigned char *repeating_key_xor_s(const char* s, const char* key);
 
 ### hamming_distance
 
+Calculates the Hamming Distance (the number of differing bits) between two arrays of unsigned bytes
+
+```c
+unsigned int hamming_distance(unsigned char *a, unsigned char *b);
+```
+
+### hamming_distance_s
+
 Calculates the Hamming Distance (the number of differing bits) between two strings
 
 ```c
-unsigned int hamming_distance(const char *a, const char *b);
+unsigned int hamming_distance_s(const char *a, const char *b);
 ```

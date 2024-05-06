@@ -374,7 +374,12 @@ void test_crypto() {
     free(enc);
     free(s);
 
-    unsigned int hamming = hamming_distance("this is a test", "wokka wokka!!!");
+    unsigned char ua[2] = { 0x2, 0xF };
+    unsigned char ub[2] = { 0x4, 0xE };
+    unsigned int hamming = hamming_distance(ua, ub, 2);
+    assert(hamming == 3);
+
+    hamming = hamming_distance_s("this is a test", "wokka wokka!!!");
     assert(hamming == 37);
 
     printf("Passes all crypto tests\n");
