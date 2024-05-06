@@ -3,6 +3,8 @@
 
 #if defined(__APPLE__) || defined(__MACH__)
 
+#include <time.h>
+
 typedef struct {
     double total_user_time;
     double total_kernel_time;
@@ -18,6 +20,7 @@ typedef struct {
 
 ProcessData *new_ProcessData();
 int update_process(pid_t pid, ProcessData *proc);
+void *reallocarray(void *optr, size_t nmemb, size_t size);
 
 #endif /* defined(__APPLE__) || defined(__MACH__) */
 #endif /* LIBFLINT_MACOS_H */

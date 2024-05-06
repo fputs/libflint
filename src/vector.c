@@ -5,6 +5,10 @@
 #include <bsd/stdlib.h>
 #endif
 
+#if defined(__APPLE__) || defined(__MACH__)
+#include "lfmacos.h"
+#endif
+
 #include "lfvector.h"
 
 #define VEC_INIT_CAP 2
@@ -32,11 +36,7 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
 static int vec_grow(Vector *const vec) {
     vec->capacity *= 2;
 
-#ifdef __OpenBSD__
     vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
-#else
-    vec->elements = reallocf(vec->elements, sizeof(void *) * vec->capacity);
-#endif
 
     if (vec->elements == NULL) {
         return -1;
