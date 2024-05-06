@@ -1,9 +1,6 @@
 ---
 name: Test and Deploy
-on:
-  push:
-    branches:
-      - master
+on: [push]
 
 jobs:
   test:
@@ -29,6 +26,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+    if: gitea.ref == 'refs/heads/master'
     timeout-minutes: 5
     steps:
       - name: Checkout repository
