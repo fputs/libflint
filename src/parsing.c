@@ -26,3 +26,4 @@ int simple_english_scoring(const char *s) {
     }
     return score;
 }
+

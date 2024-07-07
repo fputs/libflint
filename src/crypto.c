@@ -20,7 +20,7 @@ static const char b64_table[] = {
 
 typedef struct {
     unsigned char *ptr;
-    int count;
+    size_t count;
 } b64_buf;
 
 static int new_b64_buf(b64_buf *b) {
@@ -204,7 +204,7 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
 
 unsigned char *hex_decode(const char *orig, size_t *sz) {
     size_t buf_sz = strlen(orig) + 1;
-    char *sptr = orig;
+    const char *sptr = orig;
     if (strncmp(orig, "0x", 2) == 0) {
         buf_sz -= 2;
         sptr += 2;

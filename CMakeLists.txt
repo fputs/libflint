@@ -20,7 +20,7 @@ set(SOURCES
 )
 
 if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
-    add_library(flint ${SOURCES} src/macos.c)
+    add_library(flint ${SOURCES} src/macos/macos.c)
 else()
     add_library(flint ${SOURCES})
 endif()
