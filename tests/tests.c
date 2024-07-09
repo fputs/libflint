@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <pthread.h>
 
 #include "lflinkedlist.h"
+#include "lfnetwork.h"
 #include "lfset.h"
 #include "lfstack.h"
 #include "lfbinarytree.h"
@@ -12,6 +15,7 @@
 #include "lfstring.h"
 #include "lfcrypto.h"
 #include "lfparsing.h"
+#include "lfinput.h"
 
 #if defined(__APPLE__) || defined(__MACH__)
 #include "lfmacos.h"
@@ -395,6 +399,60 @@ void test_parsing() {
     printf("Passes all parsing tests\n");
 }
 
+#define NET_MSG "TEST SEND"
+
+void tcp_test_handler(Server *s) {
+    struct sockaddr_storage client_addr;
+    socklen_t client_addr_sz = sizeof(client_addr);
+    int new_fd = accept(s->fd, (struct sockaddr *)&client_addr, &client_addr_sz);
+    assert(new_fd != -1);
+    assert(send(new_fd, NET_MSG, 10, 0) != -1);
+    close(new_fd);
+}
+
+void *tcp_server_thread(void *vargp) {
+    Server *server = new_server(SERVERTYPE_TCP, "18632", tcp_test_handler);
+    serve(server, DEFAULT_BACKLOG);
+    delete_server(server);
+}
+
+void udp_test_handler(Server *s) {
+    struct sockaddr_storage client_addr;
+    socklen_t client_addr_sz = sizeof(client_addr);
+    char recv_buf[128];
+
+    int r = (int)recvfrom(s->fd, recv_buf, 128, 0, (struct sockaddr*)&client_addr, &client_addr_sz);
+    assert(r > 0);
+    assert(strcmp(recv_buf, NET_MSG) == 0);
+}
+
+void *udp_server_thread(void *vargp) {
+    Server *server = new_server(SERVERTYPE_UDP, "18633", udp_test_handler);
+    serve(server, DEFAULT_BACKLOG);
+    delete_server(server);
+}
+
+void test_network() {
+    printf("\n--- NETWORK TEST ---\n");
+    pthread_t srv_tid;
+    pthread_create(&srv_tid, NULL, tcp_server_thread, NULL);
+
+    sleep(1);
+    const char *s = capture_system("echo hello | nc localhost 18632", 0);
+    assert(strcmp(s, NET_MSG) == 0);
+    free((char *)s);
+
+    pthread_join(srv_tid, NULL);
+    printf("Passed TCP test\n");
+
+    pthread_create(&srv_tid, NULL, udp_server_thread, NULL);
+    sleep(1);
+    system("echo hello | nc localhost 18633");
+
+    pthread_join(srv_tid, NULL);
+    printf("Passed UDP test\n");
+}
+
 #if defined(__APPLE__) || defined(__MACH__)
 void test_macos() {
     printf("\n--- macOS TEST ---\n");
@@ -420,6 +478,7 @@ int main() {
     test_string();
     test_crypto();
     test_parsing();
+    test_network();
 
 #if defined(__APPLE__) || defined(__MACH__)
     test_macos();

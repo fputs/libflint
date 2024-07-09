@@ -17,4 +17,8 @@ void del_split(char **);
 
 void del_lines(char **);
 
+#define DEFAULT_CAPTURE_SYSTEM_BUFSIZE 1024
+
+const char *capture_system(const char *cmd, int buf_sz);
+
 #endif // LIBFLINT_INPUT_H

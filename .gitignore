@@ -5,4 +5,7 @@ compile_commands.json
 site
 libflint.so
 test
+tcptest
+testrunner
 .idea
+netmanual

@@ -92,7 +92,8 @@ printf("%s\n", sp[0]); // Prints "Split"
 
 ### del_split
 
-Frees all memory used by `split()`. Just like `split`, it does not touch the original string
+Frees all memory used by `split()`. Just like `split`, it does not touch the original string.
+
 ```c
 void del_split(char **sp);
 
@@ -100,4 +101,20 @@ void del_split(char **sp);
 size_t sp_sz = 0;
 char **sp = split("Delete Me!", &sp_sz, " ");
 void del_split(sp);
+```
+
+### capture_system
+
+Runs a command on the system shell and returns stdout as a string. `buffsize` is the size of 
+the returned buffer that holds `stdout`. Passing `0` to `buffsize` will use the default buffer size of `1024`.
+
+User is responsible for freeing the returned string.
+
+```c
+const char *capture_system(const char *cmd, int buffsize);
+
+/* Usage */
+const char *cap = capture_system("ls $HOME", 0);
+printf("%s\n", cap);
+free(cap);
 ```

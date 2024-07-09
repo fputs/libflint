@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
 
 #ifdef __linux__
 
@@ -120,4 +121,19 @@ void del_split(char **sp) {
 
 void del_lines(char **lines) {
     del_split(lines);
+}
+
+const char *capture_system(const char *cmd, int buf_sz) {
+    if (buf_sz == 0) {
+        buf_sz = DEFAULT_CAPTURE_SYSTEM_BUFSIZE;
+    }
+    char *buf = malloc(buf_sz);
+    FILE *tmp = popen(cmd, "r");
+    if (tmp == NULL) {
+        fprintf(stderr, "libflint: failed to open FILE *tmp in capture_system. Errno: %d\n", errno);
+        free(buf);
+        return NULL;
+    }
+    fgets(buf, buf_sz, tmp);
+    return buf;
 }
