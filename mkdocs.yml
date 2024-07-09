@@ -12,6 +12,7 @@ nav:
     - 'Linked List': 'linkedlist.md'
     - 'Math': 'math.md'
     - 'macOS': 'macos.md'
+    - 'Network': 'network.md'
     - 'Parsing': 'parsing.md'
     - 'Set': 'set.md'
     - 'Stack': 'stack.md'
