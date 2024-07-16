@@ -22,6 +22,7 @@ set(SOURCES
         src/crypto.c
         src/parsing.c
         src/network.c
+        src/memory.c
 )
 
 if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))

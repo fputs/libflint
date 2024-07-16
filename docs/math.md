@@ -57,3 +57,11 @@ Works the same as `bresenham()` but uses the `Point` struct instead of `int`
 ```c
 Point *bresenham_p(Point p1, Point p2, size_t *sz);
 ```
+
+## is_power_of_two
+
+Returns `1` if `i` is a power of two, otherwise returns `1`.
+
+```c
+int is_power_of_two(int i);
+```

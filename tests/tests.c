@@ -16,6 +16,7 @@
 #include "lfcrypto.h"
 #include "lfparsing.h"
 #include "lfinput.h"
+#include "lfmemory.h"
 
 #if defined(__APPLE__) || defined(__MACH__)
 #include "lfmacos.h"
@@ -468,6 +469,30 @@ void test_macos() {
 }
 #endif
 
+void test_memory() {
+    printf("\n--- MEMORY TEST ---\n");
+    ArenaAllocator *a = malloc(sizeof(ArenaAllocator));
+    arena_init(a, 1024);
+
+    int *i1 = arena_malloc(a, sizeof(int));
+    int *i2 = arena_malloc(a, sizeof(int));
+
+    *i1 = 1;
+    *i2 = 2;
+
+    assert(i1 < i2);
+    assert(*i1 < *i2);
+
+    long *l = arena_resize(a, i1, sizeof(int), sizeof(long));
+    assert(*l == 1);
+
+    unsigned char *c = arena_resize(a, i2, sizeof(int), sizeof(unsigned char));
+    assert(*c == 2);
+
+    arena_free(a);
+    printf("Passes all memory tests\n");
+}
+
 int main() {
     test_ll();
     test_set();
@@ -479,6 +504,7 @@ int main() {
     test_crypto();
     test_parsing();
     test_network();
+    test_memory();
 
 #if defined(__APPLE__) || defined(__MACH__)
     test_macos();
