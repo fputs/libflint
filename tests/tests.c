@@ -471,11 +471,11 @@ void test_macos() {
 
 void test_memory() {
     printf("\n--- MEMORY TEST ---\n");
-    ArenaAllocator *a = malloc(sizeof(ArenaAllocator));
-    arena_init(a, 1024);
+    ArenaAllocator *arena = malloc(sizeof(ArenaAllocator));
+    arena_init(arena, 1024);
 
-    int *i1 = arena_malloc(a, sizeof(int));
-    int *i2 = arena_malloc(a, sizeof(int));
+    int *i1 = arena_malloc(arena, sizeof(int));
+    int *i2 = arena_malloc(arena, sizeof(int));
 
     *i1 = 1;
     *i2 = 2;
@@ -483,13 +483,33 @@ void test_memory() {
     assert(i1 < i2);
     assert(*i1 < *i2);
 
-    long *l = arena_resize(a, i1, sizeof(int), sizeof(long));
+    long *l = arena_resize(arena, i1, sizeof(int), sizeof(long));
     assert(*l == 1);
 
-    unsigned char *c = arena_resize(a, i2, sizeof(int), sizeof(unsigned char));
-    assert(*c == 2);
+    unsigned char *char_test = arena_resize(arena, i2, sizeof(int), sizeof(unsigned char));
+    assert(*char_test == 2);
 
-    arena_free(a);
+    arena_free(arena);
+    arena = NULL;
+
+    PoolAllocator *pool = malloc(sizeof(PoolAllocator));
+    pool_init(pool, 64, 16, LF_DEFAULT_ALIGNMENT);
+    void *a = pool_alloc(pool);
+    void *b = pool_alloc(pool);
+    void *c = pool_alloc(pool);
+    void *d = pool_alloc(pool);
+
+    assert(a != NULL);
+    assert(b != NULL);
+    assert(c != NULL);
+    assert(d != NULL);
+
+    assert(pool_count_available(pool) == 0);
+    pool_free(pool, d);
+    d = NULL;
+    assert(pool_count_available(pool) == 1);
+
+    pool_destroy(pool);
     printf("Passes all memory tests\n");
 }
 

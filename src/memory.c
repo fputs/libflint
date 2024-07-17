@@ -28,26 +28,37 @@ void arena_clear(ArenaAllocator *allocator) {
     allocator->offset_prev = 0;
 }
 
-static uintptr_t align_forward(uintptr_t ptr, size_t align) {
-    uintptr_t p, a, m;
+static uintptr_t align_forward_uintptr(const uintptr_t ptr, const uintptr_t align) {
     if (!is_power_of_two(align)) {
         // TODO: Error
     }
-    p = ptr;
-    a = (uintptr_t)align;
-    m = p & (a - 1);
+    uintptr_t p = ptr;
+    const uintptr_t m = p & (align - 1);
 
     if (m != 0) {
-        p += a - m;
+        p += align - m;
     }
     return p;
 }
 
-static void *arena_malloc_align(ArenaAllocator *allocator, size_t size, size_t align) {
-    uintptr_t cur_ptr = (uintptr_t)allocator->buf + (uintptr_t)allocator->offset_cur;
+static uintptr_t align_forward_size(const size_t ptr, const size_t align) {
+    if (!is_power_of_two(align)) {
+        // TODO: Error
+    }
+    uintptr_t p = ptr;
+    const uintptr_t m = p & (align - 1);
+
+    if (m != 0) {
+        p += align - m;
+    }
+    return p;
+}
+
+static void *arena_malloc_align(ArenaAllocator *allocator, const size_t size, size_t align) {
+    uintptr_t cur_ptr = (uintptr_t)allocator->buf + allocator->offset_cur;
 
     // Push forward to align, then change to relative offset
-    uintptr_t offset = align_forward(cur_ptr, align);
+    uintptr_t offset = align_forward_uintptr(cur_ptr, align);
     offset -= (uintptr_t)allocator->buf;
 
     if (offset + size <= allocator->buf_sz) {
@@ -62,8 +73,8 @@ static void *arena_malloc_align(ArenaAllocator *allocator, size_t size, size_t a
     return NULL;
 }
 
-static void *arena_resize_align(ArenaAllocator *allocator, void *mem, size_t old_sz, size_t new_sz, size_t align) {
-    unsigned char *old_mem = (unsigned char *)mem;
+static void *arena_resize_align(ArenaAllocator *allocator, void *mem, const size_t old_sz, const size_t new_sz, size_t align) {
+    unsigned char *old_mem = mem;
     if (!is_power_of_two(align)) {
         // TODO: Error handling
     }
@@ -91,19 +102,79 @@ static void *arena_resize_align(ArenaAllocator *allocator, void *mem, size_t old
     return NULL;
 }
 
-void arena_resize_buf(ArenaAllocator *allocator, size_t new_sz) {
+void arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz) {
     allocator->buf = realloc(allocator->buf, sizeof(unsigned char) * new_sz);
 }
 
-#ifndef DEFAULT_ALIGNMENT
-#define DEFAULT_ALIGNMENT (2*sizeof(void*))
-#endif // DEFAULT_ALIGNMENT
-
-void *arena_malloc(ArenaAllocator *allocator, size_t size) {
-    return arena_malloc_align(allocator, size, DEFAULT_ALIGNMENT);
+void *arena_malloc(ArenaAllocator *allocator, const size_t size) {
+    return arena_malloc_align(allocator, size, LF_DEFAULT_ALIGNMENT);
 }
 
-void *arena_resize(ArenaAllocator *allocator, void *mem, size_t old_sz, size_t new_sz) {
-    return arena_resize_align(allocator, mem, old_sz, new_sz, DEFAULT_ALIGNMENT);
+void *arena_resize(ArenaAllocator *allocator, void *mem, const size_t old_sz, const size_t new_sz) {
+    return arena_resize_align(allocator, mem, old_sz, new_sz, LF_DEFAULT_ALIGNMENT);
 }
 
+void pool_init(PoolAllocator *allocator, size_t buf_sz, size_t chunk_sz, size_t chunk_align) {
+    if (allocator == NULL) {
+        return;
+    }
+
+    allocator->buf = malloc(sizeof(unsigned char) * buf_sz);
+    uintptr_t istart = (uintptr_t)allocator->buf;
+    uintptr_t start = align_forward_uintptr(istart, chunk_align);
+    allocator->buf_sz = buf_sz - (start - istart);
+
+    allocator->chunk_size = align_forward_size(chunk_sz, chunk_align);
+    if (allocator->chunk_size < sizeof(void *) || allocator->buf_sz < allocator->chunk_size) {
+        //TODO: Handle error better
+        return;
+    }
+
+    allocator->free_list = malloc(sizeof(List));
+    ll_init(allocator->free_list, NULL);
+
+    pool_free_all(allocator);
+}
+
+void pool_free(PoolAllocator *allocator, void *ptr) {
+    ListNode *node = NULL;
+    const void *start = allocator->buf;
+    const void *end = &allocator->buf[allocator->buf_sz];
+
+    if (ptr == NULL) {
+        return;
+    }
+
+    if (!(start <= ptr && ptr < end)) {
+        // TODO: Handle error better
+        return;
+    }
+
+    ll_ins_next(allocator->free_list, allocator->free_list->tail, ptr);
+}
+
+void pool_free_all(PoolAllocator *allocator) {
+    size_t chunk_count = allocator->buf_sz / allocator->chunk_size;
+    for (size_t i = 0; i < chunk_count; ++i) {
+        ll_ins_next(allocator->free_list, allocator->free_list->head, &allocator->buf[i * allocator->chunk_size]);
+    }
+}
+
+void *pool_alloc(PoolAllocator *allocator) {
+    ListNode *node = allocator->free_list->head;
+    if (node == NULL) {
+        // TODO: Handle error better
+        return NULL;
+    }
+
+    void *tmp;
+    ll_remove(allocator->free_list, allocator->free_list->head, &tmp);
+    return memset(tmp, 0, allocator->chunk_size);
+}
+
+void pool_destroy(PoolAllocator *allocator) {
+    ll_destroy(allocator->free_list);
+    free(allocator->free_list);
+    free(allocator->buf);
+    free(allocator);
+}
