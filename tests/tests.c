@@ -70,9 +70,9 @@ void test_set() {
     int j = 2;
     int k = 2;
 
-    set_insert(set, (void *) &i);
-    set_insert(set, (void *) &j);
-    set_insert(set, (void *) &k);
+    set_insert(set, &i);
+    set_insert(set, &j);
+    set_insert(set, &k);
 
     int i2 = 1;
     int j2 = 4;
@@ -80,8 +80,8 @@ void test_set() {
     Set *set2 = malloc(sizeof(Set));
     set_init(set2, int_match, NULL);
 
-    set_insert(set2, (void *) &i2);
-    set_insert(set2, (void *) &j2);
+    set_insert(set2, &i2);
+    set_insert(set2, &j2);
 
     printf("Set 1:");
     print_ll(set);
@@ -202,7 +202,7 @@ void test_math() {
 
 void print_vector(Vector *vec) {
     for (size_t i = 0; i < vec->length; ++i) {
-        int t = *(int*)vec_at(vec, i);
+        int t = *(int *) vec_at(vec, i);
         printf("%d ", t);
     }
     printf("\n");
@@ -219,29 +219,31 @@ void test_vector() {
     int e3 = 3;
     int e4 = 4;
 
-    vec_push(v, &e0);
+    size_t idx = 0;
+    vec_push(v, &e0, &idx);
+    assert(idx == 0);
     assert(v->length == 1);
-    int *t = (int*)vec_at(v, 0);
+    int *t = (int *) vec_at(v, 0);
     assert(*t == 0);
 
-    vec_push(v, &e1);
-    vec_push(v, &e2);
+    vec_push(v, &e1, NULL);
+    vec_push(v, &e2, NULL);
     assert(v->length == 3);
 
     // test access outside bounds
-    t = (int*)vec_safe_at(v, 3);
+    t = (int *) vec_safe_at(v, 3);
     assert(t == NULL);
 
     printf("Before insert: ");
     print_vector(v);
-    vec_push(v, &e4);
+    vec_push(v, &e4, NULL);
     vec_insert(v, &e3, 3);
     printf("After insert:  ");
     print_vector(v);
 
-    t = (int*)vec_at(v, 3);
+    t = (int *) vec_at(v, 3);
     assert(*t == e3);
-    t = (int*)vec_at(v, 4);
+    t = (int *) vec_at(v, 4);
     assert(*t == e4);
 
     const int *min = vec_min(v, vec_cmp_int);
@@ -251,13 +253,13 @@ void test_vector() {
     assert(*min == e0);
     assert(*max == e4);
 
-    t = (int*)vec_remove(v, 1);
+    t = (int *) vec_remove(v, 1);
     assert(t != NULL);
     assert(*t == 1);
     printf("After removal: ");
     print_vector(v);
 
-    t = (int*)vec_remove(v, 10);
+    t = (int *) vec_remove(v, 10);
     assert(t == NULL);
 
     printf("\ncap before shrink: %zu\n", vec_cap(v));
@@ -268,13 +270,15 @@ void test_vector() {
     vec_destroy(v);
     free(v);
 }
+
 void test_string() {
     printf("\n--- STRING TEST ---\n");
-    const char* haystack = "Test one two one and also maybe two but not Gabe's least favorite number, which is not one.";
-    const char* needles[] = {
-            "one",
-            "two",
-            "Gabe"
+    const char *haystack =
+            "Test one two one and also maybe two but not Gabe's least favorite number, which is not one.";
+    const char *needles[] = {
+        "one",
+        "two",
+        "Gabe"
     };
 
     size_t sub_sz = 0;
@@ -286,7 +290,7 @@ void test_string() {
     assert(subs[1] == 13);
     assert(subs[2] == 87);
 
-    const char *s = substr(haystack, subs[0], strlen(needles[0]));
+    char *s = substr(haystack, subs[0], strlen(needles[0]));
     assert(strcmp(s, needles[0]) == 0);
 
     free(s);
@@ -330,14 +334,14 @@ void test_crypto() {
 
     char *out2 = "YSBsb25nZXIgYmFzZTY0IHRlc3QsIGFwcGFyZW50bHk=";
     size_t s_sz = 0;
-    s = (char *)b64_decode(out2, strlen(out2), &s_sz);
+    s = (char *) b64_decode(out2, strlen(out2), &s_sz);
     assert(strcmp(s, "a longer base64 test, apparently") == 0);
     assert(strlen(s) == s_sz);
     free(s);
 
     s = hex_decode("DEADBEEF", &s_sz);
     unsigned char h[4] = {
-            0xDE, 0xAD, 0xBE, 0xEF
+        0xDE, 0xAD, 0xBE, 0xEF
     };
     for (size_t i = 0; i < 4; ++i) {
         assert(s[i] == h[i]);
@@ -347,7 +351,7 @@ void test_crypto() {
     // Odd number of characters
     s = hex_decode("f00f5", &s_sz);
     unsigned char h2[4] = {
-            0x0F, 0x00, 0xF5
+        0x0F, 0x00, 0xF5
     };
     for (size_t i = 0; i < 3; ++i) {
         assert(s[i] == h2[i]);
@@ -367,20 +371,20 @@ void test_crypto() {
 
     // "Sup?"
     unsigned char hexsup[4] = {
-            0x53, 0x75, 0x70, 0x3F
+        0x53, 0x75, 0x70, 0x3F
     };
     s = hex_to_str(hexsup, 4);
     assert(strcmp(s, "Sup?") == 0);
     free(s);
 
     s = repeating_key_xor_s("TEST", "HI");
-    const char *enc = hex_encode(s, 4);
+    char *enc = hex_encode(s, 4);
     assert(strcmp(enc, "1c0c1b1d") == 0);
     free(enc);
     free(s);
 
-    unsigned char ua[2] = { 0x2, 0xF };
-    unsigned char ub[2] = { 0x4, 0xE };
+    unsigned char ua[2] = {0x2, 0xF};
+    unsigned char ub[2] = {0x4, 0xE};
     unsigned int hamming = hamming_distance(ua, ub, 2);
     assert(hamming == 3);
 
@@ -405,7 +409,7 @@ void test_parsing() {
 void tcp_test_handler(Server *s) {
     struct sockaddr_storage client_addr;
     socklen_t client_addr_sz = sizeof(client_addr);
-    int new_fd = accept(s->fd, (struct sockaddr *)&client_addr, &client_addr_sz);
+    int new_fd = accept(s->fd, (struct sockaddr *) &client_addr, &client_addr_sz);
     assert(new_fd != -1);
     assert(send(new_fd, NET_MSG, 10, 0) != -1);
     close(new_fd);
@@ -422,7 +426,7 @@ void udp_test_handler(Server *s) {
     socklen_t client_addr_sz = sizeof(client_addr);
     char recv_buf[128];
 
-    int r = (int)recvfrom(s->fd, recv_buf, 128, 0, (struct sockaddr*)&client_addr, &client_addr_sz);
+    int r = (int) recvfrom(s->fd, recv_buf, 128, 0, (struct sockaddr *) &client_addr, &client_addr_sz);
     assert(r > 0);
     assert(strcmp(recv_buf, NET_MSG) == 0);
 }
@@ -441,7 +445,7 @@ void test_network() {
     sleep(1);
     const char *s = capture_system("echo hello | nc localhost 18632", 0);
     assert(strcmp(s, NET_MSG) == 0);
-    free((char *)s);
+    free((char *) s);
 
     pthread_join(srv_tid, NULL);
     printf("Passed TCP test\n");

@@ -18,7 +18,7 @@ void vec_destroy(Vector *vec);
 
 int vec_insert(Vector *vec, void *data, size_t index);
 
-int vec_push(Vector *vec, void *data);
+int vec_push(Vector *vec, void *data, size_t *index);
 
 void *vec_safe_at(Vector *vec, size_t index);
 

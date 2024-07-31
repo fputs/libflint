@@ -45,7 +45,7 @@ static int resize_b64_buf(b64_buf *b, size_t sz) {
     return 0;
 }
 
-const char *b64_encode(const unsigned char *s, size_t sz) {
+char *b64_encode(const unsigned char *s, size_t sz) {
     int i = 0;
     b64_buf encbuf;
     size_t size = 0;
@@ -236,7 +236,7 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
     return hex;
 }
 
-const char *hex_encode(const unsigned char *hex, size_t sz) {
+char *hex_encode(const unsigned char *hex, size_t sz) {
     size_t ssz = sz * 2 + 1;
     char *s = malloc(sizeof(char) * ssz);
     char *pos = s;
@@ -250,7 +250,7 @@ const char *hex_encode(const unsigned char *hex, size_t sz) {
     return s;
 }
 
-const char *hex_to_str(const unsigned char *hex, size_t sz) {
+char *hex_to_str(const unsigned char *hex, size_t sz) {
     char *s = malloc(sizeof(char) * (sz + 1));
     for (size_t i = 0; i < sz; ++i) {
         s[i] = (char)hex[i];
@@ -259,7 +259,7 @@ const char *hex_to_str(const unsigned char *hex, size_t sz) {
     return s;
 }
 
-const unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz) {
+unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz) {
     unsigned char* r = malloc(sizeof(unsigned char) * s_sz);
     for (size_t i = 0, j = 0; i < s_sz; ++i) {
         r[i] = s[i] ^ key[j];
@@ -268,7 +268,7 @@ const unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, cons
     return r;
 }
 
-const unsigned char *repeating_key_xor_s(const char* s, const char* key) {
+unsigned char *repeating_key_xor_s(const char* s, const char* key) {
     return repeating_key_xor((unsigned char*)s, strlen(s), (unsigned char*)key, strlen(key));
 }
 

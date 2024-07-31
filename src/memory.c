@@ -83,7 +83,7 @@ static void *arena_resize_align(ArenaAllocator *allocator, void *mem, const size
         return arena_malloc_align(allocator, new_sz, align);
     }
 
-    if (allocator->buf <= mem && mem < allocator->buf + allocator->buf_sz) {
+    if (allocator->buf <= (unsigned char*)mem && (unsigned char*)mem < allocator->buf + allocator->buf_sz) {
         if (allocator->buf + allocator->offset_prev == old_mem) {
             allocator->offset_cur = allocator->offset_prev + new_sz;
             if (new_sz > old_sz) {

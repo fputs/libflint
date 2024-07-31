@@ -40,7 +40,7 @@ int find_substrings(const char* haystack, const char* needle, size_t *num_substr
     return 0;
 }
 
-const char* substr(const char* str, size_t idx, size_t len) {
+char* substr(const char* str, size_t idx, size_t len) {
    size_t sz_str = strlen(str);
    if (sz_str < len || idx + len > sz_str) {
        return NULL;

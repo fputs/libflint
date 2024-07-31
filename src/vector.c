@@ -81,7 +81,10 @@ int vec_insert(Vector *vec, void *data, size_t index) {
     return 0;
 }
 
-int vec_push(Vector *vec, void *data) {
+int vec_push(Vector *vec, void *data, size_t *index) {
+    if (index != NULL) {
+        *index = vec_len(vec);
+    }
     return vec_insert(vec, data, vec_len(vec));
 }
 
