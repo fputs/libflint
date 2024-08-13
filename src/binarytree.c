@@ -146,8 +146,8 @@ void print_node(char *prefix, BinTreeNode *node, int is_left, void (*pfunc)(void
         pfunc(node->data);
         char new_prefix[64];
         memset(new_prefix, 0, 64);
-        strcat(new_prefix, prefix);
-        strcat(new_prefix, (is_left == 1 ? "│   " : "    "));
+        strlcat(new_prefix, prefix, 64);
+        strlcat(new_prefix, (is_left == 1 ? "│   " : "    "), 64 - strlen(prefix));
         print_node(new_prefix, node->left, 1, pfunc);
         print_node(new_prefix, node->right, 0, pfunc);
     }

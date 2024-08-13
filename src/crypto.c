@@ -216,10 +216,10 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
 
     char *buf = malloc(sizeof(char) * buf_sz);
     if (strlen(sptr) % 2 != 0) {
-        strcpy(buf+ 1, sptr);
+        strlcpy(buf + 1, sptr, buf_sz - 1);
         buf[0] = '0';
     } else {
-        strcpy(buf, sptr);
+        strlcpy(buf, sptr, buf_sz);
     }
     buf[buf_sz - 1] = '\0';
 

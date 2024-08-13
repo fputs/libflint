@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <pthread.h>
 
 #include "lflinkedlist.h"

@@ -116,10 +116,10 @@ int vec_shrink(Vector *vec) {
 
     vec->capacity = vec_len(vec);
 
-#if !defined(__OpenBSD__) || defined(__linux)
-    vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
-#else
+#if !defined(__OpenBSD__)
     vec->elements = reallocf(vec->elements, sizeof(void *) * vec->capacity);
+#else
+    vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
 #endif
 
     if (vec->elements == NULL) {
