@@ -220,15 +220,13 @@ void test_vector() {
     int e3 = 3;
     int e4 = 4;
 
-    size_t idx = 0;
-    vec_push(v, &e0, &idx);
-    assert(idx == 0);
+    vec_push(v, &e0);
     assert(v->length == 1);
-    int *t = (int *) vec_at(v, 0);
+    int *t = vec_at(v, 0);
     assert(*t == 0);
 
-    vec_push(v, &e1, NULL);
-    vec_push(v, &e2, NULL);
+    vec_push(v, &e1);
+    vec_push(v, &e2);
     assert(v->length == 3);
 
     // test access outside bounds
@@ -237,14 +235,14 @@ void test_vector() {
 
     printf("Before insert: ");
     print_vector(v);
-    vec_push(v, &e4, NULL);
-    vec_insert(v, &e3, 3);
+    vec_push(v, &e3);
+    vec_insert(v, &e4, 1);
     printf("After insert:  ");
     print_vector(v);
 
-    t = (int *) vec_at(v, 3);
-    assert(*t == e3);
     t = (int *) vec_at(v, 4);
+    assert(*t == e3);
+    t = (int *) vec_at(v, 1);
     assert(*t == e4);
 
     const int *min = vec_min(v, vec_cmp_int);
@@ -256,7 +254,7 @@ void test_vector() {
 
     t = (int *) vec_remove(v, 1);
     assert(t != NULL);
-    assert(*t == 1);
+    assert(*t == 4);
     printf("After removal: ");
     print_vector(v);
 
@@ -267,6 +265,11 @@ void test_vector() {
     vec_shrink(v);
     assert(vec_len(v) == vec_cap(v));
     printf("cap after shrink: %zu\n", vec_cap(v));
+
+    vec_clear(v);
+    assert(vec_len(v) == 0);
+    printf("\ncap after clear: %zu\n", vec_cap(v));
+    printf("len after clear: %zu\n", vec_len(v));
 
     vec_destroy(v);
     free(v);

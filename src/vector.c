@@ -34,7 +34,11 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
 }
 
 static int vec_grow(Vector *const vec) {
-    vec->capacity *= 2;
+    if (vec->capacity == 0) {
+        vec->capacity = 1;
+    } else {
+        vec->capacity *= 2;
+    }
 
     vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
 
@@ -44,15 +48,25 @@ static int vec_grow(Vector *const vec) {
     return 0;
 }
 
+void vec_clear(Vector *vec) {
+    vec_destroy(vec);
+    vec_init(vec, vec->destroy);
+}
+
 void vec_destroy(Vector *vec) {
     if (vec->destroy) {
         for (size_t i = 0; i < vec_len(vec); ++i) {
             vec->destroy(vec->elements[i]);
         }
     }
+    free(vec->elements);
 }
 
 int vec_insert(Vector *vec, void *data, size_t index) {
+    if (index > vec_len(vec)) {
+        return -1;
+    }
+
     if (vec_len(vec) + 1 >= vec->capacity) {
         if (vec_grow(vec) != 0) {
             return -1;
@@ -81,10 +95,7 @@ int vec_insert(Vector *vec, void *data, size_t index) {
     return 0;
 }
 
-int vec_push(Vector *vec, void *data, size_t *index) {
-    if (index != NULL) {
-        *index = vec_len(vec);
-    }
+int vec_push(Vector *vec, void *data) {
     return vec_insert(vec, data, vec_len(vec));
 }
 
