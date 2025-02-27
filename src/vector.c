@@ -33,19 +33,31 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
     return 0;
 }
 
-static int vec_grow(Vector *const vec) {
-    if (vec->capacity == 0) {
-        vec->capacity = 1;
-    } else {
-        vec->capacity *= 2;
-    }
-
-    vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
+static int vec_expand(Vector *vec, size_t new_cap) {
+    vec->capacity = new_cap;
+    vec->elements = reallocarray(vec->elements, new_cap, sizeof(void *));
 
     if (vec->elements == NULL) {
         return -1;
     }
     return 0;
+}
+
+static int vec_grow(Vector *const vec) {
+    size_t new_cap;
+    if (vec->capacity == 0) {
+        new_cap = VEC_INIT_CAP; ;
+    } else {
+        new_cap = vec->capacity * 2;
+    }
+    return vec_expand(vec, new_cap);
+}
+
+int vec_grow_to(Vector *vec, const size_t new_cap) {
+    if (vec->capacity > new_cap) {
+        return -1;
+    }
+    return vec_expand(vec, new_cap);
 }
 
 void vec_clear(Vector *vec) {

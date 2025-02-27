@@ -271,6 +271,10 @@ void test_vector() {
     printf("\ncap after clear: %zu\n", vec_cap(v));
     printf("len after clear: %zu\n", vec_len(v));
 
+    vec_grow_to(v, 10);
+    assert(vec_cap(v) == 10);
+    assert(vec_len(v) == 0);
+
     vec_destroy(v);
     free(v);
 }
