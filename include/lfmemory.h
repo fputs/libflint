@@ -5,9 +5,9 @@
 
 #include "lflinkedlist.h"
 
-#ifndef DEFAULT_ALIGNMENT
+#ifndef LF_DEFAULT_ALIGNMENT
 #define LF_DEFAULT_ALIGNMENT (2*sizeof(void*))
-#endif // DEFAULT_ALIGNMENT
+#endif // LF_DEFAULT_ALIGNMENT
 
 typedef struct {
     unsigned char* buf;

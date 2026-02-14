@@ -46,7 +46,7 @@ char* substr(const char* str, size_t idx, size_t len) {
        return NULL;
    }
 
-   char *substr = malloc(sizeof(char) * len + 1);
+   char *substr = malloc(sizeof(char) * (len + 1));
    if (substr == NULL) {
        return NULL;
    }

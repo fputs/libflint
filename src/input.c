@@ -135,5 +135,6 @@ const char *capture_system(const char *cmd, int buf_sz) {
         return NULL;
     }
     fgets(buf, buf_sz, tmp);
+    pclose(tmp);
     return buf;
 }

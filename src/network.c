@@ -96,7 +96,8 @@ int serve(Server *s, int backlog_size) {
     // This is just for macOS and BSDs
     #if !defined(__linux__) && !defined(_WIN32)
     struct sigaction sa;
-    sa.sa_handler = sighandler; 
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = sighandler;
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         fprintf(stderr, "Failed to set sigaction\n");
@@ -123,12 +124,13 @@ static void *tcp_echo_thread(void *vargp) {
             break;
         }
 
-        if (send(fd, recv_buf, strlen(recv_buf), 0) == -1) {
+        if (send(fd, recv_buf, r, 0) == -1) {
             fprintf(stderr, "Failed to send echo. Errno: %d\n", errno);
             close(fd);
             break;
         }
     }
+    return NULL;
 }
 
 void handler_tcp_echo(Server *s) {

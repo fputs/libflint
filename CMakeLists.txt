@@ -36,21 +36,51 @@ if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux"))
 endif()
 
 if(${CMAKE_PROJECT_NAME} STREQUAL flint)
-    add_executable(tests tests/tests.c)
-    target_include_directories(tests PRIVATE include)
+    enable_testing()
 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        target_link_libraries(tests flint pthread bsd)
+        set(FLINT_TEST_LIBS flint pthread bsd)
     else()
-        target_link_libraries(tests flint pthread)
+        set(FLINT_TEST_LIBS flint pthread)
+    endif()
+
+    set(TESTS
+        linkedlist
+        set
+        stack
+        binarytree
+        math
+        vector
+        string
+        crypto
+        parsing
+        memory
+    )
+
+    foreach(t ${TESTS})
+        add_executable(test_${t} tests/test_${t}.c)
+        target_include_directories(test_${t} PRIVATE include)
+        target_link_libraries(test_${t} ${FLINT_TEST_LIBS})
+        add_test(NAME ${t} COMMAND test_${t})
+    endforeach()
+
+    # Network test (slow, uses sleep + sockets)
+    add_executable(test_network tests/test_network.c)
+    target_include_directories(test_network PRIVATE include)
+    target_link_libraries(test_network ${FLINT_TEST_LIBS})
+    add_test(NAME network COMMAND test_network)
+    set_tests_properties(network PROPERTIES LABELS "slow")
+
+    # macOS-only test
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        add_executable(test_macos tests/test_macos.c)
+        target_include_directories(test_macos PRIVATE include)
+        target_link_libraries(test_macos ${FLINT_TEST_LIBS})
+        add_test(NAME macos COMMAND test_macos)
+        set_tests_properties(macos PROPERTIES LABELS "slow")
     endif()
 
     add_executable(netmanual tests/netmanual.c)
     target_include_directories(netmanual PRIVATE include)
-
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        target_link_libraries(netmanual flint pthread bsd)
-    else()
-        target_link_libraries(netmanual flint pthread)
-    endif()
+    target_link_libraries(netmanual ${FLINT_TEST_LIBS})
 endif()

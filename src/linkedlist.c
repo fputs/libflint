@@ -107,14 +107,14 @@ int ll_remove(List *list, ListNode *node, void **data) {
 }
 
 int ll_remove_next(List *list, ListNode *node, void **data) {
-    if (node->next == NULL) {
+    if (node == NULL || node->next == NULL) {
         return -1;
     }
     return ll_remove(list, node->next, data);
 }
 
 int ll_remove_prev(List *list, ListNode *node, void **data) {
-    if (node->prev == NULL) {
+    if (node == NULL || node->prev == NULL) {
         return -1;
     }
     return ll_remove(list, node->prev, data);

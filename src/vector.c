@@ -153,6 +153,9 @@ int vec_shrink(Vector *vec) {
 }
 
 const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b)) {
+    if (vec_len(vec) == 0) {
+        return NULL;
+    }
     void *a = vec->elements[0];
     for (size_t i = 1; i < vec_len(vec); ++i) {
         if (cmp(a, vec->elements[i]) > 0) {
@@ -163,6 +166,9 @@ const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b)) 
 }
 
 const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b)) {
+    if (vec_len(vec) == 0) {
+        return NULL;
+    }
     void *a = vec->elements[0];
     for (size_t i = 1; i < vec_len(vec); ++i) {
         if (cmp(a, vec->elements[i]) < 0) {
@@ -186,8 +192,8 @@ int vec_cmp_int(const void *a, const void *b) {
 }
 
 int vec_cmp_char(const void *a, const void *b) {
-    const char x = *(int*)a;
-    const char y = *(int*)b;
+    const char x = *(char*)a;
+    const char y = *(char*)b;
 
     if (x > y) {
         return 1;

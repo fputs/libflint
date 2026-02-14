@@ -4,8 +4,7 @@ My personal library of common C data structures and algorithms. Supports Linux, 
 
 ## Documentation
 
-Extensive documentation can be found [here](https://burkey.co/Software+Documentation/libflint/libflint). You can also check out `tests/tests.c` to
-see example usage from most of the library's API.
+Extensive documentation can be found [here](https://burkey.co/Software+Documentation/libflint/libflint). You can also check out the per-module test files in `tests/` for example usage.
 
 ## Building
 
@@ -20,6 +19,15 @@ add_subdirectory(lib/libflint)
 # when building target...
 target_include_directories(${TARGET} PRIVATE lib/libflint/include)
 target_link_libraries(${TARGET} PRIVATE flint )
+```
+
+## Testing
+
+```sh
+cmake -B build && cmake --build build
+ctest --test-dir build                # run all tests
+ctest --test-dir build --parallel     # run in parallel
+ctest --test-dir build --label-exclude slow  # skip slow tests (network, macos)
 ```
 
 ## Requirements

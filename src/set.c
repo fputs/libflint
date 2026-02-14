@@ -29,7 +29,7 @@ int set_remove(Set *set, void **data) {
     if (node == NULL) {
         return -1;
     }
-    return ll_remove_next(set, node, data);
+    return ll_remove(set, node, data);
 }
 
 int set_union(Set *setu, const Set *a, const Set *b) {
@@ -117,7 +117,7 @@ int set_is_subset(const Set *a, const Set *b) {
 }
 
 int set_is_equal(const Set *a, const Set *b) {
-    if (a->size == b->size) {
+    if (a->size != b->size) {
         return 0;
     }
     return set_is_subset(a, b);

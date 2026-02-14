@@ -129,7 +129,7 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
             break;
         }
         // Not base64 characters
-        if (!isalnum(s[j]) || s[j] == '+' || s[j] == '/') {
+        if (!isalnum(s[j]) && s[j] != '+' && s[j] != '/') {
             break;
         }
 

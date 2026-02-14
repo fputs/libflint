@@ -131,6 +131,7 @@ int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
 
     merge->root->left = left->root;
     merge->root->right = right->root;
+    merge->size = 1 + left->size + right->size;
 
     left->root = NULL;
     left->size = 0;

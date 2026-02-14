@@ -78,5 +78,5 @@ Point *bresenham_p(Point p1, Point p2, size_t *sz) {
 }
 
 int is_power_of_two(int i) {
-    return (i & (i - 1)) == 0;
+    return i > 0 && (i & (i - 1)) == 0;
 }
