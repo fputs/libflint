@@ -88,5 +88,67 @@ int main() {
 
     pool_destroy(pool);
 
+    /* arena save/restore */
+    ArenaAllocator save_arena;
+    arena_init(&save_arena, 512);
+
+    int *perm1 = arena_malloc(&save_arena, sizeof(int));
+    *perm1 = 100;
+    int *perm2 = arena_malloc(&save_arena, sizeof(int));
+    *perm2 = 200;
+
+    /* save, do temp work, restore */
+    ASSERT_EQ(arena_save(&save_arena), 0);
+    size_t saved_offset = save_arena.offset_cur;
+
+    int *tmp1 = arena_malloc(&save_arena, sizeof(int));
+    *tmp1 = 999;
+    int *tmp2 = arena_malloc(&save_arena, sizeof(int));
+    *tmp2 = 888;
+    ASSERT_TRUE(save_arena.offset_cur > saved_offset);
+
+    arena_restore(&save_arena);
+    ASSERT_EQ(save_arena.offset_cur, saved_offset);
+
+    /* permanent data still intact */
+    ASSERT_EQ(*perm1, 100);
+    ASSERT_EQ(*perm2, 200);
+
+    /* new alloc reuses temp space */
+    int *perm3 = arena_malloc(&save_arena, sizeof(int));
+    *perm3 = 300;
+    ASSERT_NOT_NULL(perm3);
+
+    /* nested save/restore */
+    arena_clear(&save_arena);
+    int *outer = arena_malloc(&save_arena, sizeof(int));
+    *outer = 1;
+
+    ASSERT_EQ(arena_save(&save_arena), 0);
+    size_t outer_offset = save_arena.offset_cur;
+
+    int *mid = arena_malloc(&save_arena, sizeof(int));
+    *mid = 2;
+
+    ASSERT_EQ(arena_save(&save_arena), 0);
+    size_t inner_offset = save_arena.offset_cur;
+
+    int *inner = arena_malloc(&save_arena, sizeof(int));
+    *inner = 3;
+
+    arena_restore(&save_arena);
+    ASSERT_EQ(save_arena.offset_cur, inner_offset);
+
+    arena_restore(&save_arena);
+    ASSERT_EQ(save_arena.offset_cur, outer_offset);
+
+    ASSERT_EQ(*outer, 1);
+
+    /* restore on empty stack is a no-op */
+    arena_restore(&save_arena);
+    ASSERT_EQ(save_arena.offset_cur, outer_offset);
+
+    arena_free(&save_arena);
+
     TEST_REPORT();
 }

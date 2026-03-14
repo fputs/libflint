@@ -16,6 +16,7 @@ void arena_init(ArenaAllocator *allocator, size_t buf_sz) {
     allocator->buf_sz = buf_sz;
     allocator->offset_cur = 0;
     allocator->offset_prev = 0;
+    allocator->save_count = 0;
 }
 
 void arena_free(ArenaAllocator *allocator) {
@@ -27,11 +28,29 @@ void arena_free(ArenaAllocator *allocator) {
     allocator->buf_sz = 0;
     allocator->offset_cur = 0;
     allocator->offset_prev = 0;
+    allocator->save_count = 0;
 }
 
 void arena_clear(ArenaAllocator *allocator) {
     allocator->offset_cur = 0;
     allocator->offset_prev = 0;
+    allocator->save_count = 0;
+}
+
+int arena_save(ArenaAllocator *allocator) {
+    if (allocator->save_count >= LF_ARENA_MAX_SAVE_POINTS) {
+        return -1;
+    }
+    allocator->save_stack[allocator->save_count++] = allocator->offset_cur;
+    return 0;
+}
+
+void arena_restore(ArenaAllocator *allocator) {
+    if (allocator->save_count == 0) {
+        return;
+    }
+    allocator->offset_cur = allocator->save_stack[--allocator->save_count];
+    allocator->offset_prev = allocator->offset_cur;
 }
 
 static uintptr_t align_forward(const uintptr_t ptr, const uintptr_t align) {
