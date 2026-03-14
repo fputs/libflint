@@ -13,6 +13,7 @@ set(SOURCES
         src/linkedlist.c
         src/set.c
         src/stack.c
+        src/queue.c
         src/binarytree.c
         src/input.c
         src/math.c
@@ -48,6 +49,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL flint)
         linkedlist
         set
         stack
+        queue
         binarytree
         math
         vector
