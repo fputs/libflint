@@ -3,22 +3,22 @@
 
 #include <stdlib.h>
 
-unsigned char *get_binary(const char *, size_t *fsz);
+unsigned char *inp_get_binary(const char *, size_t *fsz);
 
-char *get_input(const char *);
+char *inp_get_input(const char *);
 
-char **split(char *, size_t *, const char *);
+char **inp_split(char *, size_t *, const char *);
 
-char **get_lines(const char *, size_t *);
+char **inp_get_lines(const char *, size_t *);
 
-int *get_ints(const char *, size_t *);
+int *inp_get_ints(const char *, size_t *);
 
-void del_split(char **);
+void inp_del_split(char **);
 
-void del_lines(char **);
+void inp_del_lines(char **);
 
 #define DEFAULT_CAPTURE_SYSTEM_BUFSIZE 1024
 
-const char *capture_system(const char *cmd, int buf_sz);
+char *inp_capture_system(const char *cmd, size_t buf_sz);
 
 #endif // LIBFLINT_INPUT_H

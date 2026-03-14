@@ -4,6 +4,8 @@
 #include "lflinkedlist.h"
 
 #define Stack List
+#define stack_size(s) ((s)->size)
+#define stack_is_empty(s) ((s)->size == 0)
 
 void stack_init(Stack *stack, void (*destroy)(void *data));
 

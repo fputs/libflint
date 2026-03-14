@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include "lfparsing.h"
 
 static int ses_score_sw(char c) {
@@ -20,6 +21,9 @@ static int ses_score_sw(char c) {
 }
 
 int simple_english_scoring(const char *s) {
+    if (s == NULL) {
+        return -1;
+    }
     int score = 0;
     for (const char *c = s; *c != '\0'; ++c) {
         score += ses_score_sw(*c);

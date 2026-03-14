@@ -5,7 +5,7 @@
 
 int main() {
     ArenaAllocator *arena = malloc(sizeof(ArenaAllocator));
-    arena_init(arena, 1024);
+    ASSERT_EQ(arena_init(arena, 1024), 0);
 
     int *i1 = arena_malloc(arena, sizeof(int));
     int *i2 = arena_malloc(arena, sizeof(int));
@@ -43,24 +43,31 @@ int main() {
     ASSERT_NOT_NULL(after_clear);
 
     /* Test arena_resize_buf */
-    arena_resize_buf(arena, 2048);
+    ASSERT_EQ(arena_resize_buf(arena, 2048), 0);
     void *big_alloc = arena_malloc(arena, 1500);
     ASSERT_NOT_NULL(big_alloc);
+
+    /* Test arena_resize_buf rejects shrink below offset_cur */
+    ASSERT_EQ(arena_resize_buf(arena, 1), -1);
+
+    /* Test arena_init returns -1 for NULL */
+    ASSERT_EQ(arena_init(NULL, 64), -1);
 
     arena_free(arena);
     free(arena);
 
     /* Test stack-allocated arena */
     ArenaAllocator stack_arena;
-    arena_init(&stack_arena, 256);
+    ASSERT_EQ(arena_init(&stack_arena, 256), 0);
     int *si = arena_malloc(&stack_arena, sizeof(int));
     ASSERT_NOT_NULL(si);
     *si = 99;
     ASSERT_EQ(*si, 99);
     arena_free(&stack_arena);
 
+    /* Pool tests */
     PoolAllocator *pool = malloc(sizeof(PoolAllocator));
-    pool_init(pool, 64, 16, LF_DEFAULT_ALIGNMENT);
+    ASSERT_EQ(pool_init(pool, 64, 16, LF_DEFAULT_ALIGNMENT), 0);
     void *a = pool_alloc(pool);
     void *b = pool_alloc(pool);
     void *c = pool_alloc(pool);
@@ -77,7 +84,7 @@ int main() {
 
     /* Test pool_free_all resets properly */
     pool_free_all(pool);
-    size_t chunk_count = 64 / 16;
+    size_t chunk_count = pool->buf_sz / pool->chunk_size;
     ASSERT_EQ(pool_count_available(pool), chunk_count);
 
     /* Allocate again after free_all to verify no corruption */
@@ -87,6 +94,49 @@ int main() {
     ASSERT_NOT_NULL(b);
 
     pool_destroy(pool);
+    free(pool);
+
+    /* Pool exhaustion: allocating more chunks than capacity returns NULL */
+    PoolAllocator pool_ex;
+    ASSERT_EQ(pool_init(&pool_ex, 64, 16, LF_DEFAULT_ALIGNMENT), 0);
+    size_t ex_count = pool_ex.buf_sz / pool_ex.chunk_size;
+    for (size_t i = 0; i < ex_count; ++i) {
+        ASSERT_NOT_NULL(pool_alloc(&pool_ex));
+    }
+    ASSERT_NULL(pool_alloc(&pool_ex));
+    pool_destroy(&pool_ex);
+
+    /* Pool free with bad pointers (outside buffer range) */
+    PoolAllocator pool_bad;
+    ASSERT_EQ(pool_init(&pool_bad, 64, 16, LF_DEFAULT_ALIGNMENT), 0);
+    size_t before = pool_count_available(&pool_bad);
+    int dummy = 0;
+    pool_free(&pool_bad, &dummy);           /* pointer outside pool */
+    pool_free(&pool_bad, NULL);             /* NULL pointer */
+    ASSERT_EQ(pool_count_available(&pool_bad), before); /* count unchanged */
+    pool_destroy(&pool_bad);
+
+    /* Pool free + realloc cycle */
+    PoolAllocator pool_cycle;
+    ASSERT_EQ(pool_init(&pool_cycle, 64, 16, LF_DEFAULT_ALIGNMENT), 0);
+    /* drain all chunks first */
+    size_t cycle_count = pool_cycle.buf_sz / pool_cycle.chunk_size;
+    for (size_t i = 0; i < cycle_count; ++i) {
+        pool_alloc(&pool_cycle);
+    }
+    ASSERT_EQ(pool_count_available(&pool_cycle), 0);
+    /* free one, then alloc -- must get it back */
+    void *p1 = &pool_cycle.buf[pool_cycle.aligned_start]; /* first chunk addr */
+    pool_free(&pool_cycle, p1);
+    void *p2 = pool_alloc(&pool_cycle);
+    ASSERT_NOT_NULL(p2);
+    ASSERT_EQ(p1, p2); /* should reuse the freed chunk */
+    pool_destroy(&pool_cycle);
+
+    /* Pool init with bad params */
+    PoolAllocator pool_bp;
+    ASSERT_EQ(pool_init(&pool_bp, 4, 16, LF_DEFAULT_ALIGNMENT), -1);  /* buf too small */
+    ASSERT_EQ(pool_init(NULL, 64, 16, LF_DEFAULT_ALIGNMENT), -1);     /* NULL allocator */
 
     /* arena save/restore */
     ArenaAllocator save_arena;

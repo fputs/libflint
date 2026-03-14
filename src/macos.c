@@ -1,3 +1,5 @@
+#if defined(__APPLE__) || defined(__MACH__)
+
 #include <libproc.h>
 #include <time.h>
 #include <mach/mach_time.h>
@@ -10,20 +12,29 @@
 #define NEW_PROCESS_SENTINEL (-1.0)
 
 ProcessData *new_ProcessData() {
-    ProcessData *pd = malloc(sizeof(ProcessData));
+    ProcessData *pd = calloc(1, sizeof(ProcessData));
+    if (!pd) return NULL;
     pd->last_total_consumed = NEW_PROCESS_SENTINEL;
     return pd;
+}
+
+void destroy_ProcessData(ProcessData *pd) {
+    free(pd);
 }
 
 int update_process(pid_t pid, ProcessData *proc) {
     struct proc_taskinfo taskinfo;
     const int r = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &taskinfo, PROC_PIDTASKINFO_SIZE);
     if (r != PROC_PIDTASKINFO_SIZE) {
-        return 1;
+        return -1;
     }
 
-    mach_timebase_info_data_t info;
-    mach_timebase_info(&info);
+    static mach_timebase_info_data_t info;
+    static int info_init = 0;
+    if (!info_init) {
+        mach_timebase_info(&info);
+        info_init = 1;
+    }
     const double ns_per_tick = (double)info.numer / (double)info.denom;
 
     time(&(proc->timestamp));
@@ -34,7 +45,11 @@ int update_process(pid_t pid, ProcessData *proc) {
 
     if (proc->last_total_consumed != NEW_PROCESS_SENTINEL) {
         time_t t = proc->timestamp - proc->last_timestamp;
-        proc->percent_cpu = 100.0 * (proc->total_user_time + proc->total_kernel_time - proc->last_total_consumed) / t;
+        if (t > 0) {
+            proc->percent_cpu = 100.0 * (proc->total_user_time + proc->total_kernel_time - proc->last_total_consumed) / t;
+        } else {
+            proc->percent_cpu = 0.0;
+        }
     } else {
         proc->percent_cpu = 0.0;
     }
@@ -80,3 +95,5 @@ void *reallocarray(void *optr, size_t nmemb, size_t size)
     }
     return realloc(optr, size * nmemb);
 }
+
+#endif /* defined(__APPLE__) || defined(__MACH__) */

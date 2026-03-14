@@ -1,17 +1,14 @@
 #include "lfqueue.h"
 
 void queue_init(Queue *queue, void (*destroy)(void *data)) {
-    ll_init(queue, destroy);
+    ll_init(queue, destroy, NULL);
 }
 
 void queue_destroy(Queue *queue) {
     ll_destroy(queue);
 }
 
-int queue_enqueue(Queue *queue, void *data) {
-    if (queue->size == 0) {
-        return ll_ins_next(queue, NULL, data);
-    }
+int queue_enqueue(Queue *queue, const void *data) {
     return ll_ins_next(queue, queue->tail, data);
 }
 

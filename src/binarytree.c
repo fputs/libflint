@@ -7,7 +7,6 @@
 void bintree_init(BinTree *tree, void (*destroy)(void *data)) {
     tree->size = 0;
     tree->destroy = destroy;
-    tree->compare = NULL;
     tree->root = NULL;
 }
 
@@ -22,7 +21,7 @@ int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data) {
 
     if (node == NULL) {
         if (tree->size > 0) {
-            return 1;
+            return -1;
         }
         pos = &tree->root;
     } else {
@@ -33,7 +32,7 @@ int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data) {
     }
 
     if ((new_node = malloc(sizeof(BinTreeNode))) == NULL) {
-        return 2;
+        return -1;
     }
 
     new_node->data = data;
@@ -51,7 +50,7 @@ int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data) {
 
     if (node == NULL) {
         if (tree->size > 0) {
-            return 1;
+            return -1;
         }
         pos = &tree->root;
     } else {
@@ -62,7 +61,7 @@ int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data) {
     }
 
     if ((new_node = malloc(sizeof(BinTreeNode))) == NULL) {
-        return 2;
+        return -1;
     }
 
     new_node->data = data;
@@ -123,6 +122,10 @@ void bintree_rem_right(BinTree *tree, BinTreeNode *node) {
 }
 
 int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
+    if (left == right) {
+        return -1;
+    }
+
     bintree_init(merge, left->destroy);
     if (bintree_ins_left(merge, NULL, data) != 0) {
         bintree_destroy(merge);
@@ -135,30 +138,63 @@ int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
 
     left->root = NULL;
     left->size = 0;
+
+    /* Preserve right's destroy callback before clearing */
     right->root = NULL;
     right->size = 0;
 
     return 0;
 }
 
-void print_node(char *prefix, BinTreeNode *node, int is_left, void (*pfunc)(void *data)) {
-    if (node != NULL) {
-        printf("%s%s", prefix, (is_left ? "├──" : "└──"));
-        pfunc(node->data);
-        char new_prefix[64];
-        memset(new_prefix, 0, 64);
-        strlcat(new_prefix, prefix, 64);
-        strlcat(new_prefix, (is_left == 1 ? "│   " : "    "), 64 - strlen(prefix));
-        print_node(new_prefix, node->left, 1, pfunc);
-        print_node(new_prefix, node->right, 0, pfunc);
+void bintree_traverse(BinTree *tree, BinTreeNode *node, int order,
+                      void (*visitor)(void *data)) {
+    (void)tree;
+    if (node == NULL) {
+        return;
+    }
+
+    switch (order) {
+    case BINTREE_PREORDER:
+        visitor(node->data);
+        bintree_traverse(tree, node->left, order, visitor);
+        bintree_traverse(tree, node->right, order, visitor);
+        break;
+    case BINTREE_INORDER:
+        bintree_traverse(tree, node->left, order, visitor);
+        visitor(node->data);
+        bintree_traverse(tree, node->right, order, visitor);
+        break;
+    case BINTREE_POSTORDER:
+        bintree_traverse(tree, node->left, order, visitor);
+        bintree_traverse(tree, node->right, order, visitor);
+        visitor(node->data);
+        break;
     }
 }
 
-void bintree_debug_pfunc_int(void *data) {
-    int i = *((int *) data);
-    printf("%d\n", i);
+static void print_node(char *prefix, BinTreeNode *node, int is_left,
+                        void (*print_fn)(void *data, char *buf, size_t buf_sz)) {
+    if (node != NULL) {
+        char label[64];
+        print_fn(node->data, label, sizeof(label));
+        printf("%s%s%s\n", prefix, (is_left ? "├──" : "└──"), label);
+
+        char new_prefix[256];
+        snprintf(new_prefix, sizeof(new_prefix), "%s%s",
+                 prefix, (is_left ? "│   " : "    "));
+        print_node(new_prefix, node->left, 1, print_fn);
+        print_node(new_prefix, node->right, 0, print_fn);
+    }
 }
 
-void bintree_debug_print(BinTree *tree) {
-    print_node("", tree->root, 0, bintree_debug_pfunc_int);
+static void default_print_int(void *data, char *buf, size_t buf_sz) {
+    snprintf(buf, buf_sz, "%d", *(int *)data);
+}
+
+void bintree_debug_print(BinTree *tree,
+                         void (*print_fn)(void *data, char *buf, size_t buf_sz)) {
+    if (print_fn == NULL) {
+        print_fn = default_print_int;
+    }
+    print_node("", tree->root, 0, print_fn);
 }

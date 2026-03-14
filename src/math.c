@@ -1,7 +1,15 @@
+#include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include "lfmath.h"
+
+int abs_int(int a) {
+    if (a == INT_MIN) {
+        return INT_MAX;
+    }
+    return a < 0 ? -a : a;
+}
 
 int max_int(int a, int b) {
     if (a > b) {
@@ -18,6 +26,11 @@ int min_int(int a, int b) {
 }
 
 int clamp_int(int i, int low, int high) {
+    if (low > high) {
+        int tmp = low;
+        low = high;
+        high = tmp;
+    }
     if (i > high) {
         return high;
     } else if (i < low) {
@@ -27,6 +40,9 @@ int clamp_int(int i, int low, int high) {
 }
 
 int binstr_to_int(const char *s) {
+    if (!s) {
+        return -1;
+    }
     int n = 0, m = 1;
     for (int i = (int) strlen(s) - 1; i >= 0; --i) {
         if (s[i] == '_') {
@@ -41,19 +57,26 @@ int binstr_to_int(const char *s) {
 }
 
 Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
-    Point *line = NULL;
-    size_t n = 0;
     *sz = 0;
 
-    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-    int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    size_t npts = (size_t)(dx > dy ? dx : dy) + 1;
+
+    Point *line = malloc(sizeof(Point) * npts);
+    if (!line) {
+        return NULL;
+    }
+
+    int sx = x0 < x1 ? 1 : -1;
+    int sy = y0 < y1 ? 1 : -1;
     int err = (dx > dy ? dx : -dy) / 2, e2;
+    size_t n = 0;
 
     for (;;) {
-        line = realloc(line, sizeof(Point) * ++n);
-        ++*sz;
-        line[n - 1].x = x0;
-        line[n - 1].y = y0;
+        line[n].x = x0;
+        line[n].y = y0;
+        n++;
 
         if (x0 == x1 && y0 == y1) {
             break;
@@ -70,15 +93,12 @@ Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
         }
     }
 
+    *sz = n;
     return line;
 }
 
 Point *bresenham_p(Point p1, Point p2, size_t *sz) {
     return bresenham(p1.x, p1.y, p2.x, p2.y, sz);
-}
-
-int abs_int(int i) {
-    return i < 0 ? -i : i;
 }
 
 int is_power_of_two(int i) {

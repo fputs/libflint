@@ -57,6 +57,8 @@ if(${CMAKE_PROJECT_NAME} STREQUAL flint)
         crypto
         parsing
         memory
+        utility
+        input
     )
 
     foreach(t ${TESTS})

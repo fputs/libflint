@@ -13,8 +13,6 @@
 
 #define VEC_INIT_CAP 2
 
-static int (*vec_sort_cmp_fn)(const void *, const void *);
-
 int vec_init(Vector *vec, void (*destroy)(void *data)) {
     return vec_init_with_capacity(vec, destroy, VEC_INIT_CAP);
 }
@@ -36,19 +34,19 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
 }
 
 static int vec_expand(Vector *vec, size_t new_cap) {
-    vec->capacity = new_cap;
-    vec->elements = reallocarray(vec->elements, new_cap, sizeof(void *));
-
-    if (vec->elements == NULL) {
+    void *tmp = reallocarray(vec->elements, new_cap, sizeof(void *));
+    if (tmp == NULL) {
         return -1;
     }
+    vec->elements = tmp;
+    vec->capacity = new_cap;
     return 0;
 }
 
 static int vec_grow(Vector *const vec) {
     size_t new_cap;
     if (vec->capacity == 0) {
-        new_cap = VEC_INIT_CAP; ;
+        new_cap = VEC_INIT_CAP;
     } else {
         new_cap = vec->capacity * 2;
     }
@@ -62,9 +60,13 @@ int vec_grow_to(Vector *vec, const size_t new_cap) {
     return vec_expand(vec, new_cap);
 }
 
-void vec_clear(Vector *vec) {
+int vec_clear(Vector *vec) {
+    void (*destroy)(void *data) = vec->destroy;
     vec_destroy(vec);
-    vec_init(vec, vec->destroy);
+    if (vec_init(vec, destroy) != 0) {
+        return -1;
+    }
+    return 0;
 }
 
 void vec_destroy(Vector *vec) {
@@ -81,14 +83,10 @@ int vec_insert(Vector *vec, void *data, size_t index) {
         return -1;
     }
 
-    if (vec_len(vec) + 1 >= vec->capacity) {
+    if (vec_len(vec) + 1 > vec->capacity) {
         if (vec_grow(vec) != 0) {
             return -1;
         }
-    }
-
-    if (index > vec_len(vec)) {
-        return -1;
     }
 
     if (index < vec_len(vec)) {
@@ -139,17 +137,27 @@ int vec_shrink(Vector *vec) {
         return 0;
     }
 
-    vec->capacity = vec_len(vec);
+    if (vec_len(vec) == 0) {
+        free(vec->elements);
+        vec->elements = NULL;
+        vec->capacity = 0;
+        return 0;
+    }
+
+    size_t new_cap = vec_len(vec);
 
 #if !defined(__OpenBSD__)
-    vec->elements = reallocf(vec->elements, sizeof(void *) * vec->capacity);
+    void *tmp = reallocf(vec->elements, sizeof(void *) * new_cap);
 #else
-    vec->elements = reallocarray(vec->elements, vec->capacity, sizeof(void *));
+    void *tmp = reallocarray(vec->elements, new_cap, sizeof(void *));
 #endif
 
-    if (vec->elements == NULL) {
+    if (tmp == NULL) {
         return -1;
     }
+
+    vec->elements = tmp;
+    vec->capacity = new_cap;
 
     return 0;
 }
@@ -199,19 +207,31 @@ void vec_reverse(Vector *vec) {
     }
 }
 
-static int vec_sort_cmp_wrapper(const void *a, const void *b) {
-    /* qsort passes pointers to elements; our elements are void*, so a is void** */
+#if defined(__APPLE__)
+static int vec_sort_cmp_wrapper(void *thunk, const void *a, const void *b) {
+    int (*cmp)(const void *, const void *) = thunk;
     const void *ea = *(const void **)a;
     const void *eb = *(const void **)b;
-    return vec_sort_cmp_fn(ea, eb);
+    return cmp(ea, eb);
 }
+#else
+static int vec_sort_cmp_wrapper(const void *a, const void *b, void *thunk) {
+    int (*cmp)(const void *, const void *) = thunk;
+    const void *ea = *(const void **)a;
+    const void *eb = *(const void **)b;
+    return cmp(ea, eb);
+}
+#endif
 
 void vec_sort(Vector *vec, int (*cmp)(const void *a, const void *b)) {
     if (vec_len(vec) < 2) {
         return;
     }
-    vec_sort_cmp_fn = cmp;
-    qsort(vec->elements, vec_len(vec), sizeof(void *), vec_sort_cmp_wrapper);
+#if defined(__APPLE__)
+    qsort_r(vec->elements, vec_len(vec), sizeof(void *), (void *)cmp, vec_sort_cmp_wrapper);
+#else
+    qsort_r(vec->elements, vec_len(vec), sizeof(void *), vec_sort_cmp_wrapper, (void *)cmp);
+#endif
 }
 
 void *vec_bsearch(Vector *vec, const void *key, int (*cmp)(const void *a, const void *b)) {

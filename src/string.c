@@ -4,18 +4,19 @@
 
 #include "lfstring.h"
 
-int find_substrings(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings) {
+int str_find(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings) {
     if (*substrings != NULL) {
         return 1;
     }
 
+    *num_substrings = 0;
+
     size_t sz_h = strlen(haystack);
     size_t sz_n = strlen(needle);
-    if ((int)sz_h - (int)sz_n < 0) {
+    if (sz_n > sz_h) {
         return 0;
     }
 
-    *num_substrings = 0;
     for (size_t i = 0; i <= sz_h - sz_n; ++i) {
         if (strncmp(haystack + i, needle, sz_n) == 0) {
             ++(*num_substrings);
@@ -41,21 +42,21 @@ int find_substrings(const char* haystack, const char* needle, size_t *num_substr
     return 0;
 }
 
-char* substr(const char* str, size_t idx, size_t len) {
+char* str_substr(const char* str, size_t idx, size_t len) {
    size_t sz_str = strlen(str);
    if (sz_str < len || idx + len > sz_str) {
        return NULL;
    }
 
-   char *substr = malloc(sizeof(char) * (len + 1));
-   if (substr == NULL) {
+   char *sub = malloc(sizeof(char) * (len + 1));
+   if (sub == NULL) {
        return NULL;
    }
 
-   memcpy(substr, str + idx, len);
-   substr[len] = '\0';
+   memcpy(sub, str + idx, len);
+   sub[len] = '\0';
 
-   return substr;
+   return sub;
 }
 
 char *str_trim(const char *str) {
@@ -183,4 +184,71 @@ char *str_to_lower(const char *str) {
     }
     out[len] = '\0';
     return out;
+}
+
+char **str_split(const char *str, const char *delim, int *count) {
+    *count = 0;
+    size_t delim_len = strlen(delim);
+
+    if (delim_len == 0) {
+        char **result = malloc(sizeof(char *));
+        if (result == NULL) {
+            return NULL;
+        }
+        result[0] = strdup(str);
+        if (result[0] == NULL) {
+            free(result);
+            return NULL;
+        }
+        *count = 1;
+        return result;
+    }
+
+    /* count segments */
+    int n = 1;
+    const char *p = str;
+    while ((p = strstr(p, delim)) != NULL) {
+        n++;
+        p += delim_len;
+    }
+
+    char **result = malloc(sizeof(char *) * n);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    int i = 0;
+    p = str;
+    const char *next;
+    while ((next = strstr(p, delim)) != NULL) {
+        size_t seg_len = next - p;
+        result[i] = malloc(seg_len + 1);
+        if (result[i] == NULL) {
+            for (int j = 0; j < i; j++) {
+                free(result[j]);
+            }
+            free(result);
+            return NULL;
+        }
+        memcpy(result[i], p, seg_len);
+        result[i][seg_len] = '\0';
+        i++;
+        p = next + delim_len;
+    }
+
+    /* last segment */
+    result[i] = strdup(p);
+    if (result[i] == NULL) {
+        for (int j = 0; j < i; j++) {
+            free(result[j]);
+        }
+        free(result);
+        return NULL;
+    }
+    *count = n;
+    return result;
+}
+
+int str_contains(const char *str, const char *substr) {
+    return strstr(str, substr) != NULL;
 }

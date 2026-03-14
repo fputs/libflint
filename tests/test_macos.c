@@ -8,16 +8,39 @@
 
 int main() {
     pid_t pid = getpid();
+
+    /* new_ProcessData returns zeroed memory with sentinel */
     ProcessData *pd = new_ProcessData();
     ASSERT_NOT_NULL(pd);
+    ASSERT_EQ(pd->percent_cpu, 0.0);
+    ASSERT_EQ(pd->virtual_memory, 0);
+    ASSERT_EQ(pd->resident_memory, 0);
+    ASSERT_EQ(pd->total_user_time, 0.0);
+    ASSERT_EQ(pd->total_kernel_time, 0.0);
 
-    for (int i = 0; i < 2; i++) {
-        update_process(pid, pd);
-        sleep(1);
-    }
+    /* first update succeeds and populates fields */
+    int rc = update_process(pid, pd);
+    ASSERT_EQ(rc, 0);
+    ASSERT_TRUE(pd->resident_memory > 0);
+    ASSERT_TRUE(pd->virtual_memory > 0);
+    ASSERT_TRUE(pd->percent_cpu == 0.0);
+
+    sleep(1);
+
+    /* second update succeeds */
+    rc = update_process(pid, pd);
+    ASSERT_EQ(rc, 0);
     ASSERT_TRUE(pd->percent_cpu >= 0.0);
 
-    free(pd);
+    /* error path: invalid PID returns -1 */
+    rc = update_process(-1, pd);
+    ASSERT_EQ(rc, -1);
+
+    destroy_ProcessData(pd);
+
+    /* destroy_ProcessData handles NULL safely */
+    destroy_ProcessData(NULL);
+
     TEST_REPORT();
 }
 #else

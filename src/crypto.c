@@ -203,6 +203,10 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
 }
 
 unsigned char *hex_decode(const char *orig, size_t *sz) {
+    if (sz == NULL) {
+        return NULL;
+    }
+
     size_t buf_sz = strlen(orig) + 1;
     const char *sptr = orig;
     if (strncmp(orig, "0x", 2) == 0) {
@@ -215,16 +219,25 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
     }
 
     char *buf = malloc(sizeof(char) * buf_sz);
+    if (buf == NULL) {
+        return NULL;
+    }
+
     if (strlen(sptr) % 2 != 0) {
-        strlcpy(buf + 1, sptr, buf_sz - 1);
+        memcpy(buf + 1, sptr, strlen(sptr));
         buf[0] = '0';
     } else {
-        strlcpy(buf, sptr, buf_sz);
+        memcpy(buf, sptr, strlen(sptr));
     }
     buf[buf_sz - 1] = '\0';
 
     *sz = buf_sz / 2;
     unsigned char *hex = malloc(sizeof(unsigned char) * *sz);
+    if (hex == NULL) {
+        free(buf);
+        return NULL;
+    }
+
     const char *pos = buf;
 
     for (size_t i = 0; i < *sz; ++i) {
@@ -239,6 +252,10 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
 char *hex_encode(const unsigned char *hex, size_t sz) {
     size_t ssz = sz * 2 + 1;
     char *s = malloc(sizeof(char) * ssz);
+    if (s == NULL) {
+        return NULL;
+    }
+
     char *pos = s;
 
     for (size_t i = 0; i < sz; ++i) {
@@ -252,6 +269,10 @@ char *hex_encode(const unsigned char *hex, size_t sz) {
 
 char *hex_to_str(const unsigned char *hex, size_t sz) {
     char *s = malloc(sizeof(char) * (sz + 1));
+    if (s == NULL) {
+        return NULL;
+    }
+
     for (size_t i = 0; i < sz; ++i) {
         s[i] = (char)hex[i];
     }
@@ -260,7 +281,15 @@ char *hex_to_str(const unsigned char *hex, size_t sz) {
 }
 
 unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz) {
+    if (k_sz == 0) {
+        return NULL;
+    }
+
     unsigned char* r = malloc(sizeof(unsigned char) * s_sz);
+    if (r == NULL) {
+        return NULL;
+    }
+
     for (size_t i = 0, j = 0; i < s_sz; ++i) {
         r[i] = s[i] ^ key[j];
         j = (j + 1) % k_sz;
@@ -272,23 +301,23 @@ unsigned char *repeating_key_xor_s(const char* s, const char* key) {
     return repeating_key_xor((unsigned char*)s, strlen(s), (unsigned char*)key, strlen(key));
 }
 
-unsigned int hamming_distance_s(const char *a, const char *b) {
+int hamming_distance_s(const char *a, const char *b) {
     size_t sz = strlen(a);
     if (sz != strlen(b)) {
         return -1;
     }
 
-    return hamming_distance((unsigned char *)a, (unsigned char *)b, sz);
+    return hamming_distance((const unsigned char *)a, (const unsigned char *)b, sz);
 }
 
-unsigned int hamming_distance(unsigned char *a, unsigned char *b, size_t sz) {
-    unsigned int hamming = 0;
+int hamming_distance(const unsigned char *a, const unsigned char *b, size_t sz) {
+    int hamming = 0;
     for (size_t i = 0; i < sz; ++i) {
         if (a[i] == b[i]) {
             continue;
         }
         unsigned char c = a[i] ^ b[i];
-        unsigned int count = 0;
+        int count = 0;
         for (; c; count++) {
             c &= c - 1;
         }

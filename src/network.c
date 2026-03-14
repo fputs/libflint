@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -60,6 +61,9 @@ Server *new_server(ServerType type, const char *port, void(handler)(Server *s)) 
             continue;
         }
 
+        int yes = 1;
+        setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+
         if (bind(s->fd, p->ai_addr, p->ai_addrlen) != 0) {
             close(s->fd);
             continue;
@@ -70,6 +74,7 @@ Server *new_server(ServerType type, const char *port, void(handler)(Server *s)) 
 
     if (p == NULL) {
         fprintf(stderr, "Failed to bind\n");
+        freeaddrinfo(addr);
         free(s);
         return NULL;
     }
@@ -79,8 +84,9 @@ Server *new_server(ServerType type, const char *port, void(handler)(Server *s)) 
 }
 
 void delete_server(Server *s) {
+    if (s == NULL) return;
+    close(s->fd);
     free(s);
-    s = NULL;
 }
 
 int serve(Server *s, int backlog_size) {
@@ -88,8 +94,10 @@ int serve(Server *s, int backlog_size) {
         backlog_size = DEFAULT_BACKLOG;
     }
 
-    if (listen(s->fd, backlog_size) != 0) {
-        return 1;
+    if (s->server_type != SERVERTYPE_UDP) {
+        if (listen(s->fd, backlog_size) != 0) {
+            return -1;
+        }
     }
 
     // Linux doesn't handle SA_RESTART properly, and I don't know about Windows (nor do I care)
@@ -101,7 +109,7 @@ int serve(Server *s, int backlog_size) {
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         fprintf(stderr, "Failed to set sigaction\n");
-        return 1;
+        return -1;
     }
     #endif
 
@@ -111,9 +119,9 @@ int serve(Server *s, int backlog_size) {
 }
 
 static void *tcp_echo_thread(void *vargp) {
+    int fd = (int)(intptr_t)vargp;
     while (1) {
         char recv_buf[256];
-        int fd = *(int *) vargp;
 
         int r = (int)recv(fd, recv_buf, 256, 0);
         if (r < 1) {
@@ -147,6 +155,7 @@ void handler_tcp_echo(Server *s) {
         pthread_attr_t attr;
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        pthread_create(&srv_tid, &attr, tcp_echo_thread, &new_fd);
+        pthread_create(&srv_tid, &attr, tcp_echo_thread, (void *)(intptr_t)new_fd);
+        pthread_attr_destroy(&attr);
     }
 }

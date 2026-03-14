@@ -1,7 +1,7 @@
 #ifndef LIBFLINT_H_VECTOR
 #define LIBFLINT_H_VECTOR
 
-#include <memory.h>
+#include <string.h>
 
 typedef struct Vector {
     size_t capacity;
@@ -14,7 +14,7 @@ int vec_init(Vector *vec, void (*destroy)(void *data));
 
 int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t cap);
 
-void vec_clear(Vector *vec);
+int vec_clear(Vector *vec);
 
 void vec_destroy(Vector *vec);
 

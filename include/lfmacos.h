@@ -3,6 +3,7 @@
 
 #if defined(__APPLE__) || defined(__MACH__)
 
+#include <stdint.h>
 #include <time.h>
 
 typedef struct {
@@ -19,6 +20,7 @@ typedef struct {
 } ProcessData;
 
 ProcessData *new_ProcessData();
+void destroy_ProcessData(ProcessData *pd);
 int update_process(pid_t pid, ProcessData *proc);
 void *reallocarray(void *optr, size_t nmemb, size_t size);
 

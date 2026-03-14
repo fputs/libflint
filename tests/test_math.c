@@ -1,27 +1,40 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "lftest.h"
 #include "lfmath.h"
 
 int main() {
-    int i = 1, j = 2;
-    ASSERT_EQ(max_int(i, j), j);
-    ASSERT_EQ(min_int(i, j), i);
-
-    char *s = "10101101";
-    ASSERT_EQ(binstr_to_int(s), 173);
-
-    char *s2 = "1010_1101";
-    ASSERT_EQ(binstr_to_int(s2), 173);
-
-    i = 10;
-    i = clamp_int(i, 2, 5);
-    ASSERT_EQ(i, 5);
-
     /* abs_int */
     ASSERT_EQ(abs_int(5), 5);
     ASSERT_EQ(abs_int(-5), 5);
     ASSERT_EQ(abs_int(0), 0);
+    ASSERT_EQ(abs_int(INT_MIN), INT_MAX);
+
+    /* max/min */
+    ASSERT_EQ(max_int(1, 2), 2);
+    ASSERT_EQ(min_int(1, 2), 1);
+
+    /* binstr_to_int */
+    ASSERT_EQ(binstr_to_int("10101101"), 173);
+    ASSERT_EQ(binstr_to_int("1010_1101"), 173);
+    ASSERT_EQ(binstr_to_int(NULL), -1);
+
+    /* clamp_int - all branches */
+    ASSERT_EQ(clamp_int(10, 2, 5), 5);   /* above high */
+    ASSERT_EQ(clamp_int(1, 2, 5), 2);    /* below low */
+    ASSERT_EQ(clamp_int(3, 2, 5), 3);    /* in range */
+    ASSERT_EQ(clamp_int(3, 5, 2), 3);    /* low > high, swap */
+    ASSERT_EQ(clamp_int(10, 5, 2), 5);   /* low > high, above */
+
+    /* is_power_of_two */
+    ASSERT_TRUE(is_power_of_two(1));
+    ASSERT_TRUE(is_power_of_two(2));
+    ASSERT_TRUE(is_power_of_two(4));
+    ASSERT_TRUE(is_power_of_two(1024));
+    ASSERT_FALSE(is_power_of_two(0));
+    ASSERT_FALSE(is_power_of_two(3));
+    ASSERT_FALSE(is_power_of_two(-1));
 
     /* gcd */
     ASSERT_EQ(gcd(12, 8), 4);
@@ -51,10 +64,35 @@ int main() {
     ASSERT_EQ(isqrt(100), 10);
     ASSERT_EQ(isqrt(-1), -1);
 
+    /* bresenham coordinate verification */
     size_t sz = 0;
     Point *line = bresenham(0, 0, 2, 5, &sz);
-    ASSERT_TRUE(sz > 0);
     ASSERT_NOT_NULL(line);
+    ASSERT_TRUE(sz > 0);
+    /* first point */
+    ASSERT_EQ(line[0].x, 0);
+    ASSERT_EQ(line[0].y, 0);
+    /* last point */
+    ASSERT_EQ(line[sz - 1].x, 2);
+    ASSERT_EQ(line[sz - 1].y, 5);
+    free(line);
+
+    /* bresenham single point */
+    line = bresenham(3, 3, 3, 3, &sz);
+    ASSERT_NOT_NULL(line);
+    ASSERT_EQ(sz, 1);
+    ASSERT_EQ(line[0].x, 3);
+    ASSERT_EQ(line[0].y, 3);
+    free(line);
+
+    /* bresenham_p */
+    Point p1 = Point_new(0, 0);
+    Point p2 = Point_new(4, 0);
+    line = bresenham_p(p1, p2, &sz);
+    ASSERT_NOT_NULL(line);
+    ASSERT_EQ(sz, 5);
+    ASSERT_EQ(line[0].x, 0);
+    ASSERT_EQ(line[4].x, 4);
     free(line);
 
     TEST_REPORT();

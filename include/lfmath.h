@@ -5,6 +5,8 @@
 
 #include "lfutility.h"
 
+int abs_int(int a);
+
 int max_int(int a, int b);
 
 int min_int(int a, int b);
@@ -12,8 +14,6 @@ int min_int(int a, int b);
 int clamp_int(int i, int low, int high);
 
 int binstr_to_int(const char *s);
-
-int abs_int(int i);
 
 int is_power_of_two(int i);
 

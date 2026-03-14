@@ -46,17 +46,46 @@ static void *udp_server_thread(void *vargp) {
     return NULL;
 }
 
+static void dummy_handler(Server *s) {
+    (void)s;
+}
+
 int main() {
+    /* Test new_server with bad port returns NULL */
+    Server *bad = new_server(SERVERTYPE_TCP, "notaport", dummy_handler);
+    ASSERT_NULL(bad);
+
+    /* Test new_server creates valid TCP server and delete_server cleans up */
+    Server *tcp = new_server(SERVERTYPE_TCP, "18640", dummy_handler);
+    ASSERT_NOT_NULL(tcp);
+    ASSERT_EQ(tcp->server_type, SERVERTYPE_TCP);
+    ASSERT_EQ(tcp->port, 18640);
+    ASSERT_TRUE(tcp->fd >= 0);
+    delete_server(tcp);
+
+    /* Test new_server creates valid UDP server and delete_server cleans up */
+    Server *udp = new_server(SERVERTYPE_UDP, "18641", dummy_handler);
+    ASSERT_NOT_NULL(udp);
+    ASSERT_EQ(udp->server_type, SERVERTYPE_UDP);
+    ASSERT_EQ(udp->port, 18641);
+    ASSERT_TRUE(udp->fd >= 0);
+    delete_server(udp);
+
+    /* Test delete_server with NULL doesn't crash */
+    delete_server(NULL);
+
+    /* TCP echo test */
     pthread_t srv_tid;
     pthread_create(&srv_tid, NULL, tcp_server_thread, NULL);
 
     sleep(1);
-    const char *s = capture_system("echo hello | nc localhost 18632", 0);
+    char *s = inp_capture_system("echo hello | nc localhost 18632", 0);
     ASSERT_STR_EQ(s, NET_MSG);
-    free((char *) s);
+    free(s);
 
     pthread_join(srv_tid, NULL);
 
+    /* UDP test */
     pthread_create(&srv_tid, NULL, udp_server_thread, NULL);
     sleep(1);
     system("echo hello | nc localhost 18633");

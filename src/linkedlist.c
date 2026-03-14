@@ -3,9 +3,11 @@
 
 #include "lflinkedlist.h"
 
-void ll_init(List *list, void (*destroy)(void *data)) {
+void ll_init(List *list, void (*destroy)(void *data),
+             int (*match)(const void *a, const void *b)) {
     list->size = 0;
     list->destroy = destroy;
+    list->match = match;
     list->head = NULL;
     list->tail = NULL;
 }
@@ -81,7 +83,7 @@ int ll_ins_prev(List *list, ListNode *node, const void *data) {
 }
 
 int ll_remove(List *list, ListNode *node, void **data) {
-    if (node == NULL || list->size == 0) {
+    if (node == NULL || data == NULL || list->size == 0) {
         return -1;
     }
 
@@ -120,14 +122,22 @@ int ll_remove_prev(List *list, ListNode *node, void **data) {
     return ll_remove(list, node->prev, data);
 }
 
-ListNode *ll_find(List *list, const void *data) {
-    if (list->match == NULL) {
+ListNode *ll_find(const List *list, const void *data) {
+    if (list == NULL) {
         return NULL;
     }
-    for (ListNode *node = list->head; node != NULL; node = node->next) {
-        if (list->match(data, node->data)) {
-            return node;
+    ListNode *node = list->head;
+    while (node != NULL) {
+        if (list->match != NULL) {
+            if (list->match(node->data, data) == 0) {
+                return node;
+            }
+        } else {
+            if (node->data == data) {
+                return node;
+            }
         }
+        node = node->next;
     }
     return NULL;
 }
@@ -212,8 +222,8 @@ void ll_sort(List *list, int (*cmp)(const void *a, const void *b)) {
     list->tail = node;
 }
 
-void **ll_to_array(List *list) {
-    if (list->size == 0) {
+void **ll_to_array(const List *list) {
+    if (list == NULL || list->size == 0) {
         return NULL;
     }
     void **arr = malloc(list->size * sizeof(void *));

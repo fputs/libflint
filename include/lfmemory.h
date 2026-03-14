@@ -23,24 +23,25 @@ typedef struct {
     size_t save_count;
 } ArenaAllocator;
 
-void arena_init(ArenaAllocator *allocator, size_t buf_sz);
+int arena_init(ArenaAllocator *allocator, size_t buf_sz);
 void arena_free(ArenaAllocator *allocator);
 void *arena_malloc(ArenaAllocator* allocator, size_t size);
-void arena_resize_buf(ArenaAllocator *allocator, size_t new_sz);
+int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz);
 void *arena_resize(ArenaAllocator *allocator, void *mem, size_t old_sz, size_t new_sz);
 void arena_clear(ArenaAllocator *allocator);
 int arena_save(ArenaAllocator *allocator);
 void arena_restore(ArenaAllocator *allocator);
 
 typedef struct {
-	unsigned char *buf;
+    unsigned char *buf;
     size_t buf_sz;
     size_t chunk_size;
+    size_t aligned_start;
 
     List *free_list;
 } PoolAllocator;
 
-void pool_init(PoolAllocator *allocator, size_t buf_sz, size_t chunk_sz, size_t chunk_align);
+int pool_init(PoolAllocator *allocator, size_t buf_sz, size_t chunk_sz, size_t chunk_align);
 void pool_free(PoolAllocator *allocator, void *ptr);
 void pool_free_all(PoolAllocator *allocator);
 void *pool_alloc(PoolAllocator *allocator);
