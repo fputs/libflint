@@ -34,7 +34,17 @@ int ll_remove_next(List *list, ListNode *node, void **data);
 
 int ll_remove_prev(List *list, ListNode *node, void **data);
 
+ListNode *ll_find(List *list, const void *data);
+
+void ll_reverse(List *list);
+
+void ll_sort(List *list, int (*cmp)(const void *a, const void *b));
+
+void **ll_to_array(List *list);
+
 /* Provides ListNode *node for the iteration loop */
 #define LL_ITER(list) for(ListNode *node = (list)->head; node != NULL; node = node->next)
+
+#define LL_ITER_REV(list) for(ListNode *node = (list)->tail; node != NULL; node = node->prev)
 
 #endif

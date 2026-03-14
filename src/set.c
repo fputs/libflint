@@ -18,14 +18,7 @@ int set_insert(Set *set, const void *data) {
 }
 
 int set_remove(Set *set, void **data) {
-    ListNode *node = NULL;
-
-    for (node = set->head; node != NULL; node = node->next) {
-        if (set->match(*data, node->data)) {
-            break;
-        }
-    }
-
+    ListNode *node = ll_find(set, *data);
     if (node == NULL) {
         return -1;
     }
@@ -96,12 +89,7 @@ int set_difference(Set *setd, const Set *a, const Set *b) {
 }
 
 int set_is_member(const Set *set, const void *data) {
-    for (ListNode *node = set->head; node != NULL; node = node->next) {
-        if (set->match(data, node->data)) {
-            return 1;
-        }
-    }
-    return 0;
+    return ll_find((List *)set, data) != NULL;
 }
 
 int set_is_subset(const Set *a, const Set *b) {
