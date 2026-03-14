@@ -34,6 +34,14 @@ const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b));
 
 const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b));
 
+void *vec_pop(Vector *vec);
+
+void vec_reverse(Vector *vec);
+
+void vec_sort(Vector *vec, int (*cmp)(const void *a, const void *b));
+
+void *vec_bsearch(Vector *vec, const void *key, int (*cmp)(const void *a, const void *b));
+
 int vec_cmp_int(const void *a, const void *b);
 
 int vec_cmp_char(const void *a, const void *b);

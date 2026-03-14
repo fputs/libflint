@@ -56,6 +56,80 @@ int main() {
     ASSERT_EQ(vec_len(v), 0);
 
     vec_destroy(v);
+
+    /* vec_pop */
+    vec_init(v, NULL);
+    int p1 = 10, p2 = 20, p3 = 30;
+    vec_push(v, &p1);
+    vec_push(v, &p2);
+    vec_push(v, &p3);
+
+    int *popped = vec_pop(v);
+    ASSERT_EQ(*popped, 30);
+    ASSERT_EQ(vec_len(v), 2);
+
+    popped = vec_pop(v);
+    ASSERT_EQ(*popped, 20);
+
+    popped = vec_pop(v);
+    ASSERT_EQ(*popped, 10);
+    ASSERT_EQ(vec_len(v), 0);
+
+    popped = vec_pop(v);
+    ASSERT_NULL(popped);
+
+    vec_destroy(v);
+
+    /* vec_reverse */
+    vec_init(v, NULL);
+    int r1 = 1, r2 = 2, r3 = 3, r4 = 4;
+    vec_push(v, &r1);
+    vec_push(v, &r2);
+    vec_push(v, &r3);
+    vec_push(v, &r4);
+
+    vec_reverse(v);
+    ASSERT_EQ(*(int *)vec_at(v, 0), 4);
+    ASSERT_EQ(*(int *)vec_at(v, 1), 3);
+    ASSERT_EQ(*(int *)vec_at(v, 2), 2);
+    ASSERT_EQ(*(int *)vec_at(v, 3), 1);
+
+    /* reverse odd-length */
+    vec_pop(v);
+    vec_reverse(v);
+    ASSERT_EQ(*(int *)vec_at(v, 0), 2);
+    ASSERT_EQ(*(int *)vec_at(v, 1), 3);
+    ASSERT_EQ(*(int *)vec_at(v, 2), 4);
+
+    vec_destroy(v);
+
+    /* vec_sort */
+    vec_init(v, NULL);
+    int s1 = 5, s2 = 1, s3 = 3, s4 = 2, s5 = 4;
+    vec_push(v, &s1);
+    vec_push(v, &s2);
+    vec_push(v, &s3);
+    vec_push(v, &s4);
+    vec_push(v, &s5);
+
+    vec_sort(v, vec_cmp_int);
+    ASSERT_EQ(*(int *)vec_at(v, 0), 1);
+    ASSERT_EQ(*(int *)vec_at(v, 1), 2);
+    ASSERT_EQ(*(int *)vec_at(v, 2), 3);
+    ASSERT_EQ(*(int *)vec_at(v, 3), 4);
+    ASSERT_EQ(*(int *)vec_at(v, 4), 5);
+
+    /* vec_bsearch on sorted vector */
+    int key = 3;
+    int *found = vec_bsearch(v, &key, vec_cmp_int);
+    ASSERT_NOT_NULL(found);
+    ASSERT_EQ(*found, 3);
+
+    int missing = 99;
+    found = vec_bsearch(v, &missing, vec_cmp_int);
+    ASSERT_NULL(found);
+
+    vec_destroy(v);
     free(v);
 
     TEST_REPORT();

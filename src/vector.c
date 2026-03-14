@@ -13,6 +13,8 @@
 
 #define VEC_INIT_CAP 2
 
+static int (*vec_sort_cmp_fn)(const void *, const void *);
+
 int vec_init(Vector *vec, void (*destroy)(void *data)) {
     return vec_init_with_capacity(vec, destroy, VEC_INIT_CAP);
 }
@@ -176,6 +178,57 @@ const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b)) 
         }
     }
     return a;
+}
+
+void *vec_pop(Vector *vec) {
+    if (vec_len(vec) == 0) {
+        return NULL;
+    }
+    return vec_remove(vec, vec_len(vec) - 1);
+}
+
+void vec_reverse(Vector *vec) {
+    size_t lo = 0;
+    size_t hi = vec_len(vec);
+    while (lo + 1 < hi) {
+        --hi;
+        void *tmp = vec->elements[lo];
+        vec->elements[lo] = vec->elements[hi];
+        vec->elements[hi] = tmp;
+        ++lo;
+    }
+}
+
+static int vec_sort_cmp_wrapper(const void *a, const void *b) {
+    /* qsort passes pointers to elements; our elements are void*, so a is void** */
+    const void *ea = *(const void **)a;
+    const void *eb = *(const void **)b;
+    return vec_sort_cmp_fn(ea, eb);
+}
+
+void vec_sort(Vector *vec, int (*cmp)(const void *a, const void *b)) {
+    if (vec_len(vec) < 2) {
+        return;
+    }
+    vec_sort_cmp_fn = cmp;
+    qsort(vec->elements, vec_len(vec), sizeof(void *), vec_sort_cmp_wrapper);
+}
+
+void *vec_bsearch(Vector *vec, const void *key, int (*cmp)(const void *a, const void *b)) {
+    size_t lo = 0;
+    size_t hi = vec_len(vec);
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        int r = cmp(key, vec->elements[mid]);
+        if (r == 0) {
+            return vec->elements[mid];
+        } else if (r < 0) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return NULL;
 }
 
 int vec_cmp_int(const void *a, const void *b) {
