@@ -1,10 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef __linux__
-#include <bsd/stdlib.h>
-#endif
-
 #if defined(__APPLE__) || defined(__MACH__)
 #include "lfmacos.h"
 #endif
@@ -146,11 +142,7 @@ int vec_shrink(Vector *vec) {
 
     size_t new_cap = vec_len(vec);
 
-#if !defined(__OpenBSD__)
-    void *tmp = reallocf(vec->elements, sizeof(void *) * new_cap);
-#else
-    void *tmp = reallocarray(vec->elements, new_cap, sizeof(void *));
-#endif
+    void *tmp = realloc(vec->elements, sizeof(void *) * new_cap);
 
     if (tmp == NULL) {
         return -1;
