@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #if defined(__APPLE__) || defined(__MACH__)
 #include "lfmacos.h"

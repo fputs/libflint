@@ -207,14 +207,14 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
         return NULL;
     }
 
-    size_t buf_sz = strlen(orig) + 1;
     const char *sptr = orig;
     if (strncmp(orig, "0x", 2) == 0) {
-        buf_sz -= 2;
         sptr += 2;
     }
+    size_t slen = strlen(sptr);
+    size_t buf_sz = slen + 1;
 
-    if (strlen(orig) % 2 != 0) {
+    if (slen % 2 != 0) {
         buf_sz += 1;
     }
 
