@@ -192,13 +192,13 @@ int main() {
     free(s);
 
     /* str_split */
-    int count = 0;
+    size_t count = 0;
     char **split = str_split("foo,bar,baz", ",", &count);
     ASSERT_EQ(count, 3);
     ASSERT_STR_EQ(split[0], "foo");
     ASSERT_STR_EQ(split[1], "bar");
     ASSERT_STR_EQ(split[2], "baz");
-    for (int i = 0; i < count; i++) free(split[i]);
+    for (size_t i = 0; i < count; i++) free(split[i]);
     free(split);
 
     split = str_split("hello", ",", &count);
@@ -214,7 +214,7 @@ int main() {
     ASSERT_STR_EQ(split[2], "");
     ASSERT_STR_EQ(split[3], "b");
     ASSERT_STR_EQ(split[4], "");
-    for (int i = 0; i < count; i++) free(split[i]);
+    for (size_t i = 0; i < count; i++) free(split[i]);
     free(split);
 
     /* str_split with multi-char delimiter */
@@ -223,7 +223,7 @@ int main() {
     ASSERT_STR_EQ(split[0], "a");
     ASSERT_STR_EQ(split[1], "b");
     ASSERT_STR_EQ(split[2], "c");
-    for (int i = 0; i < count; i++) free(split[i]);
+    for (size_t i = 0; i < count; i++) free(split[i]);
     free(split);
 
     /* str_split with empty delimiter returns whole string */

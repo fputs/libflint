@@ -47,7 +47,11 @@ unsigned char *inp_get_binary(const char *path, size_t *fsz) {
         return NULL;
     }
 
-    fread(buf, 1, *fsz, fp);
+    if (fread(buf, 1, *fsz, fp) != *fsz) {
+        free(buf);
+        fclose(fp);
+        return NULL;
+    }
     fclose(fp);
 
     return buf;
@@ -68,7 +72,11 @@ char *inp_get_input(const char *path) {
         return NULL;
     }
 
-    fread(buf, 1, fsz, fp);
+    if (fread(buf, 1, fsz, fp) != fsz) {
+        free(buf);
+        fclose(fp);
+        return NULL;
+    }
     buf[fsz] = '\0';
     fclose(fp);
 

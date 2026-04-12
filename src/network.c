@@ -37,13 +37,6 @@ Server *new_server(ServerType type, const char *port, void(handler)(Server *s)) 
     s->server_type = type;
     s->handler = handler;
 
-    struct addrinfo *addr = NULL;
-    if (getaddrinfo(NULL, port, NULL, &addr) != 0) {
-        free(s);
-        return NULL;
-    }
-    s->port = (int)strtol(port, NULL, 10);
-
     int socktype = 0;
     switch (type) {
     case SERVERTYPE_TCP:
@@ -54,9 +47,21 @@ Server *new_server(ServerType type, const char *port, void(handler)(Server *s)) 
         break;
     }
 
+    struct addrinfo hints = {0};
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = socktype;
+    hints.ai_flags = AI_PASSIVE;
+
+    struct addrinfo *addr = NULL;
+    if (getaddrinfo(NULL, port, &hints, &addr) != 0) {
+        free(s);
+        return NULL;
+    }
+    s->port = (int)strtol(port, NULL, 10);
+
     struct addrinfo *p;
     for (p = addr; p != NULL; p = p->ai_next) {
-        s->fd = socket(AF_INET, socktype, 0);
+        s->fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (s->fd == -1) {
             continue;
         }

@@ -21,7 +21,7 @@ char *str_to_upper(const char *str);
 
 char *str_to_lower(const char *str);
 
-char **str_split(const char *str, const char *delim, int *count);
+char **str_split(const char *str, const char *delim, size_t *count);
 
 int str_contains(const char *str, const char *substr);
 

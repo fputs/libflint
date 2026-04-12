@@ -5,7 +5,7 @@
 
 #include "lfcrypto.h"
 
-#define B64_BUF_SZ (1024 * 64)
+#define B64_BUF_SZ 256
 
 static const char b64_table[] = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',

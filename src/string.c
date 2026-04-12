@@ -191,7 +191,7 @@ char *str_to_lower(const char *str) {
     return out;
 }
 
-char **str_split(const char *str, const char *delim, int *count) {
+char **str_split(const char *str, const char *delim, size_t *count) {
     *count = 0;
     size_t delim_len = strlen(delim);
 
@@ -210,7 +210,7 @@ char **str_split(const char *str, const char *delim, int *count) {
     }
 
     /* count segments */
-    int n = 1;
+    size_t n = 1;
     const char *p = str;
     while ((p = strstr(p, delim)) != NULL) {
         n++;
@@ -222,14 +222,14 @@ char **str_split(const char *str, const char *delim, int *count) {
         return NULL;
     }
 
-    int i = 0;
+    size_t i = 0;
     p = str;
     const char *next;
     while ((next = strstr(p, delim)) != NULL) {
         size_t seg_len = next - p;
         result[i] = malloc(seg_len + 1);
         if (result[i] == NULL) {
-            for (int j = 0; j < i; j++) {
+            for (size_t j = 0; j < i; j++) {
                 free(result[j]);
             }
             free(result);
@@ -244,7 +244,7 @@ char **str_split(const char *str, const char *delim, int *count) {
     /* last segment */
     result[i] = strdup(p);
     if (result[i] == NULL) {
-        for (int j = 0; j < i; j++) {
+        for (size_t j = 0; j < i; j++) {
             free(result[j]);
         }
         free(result);

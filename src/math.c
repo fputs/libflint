@@ -50,6 +50,8 @@ int binstr_to_int(const char *s) {
         }
         if (s[i] == '1') {
             n += m;
+        } else if (s[i] != '0') {
+            return -1;
         }
         m *= 2;
     }
