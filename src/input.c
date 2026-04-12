@@ -204,6 +204,10 @@ void inp_del_lines(char **lines) {
     free(lines - 1);
 }
 
+/*
+ * Runs cmd via /bin/sh (popen). The command string is passed to the shell
+ * unsanitized — callers must never pass untrusted or user-supplied input.
+ */
 char *inp_capture_system(const char *cmd, size_t buf_sz) {
     if (cmd == NULL) {
         return NULL;

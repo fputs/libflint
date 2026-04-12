@@ -118,6 +118,8 @@ int serve(Server *s, int backlog_size) {
     return 0;
 }
 
+/* recv_buf is not NUL-terminated — safe here (send uses byte count), but
+ * do not treat it as a C string without adding a terminator first. */
 static void *tcp_echo_thread(void *vargp) {
     int fd = (int)(intptr_t)vargp;
     while (1) {
@@ -141,6 +143,10 @@ static void *tcp_echo_thread(void *vargp) {
     return NULL;
 }
 
+/*
+ * Basic example handler — spawns one detached thread per connection with no
+ * connection limit or timeout. Not suitable for production use.
+ */
 void handler_tcp_echo(Server *s) {
     while (1) {
         struct sockaddr_storage client_addr;
