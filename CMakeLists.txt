@@ -24,6 +24,7 @@ set(SOURCES
         src/parsing.c
         src/network.c
         src/memory.c
+        src/ringbuf.c
 )
 
 if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
@@ -59,6 +60,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL flint)
         memory
         utility
         input
+        ringbuf
     )
 
     foreach(t ${TESTS})
