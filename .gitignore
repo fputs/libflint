@@ -2,12 +2,6 @@ cmake*
 .cache
 build
 compile_commands.json
-site
-libflint.so
-test
-tcptest
-testrunner
-test_*
 .idea
-netmanual
 CLAUDE.md
+.claude
