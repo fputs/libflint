@@ -26,6 +26,7 @@ set(SOURCES
         src/memory.c
         src/ringbuf.c
         src/bytering.c
+        src/statemachine.c
 )
 
 if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
@@ -63,6 +64,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL flint)
         input
         ringbuf
         bytering
+        statemachine
     )
 
     foreach(t ${TESTS})
