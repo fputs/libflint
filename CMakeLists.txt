@@ -65,6 +65,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL flint)
         ringbuf
         bytering
         statemachine
+        bitops
     )
 
     foreach(t ${TESTS})
