@@ -1,7 +1,4 @@
 cmake*
-.cache
 build
 compile_commands.json
 .idea
-CLAUDE.md
-.claude
