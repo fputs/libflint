@@ -1,4 +1,7 @@
 Bit manipulation macros for setting, clearing, toggling, testing, extracting, and inserting bit fields. Header-only module.
+
+Masks use `uint64_t` so `LF_BIT_EXTRACT(x, 0, 32)` and `width == 64` are defined. Bit index `i` must be in `0..63`. Every argument is evaluated more than once — do not pass `arr[i++]`.
+
 ## Macros
 
 ### LF_BIT_SET

@@ -73,6 +73,15 @@ int main() {
     ASSERT_EQ(LF_BIT_EXTRACT(x, 7, 1), 1);
     ASSERT_EQ(LF_BIT_EXTRACT(x, 6, 1), 0);
 
+    /* full-width extract is defined (1UL << 32 is UB on ILP32) */
+    ASSERT_EQ(LF_BIT_EXTRACT(x, 0, 32), (uint32_t)0x80);
+    {
+        uint64_t y = ~0ULL;
+        ASSERT_EQ(LF_BIT_EXTRACT(y, 0, 32), 0xFFFFFFFFULL);
+        ASSERT_EQ(LF_BIT_EXTRACT(y, 0, 64), ~0ULL);
+        ASSERT_EQ(LF_BIT_EXTRACT(y, 32, 32), 0xFFFFFFFFULL);
+    }
+
     /* LF_BIT_INSERT */
     x = 0;
     LF_BIT_INSERT(x, 0, 4, 0xA);
@@ -100,6 +109,16 @@ int main() {
     x = 0;
     LF_BIT_INSERT(x, 12, 8, 0x42);
     ASSERT_EQ(LF_BIT_EXTRACT(x, 12, 8), 0x42);
+
+    {
+        uint64_t z = 0;
+        LF_BIT_SET(z, 63);
+        ASSERT_EQ(z, 1ULL << 63);
+        LF_BIT_INSERT(z, 0, 32, 0xFFFFFFFFULL);
+        ASSERT_EQ(z, (1ULL << 63) | 0xFFFFFFFFULL);
+        LF_BIT_INSERT(z, 32, 32, 0xA5A5A5A5ULL);
+        ASSERT_EQ(z, 0xA5A5A5A5FFFFFFFFULL);
+    }
 
     TEST_REPORT();
 }
