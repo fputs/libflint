@@ -26,4 +26,9 @@ static inline uint64_t lf_bit_mask(unsigned width)
     ((x) = ((x) & ~(lf_bit_mask((unsigned)(width)) << (start))) | \
         (((val) & lf_bit_mask((unsigned)(width))) << (start)))
 
+static inline int lf_is_pow2(uint64_t x)
+{
+    return x != 0 && (x & (x - 1)) == 0;
+}
+
 #endif //LIBFLINT_BITOPS_H

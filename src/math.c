@@ -154,11 +154,7 @@ LfPoint *bresenham_p(LfPoint p1, LfPoint p2, size_t *sz) {
     return bresenham(p1.x, p1.y, p2.x, p2.y, sz);
 }
 
-int is_power_of_two(int i) {
-    return i > 0 && (i & (i - 1)) == 0;
-}
-
-int gcd(int a, int b) {
+int lf_gcd(int a, int b) {
     a = abs_int(a);
     b = abs_int(b);
     while (b) {
@@ -169,7 +165,7 @@ int gcd(int a, int b) {
     return a;
 }
 
-int lcm(int a, int b) {
+int lf_lcm(int a, int b) {
     if (a == 0 || b == 0) {
         return 0;
     }
@@ -178,7 +174,7 @@ int lcm(int a, int b) {
     }
     int ga = abs_int(a);
     int gb = abs_int(b);
-    int d = gcd(ga, gb);
+    int d = lf_gcd(ga, gb);
     int q = ga / d;
     if (q != 0 && gb > INT_MAX / q) {
         return -1;
@@ -186,11 +182,11 @@ int lcm(int a, int b) {
     return q * gb;
 }
 
-float lerp(float a, float b, float t) {
+float lf_lerp(float a, float b, float t) {
     return a + t * (b - a);
 }
 
-int isqrt(int n) {
+int lf_isqrt(int n) {
     if (n < 0) {
         return -1;
     }

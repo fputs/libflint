@@ -28,15 +28,13 @@ int clamp_int(int i, int low, int high);
 
 int binstr_to_int(const char *s);
 
-int is_power_of_two(int i);
+int lf_gcd(int a, int b);
 
-int gcd(int a, int b);
+int lf_lcm(int a, int b);
 
-int lcm(int a, int b);
+float lf_lerp(float a, float b, float t);
 
-float lerp(float a, float b, float t);
-
-int isqrt(int n);
+int lf_isqrt(int n);
 
 LfPoint *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
 

@@ -34,47 +34,38 @@ int main() {
     ASSERT_EQ(clamp_int(3, 5, 2), 3);    /* low > high, swap */
     ASSERT_EQ(clamp_int(10, 5, 2), 5);   /* low > high, above */
 
-    /* is_power_of_two */
-    ASSERT_TRUE(is_power_of_two(1));
-    ASSERT_TRUE(is_power_of_two(2));
-    ASSERT_TRUE(is_power_of_two(4));
-    ASSERT_TRUE(is_power_of_two(1024));
-    ASSERT_FALSE(is_power_of_two(0));
-    ASSERT_FALSE(is_power_of_two(3));
-    ASSERT_FALSE(is_power_of_two(-1));
-
     /* gcd */
-    ASSERT_EQ(gcd(12, 8), 4);
-    ASSERT_EQ(gcd(7, 13), 1);
-    ASSERT_EQ(gcd(0, 5), 5);
-    ASSERT_EQ(gcd(5, 0), 5);
-    ASSERT_EQ(gcd(-12, 8), 4);
-    ASSERT_EQ(gcd(-6, -9), 3);
+    ASSERT_EQ(lf_gcd(12, 8), 4);
+    ASSERT_EQ(lf_gcd(7, 13), 1);
+    ASSERT_EQ(lf_gcd(0, 5), 5);
+    ASSERT_EQ(lf_gcd(5, 0), 5);
+    ASSERT_EQ(lf_gcd(-12, 8), 4);
+    ASSERT_EQ(lf_gcd(-6, -9), 3);
 
     /* lcm */
-    ASSERT_EQ(lcm(4, 6), 12);
-    ASSERT_EQ(lcm(7, 13), 91);
-    ASSERT_EQ(lcm(1, 5), 5);
-    ASSERT_EQ(lcm(0, 5), 0);
-    ASSERT_EQ(lcm(INT_MIN, INT_MIN), -1);
-    ASSERT_EQ(lcm(INT_MIN, 2), -1);
-    ASSERT_EQ(lcm(INT_MAX, INT_MAX), INT_MAX);
-    ASSERT_EQ(lcm(INT_MAX, INT_MAX - 1), -1);
+    ASSERT_EQ(lf_lcm(4, 6), 12);
+    ASSERT_EQ(lf_lcm(7, 13), 91);
+    ASSERT_EQ(lf_lcm(1, 5), 5);
+    ASSERT_EQ(lf_lcm(0, 5), 0);
+    ASSERT_EQ(lf_lcm(INT_MIN, INT_MIN), -1);
+    ASSERT_EQ(lf_lcm(INT_MIN, 2), -1);
+    ASSERT_EQ(lf_lcm(INT_MAX, INT_MAX), INT_MAX);
+    ASSERT_EQ(lf_lcm(INT_MAX, INT_MAX - 1), -1);
 
     /* lerp */
-    ASSERT_TRUE(lerp(0.0f, 10.0f, 0.0f) == 0.0f);
-    ASSERT_TRUE(lerp(0.0f, 10.0f, 1.0f) == 10.0f);
-    ASSERT_TRUE(lerp(0.0f, 10.0f, 0.5f) == 5.0f);
-    ASSERT_TRUE(lerp(2.0f, 4.0f, 0.25f) == 2.5f);
+    ASSERT_TRUE(lf_lerp(0.0f, 10.0f, 0.0f) == 0.0f);
+    ASSERT_TRUE(lf_lerp(0.0f, 10.0f, 1.0f) == 10.0f);
+    ASSERT_TRUE(lf_lerp(0.0f, 10.0f, 0.5f) == 5.0f);
+    ASSERT_TRUE(lf_lerp(2.0f, 4.0f, 0.25f) == 2.5f);
 
     /* isqrt */
-    ASSERT_EQ(isqrt(0), 0);
-    ASSERT_EQ(isqrt(1), 1);
-    ASSERT_EQ(isqrt(25), 5);
-    ASSERT_EQ(isqrt(26), 5);
-    ASSERT_EQ(isqrt(100), 10);
-    ASSERT_EQ(isqrt(-1), -1);
-    ASSERT_EQ(isqrt(INT_MAX), 46340);
+    ASSERT_EQ(lf_isqrt(0), 0);
+    ASSERT_EQ(lf_isqrt(1), 1);
+    ASSERT_EQ(lf_isqrt(25), 5);
+    ASSERT_EQ(lf_isqrt(26), 5);
+    ASSERT_EQ(lf_isqrt(100), 10);
+    ASSERT_EQ(lf_isqrt(-1), -1);
+    ASSERT_EQ(lf_isqrt(INT_MAX), 46340);
 
     /* LfPoint */
     LfPoint pa = lf_point(3, 7);

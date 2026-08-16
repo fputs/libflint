@@ -85,3 +85,11 @@ LF_BIT_INSERT(reg, 4, 4, 0xB);   // reg == 0xBA
 reg = 0;
 LF_BIT_INSERT(reg, 0, 3, 0xFF);  // reg == 0x07 (only low 3 bits)
 ```
+
+### lf_is_pow2
+
+Returns `1` if `x` is a power of two, otherwise `0`. Zero is not a power of two.
+
+```c
+static inline int lf_is_pow2(uint64_t x);
+```

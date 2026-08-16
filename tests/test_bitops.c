@@ -120,5 +120,15 @@ int main() {
         ASSERT_EQ(z, 0xA5A5A5A5FFFFFFFFULL);
     }
 
+    /* lf_is_pow2 */
+    ASSERT_TRUE(lf_is_pow2(1));
+    ASSERT_TRUE(lf_is_pow2(2));
+    ASSERT_TRUE(lf_is_pow2(4));
+    ASSERT_TRUE(lf_is_pow2(1024));
+    ASSERT_TRUE(lf_is_pow2(1ULL << 63));
+    ASSERT_FALSE(lf_is_pow2(0));
+    ASSERT_FALSE(lf_is_pow2(3));
+    ASSERT_FALSE(lf_is_pow2((uint64_t)-1));
+
     TEST_REPORT();
 }

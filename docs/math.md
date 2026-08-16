@@ -81,56 +81,48 @@ Returns the absolute value of an integer. Clamps `INT_MIN` to `INT_MAX` (since `
 int abs_int(int a);
 ```
 
-### is_power_of_two
-
-Returns `1` if `i` is a positive power of two, otherwise returns `0`. Returns `0` for `i <= 0`.
-
-```c
-int is_power_of_two(int i);
-```
-
-### gcd
+### lf_gcd
 
 Returns the greatest common divisor of `a` and `b` using the Euclidean algorithm. Handles negative inputs.
 
 ```c
-int gcd(int a, int b);
+int lf_gcd(int a, int b);
 
 /* Usage */
-gcd(12, 8);  // returns 4
-gcd(7, 13);  // returns 1
+lf_gcd(12, 8);  // returns 4
+lf_gcd(7, 13);  // returns 1
 ```
 
-### lcm
+### lf_lcm
 
 Returns the least common multiple of `a` and `b`. Returns `0` if either input is `0`. Handles negative inputs. Returns `-1` if the result does not fit in `int` (including any call involving `INT_MIN`).
 
 ```c
-int lcm(int a, int b);
+int lf_lcm(int a, int b);
 
 /* Usage */
-lcm(4, 6);  // returns 12
+lf_lcm(4, 6);  // returns 12
 ```
 
-### lerp
+### lf_lerp
 
 Linear interpolation between `a` and `b` by factor `t`. Returns `a` when `t == 0`, `b` when `t == 1`.
 
 ```c
-float lerp(float a, float b, float t);
+float lf_lerp(float a, float b, float t);
 
 /* Usage */
-lerp(0.0f, 10.0f, 0.5f);  // returns 5.0
+lf_lerp(0.0f, 10.0f, 0.5f);  // returns 5.0
 ```
 
-### isqrt
+### lf_isqrt
 
-Returns the integer square root (floor) of `n`. Returns `-1` for negative inputs. Safe for `INT_MAX`.
+Returns the integer square root (floor) of `n`. Returns `-1` for negative inputs. Safe for `INT_MAX`. `isqrt` is a reserved `is*` name and is not provided.
 
 ```c
-int isqrt(int n);
+int lf_isqrt(int n);
 
 /* Usage */
-isqrt(25);  // returns 5
-isqrt(26);  // returns 5
+lf_isqrt(25);  // returns 5
+lf_isqrt(26);  // returns 5
 ```
