@@ -16,7 +16,7 @@
 - [[memory]] — Arena allocator (bump allocation with save/restore) and pool allocator (fixed-size chunks with free list)
 
 ### Utilities
-- [[string]] — C string helpers
+- [[string]] — `lfstr_*` helpers and `LfStr` views
 - [[math]] — General math functions
 - [[codec]] — Hex and Base64 codecs (not cryptography)
 - [[puzzle]] — Repeating-key XOR and Hamming distance (Cryptopals-style, not cryptography)

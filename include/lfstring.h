@@ -3,26 +3,48 @@
 
 #include <stddef.h>
 
-int str_find(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings);
+/*
+ * Counted string view. Does not own p. Predicates that do not
+ * allocate take LfStr; the lfstr_* C-string wrappers are conveniences.
+ */
+typedef struct {
+    const char *p;
+    size_t n;
+} LfStr;
 
-char* str_substr(const char* str, size_t idx, size_t len);
+LfStr lfstr_from(const char *s);
 
-char *str_trim(const char *str);
+LfStr lfstr_trim_view(LfStr s);
 
-char *str_join(const char **strs, size_t count, const char *sep);
+int lfstr_starts_with_view(LfStr s, LfStr prefix);
 
-int str_starts_with(const char *str, const char *prefix);
+int lfstr_ends_with_view(LfStr s, LfStr suffix);
 
-int str_ends_with(const char *str, const char *suffix);
+int lfstr_contains_view(LfStr s, LfStr needle);
 
-char *str_replace(const char *str, const char *old, const char *new);
+int lfstr_find(const char *haystack, const char *needle,
+               size_t *num_substrings, size_t **substrings);
 
-char *str_to_upper(const char *str);
+char *lfstr_substr(const char *str, size_t idx, size_t len);
 
-char *str_to_lower(const char *str);
+char *lfstr_trim(const char *str);
 
-char **str_split(const char *str, const char *delim, size_t *count);
+char *lfstr_join(const char **strs, size_t count, const char *sep);
 
-int str_contains(const char *str, const char *substr);
+int lfstr_starts_with(const char *str, const char *prefix);
 
-#endif // LIBFLINT_H_STRING
+int lfstr_ends_with(const char *str, const char *suffix);
+
+char *lfstr_replace(const char *str, const char *old, const char *replacement);
+
+char *lfstr_to_upper(const char *str);
+
+char *lfstr_to_lower(const char *str);
+
+char **lfstr_split(const char *str, const char *delim, size_t *count);
+
+void lfstr_split_free(char **parts, size_t count);
+
+int lfstr_contains(const char *str, const char *substr);
+
+#endif /* LIBFLINT_H_STRING */

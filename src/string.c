@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "lfcompat.h"
 #include "lfstring.h"
 
 static int size_add(size_t a, size_t b, size_t *out) {
@@ -21,7 +22,78 @@ static int size_mul(size_t a, size_t b, size_t *out) {
     return 0;
 }
 
-int str_find(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings) {
+LfStr lfstr_from(const char *s) {
+    LfStr v;
+    if (s == NULL) {
+        v.p = NULL;
+        v.n = 0;
+        return v;
+    }
+    v.p = s;
+    v.n = strlen(s);
+    return v;
+}
+
+LfStr lfstr_trim_view(LfStr s) {
+    LfStr v = {NULL, 0};
+    if (s.p == NULL) {
+        return v;
+    }
+    const char *start = s.p;
+    const char *end = s.p + s.n;
+    while (start < end && isspace((unsigned char)*start)) {
+        start++;
+    }
+    while (end > start && isspace((unsigned char)*(end - 1))) {
+        end--;
+    }
+    v.p = start;
+    v.n = (size_t)(end - start);
+    return v;
+}
+
+int lfstr_starts_with_view(LfStr s, LfStr prefix) {
+    if (prefix.n == 0) {
+        return 1;
+    }
+    if (s.p == NULL || prefix.p == NULL || prefix.n > s.n) {
+        return 0;
+    }
+    return memcmp(s.p, prefix.p, prefix.n) == 0;
+}
+
+int lfstr_ends_with_view(LfStr s, LfStr suffix) {
+    if (suffix.n == 0) {
+        return 1;
+    }
+    if (s.p == NULL || suffix.p == NULL || suffix.n > s.n) {
+        return 0;
+    }
+    return memcmp(s.p + (s.n - suffix.n), suffix.p, suffix.n) == 0;
+}
+
+int lfstr_contains_view(LfStr s, LfStr needle) {
+    if (needle.n == 0) {
+        return 1;
+    }
+    if (s.p == NULL || needle.p == NULL || needle.n > s.n) {
+        return 0;
+    }
+    const char *end = s.p + (s.n - needle.n);
+    for (const char *p = s.p; p <= end; p++) {
+        if (memcmp(p, needle.p, needle.n) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int lfstr_find(const char *haystack, const char *needle,
+               size_t *num_substrings, size_t **substrings) {
+    if (haystack == NULL || needle == NULL ||
+        num_substrings == NULL || substrings == NULL) {
+        return -1;
+    }
     if (*substrings != NULL) {
         return 1;
     }
@@ -34,6 +106,7 @@ int str_find(const char* haystack, const char* needle, size_t *num_substrings, s
         return 0;
     }
 
+    /* Empty needle matches every position, including one past the last char. */
     for (size_t i = 0; i <= sz_h - sz_n; ++i) {
         if (strncmp(haystack + i, needle, sz_n) == 0) {
             ++(*num_substrings);
@@ -44,8 +117,9 @@ int str_find(const char* haystack, const char* needle, size_t *num_substrings, s
         return 0;
     }
 
-    *substrings = malloc(sizeof(size_t) * *num_substrings);
+    *substrings = lf_reallocarray(NULL, *num_substrings, sizeof(size_t));
     if (*substrings == NULL) {
+        *num_substrings = 0;
         return -1;
     }
 
@@ -59,51 +133,50 @@ int str_find(const char* haystack, const char* needle, size_t *num_substrings, s
     return 0;
 }
 
-char* str_substr(const char* str, size_t idx, size_t len) {
-   if (str == NULL) {
-       return NULL;
-   }
+char *lfstr_substr(const char *str, size_t idx, size_t len) {
+    if (str == NULL) {
+        return NULL;
+    }
 
-   size_t sz_str = strlen(str);
-   if (len > sz_str || idx > sz_str - len) {
-       return NULL;
-   }
+    size_t sz_str = strlen(str);
+    if (len > sz_str || idx > sz_str - len) {
+        return NULL;
+    }
 
-   size_t alloc;
-   if (size_add(len, 1, &alloc) != 0) {
-       return NULL;
-   }
-   char *sub = malloc(alloc);
-   if (sub == NULL) {
-       return NULL;
-   }
+    size_t alloc;
+    if (size_add(len, 1, &alloc) != 0) {
+        return NULL;
+    }
+    char *sub = malloc(alloc);
+    if (sub == NULL) {
+        return NULL;
+    }
 
-   memcpy(sub, str + idx, len);
-   sub[len] = '\0';
+    memcpy(sub, str + idx, len);
+    sub[len] = '\0';
 
-   return sub;
+    return sub;
 }
 
-char *str_trim(const char *str) {
-    const char *start = str;
-    while (*start && isspace((unsigned char)*start)) {
-        start++;
+char *lfstr_trim(const char *str) {
+    if (str == NULL) {
+        return NULL;
     }
-    const char *end = str + strlen(str);
-    while (end > start && isspace((unsigned char)*(end - 1))) {
-        end--;
+    LfStr v = lfstr_trim_view(lfstr_from(str));
+    size_t alloc;
+    if (size_add(v.n, 1, &alloc) != 0) {
+        return NULL;
     }
-    size_t len = end - start;
-    char *out = malloc(len + 1);
+    char *out = malloc(alloc);
     if (out == NULL) {
         return NULL;
     }
-    memcpy(out, start, len);
-    out[len] = '\0';
+    memcpy(out, v.p, v.n);
+    out[v.n] = '\0';
     return out;
 }
 
-char *str_join(const char **strs, size_t count, const char *sep) {
+char *lfstr_join(const char **strs, size_t count, const char *sep) {
     if (sep == NULL || (count != 0 && strs == NULL)) {
         return NULL;
     }
@@ -154,25 +227,26 @@ char *str_join(const char **strs, size_t count, const char *sep) {
     return out;
 }
 
-int str_starts_with(const char *str, const char *prefix) {
-    return strncmp(str, prefix, strlen(prefix)) == 0;
-}
-
-int str_ends_with(const char *str, const char *suffix) {
-    size_t str_len = strlen(str);
-    size_t suf_len = strlen(suffix);
-    if (suf_len > str_len) {
+int lfstr_starts_with(const char *str, const char *prefix) {
+    if (str == NULL || prefix == NULL) {
         return 0;
     }
-    return strcmp(str + str_len - suf_len, suffix) == 0;
+    return lfstr_starts_with_view(lfstr_from(str), lfstr_from(prefix));
 }
 
-char *str_replace(const char *str, const char *old, const char *new) {
-    if (str == NULL || old == NULL || new == NULL) {
+int lfstr_ends_with(const char *str, const char *suffix) {
+    if (str == NULL || suffix == NULL) {
+        return 0;
+    }
+    return lfstr_ends_with_view(lfstr_from(str), lfstr_from(suffix));
+}
+
+char *lfstr_replace(const char *str, const char *old, const char *replacement) {
+    if (str == NULL || old == NULL || replacement == NULL) {
         return NULL;
     }
     size_t old_len = strlen(old);
-    size_t new_len = strlen(new);
+    size_t new_len = strlen(replacement);
     if (old_len == 0) {
         return strdup(str);
     }
@@ -216,7 +290,7 @@ char *str_replace(const char *str, const char *old, const char *new) {
     p = str;
     while (*p) {
         if (strncmp(p, old, old_len) == 0) {
-            memcpy(w, new, new_len);
+            memcpy(w, replacement, new_len);
             w += new_len;
             p += old_len;
         } else {
@@ -227,38 +301,55 @@ char *str_replace(const char *str, const char *old, const char *new) {
     return out;
 }
 
-char *str_to_upper(const char *str) {
+char *lfstr_to_upper(const char *str) {
+    if (str == NULL) {
+        return NULL;
+    }
     size_t len = strlen(str);
-    char *out = malloc(len + 1);
+    size_t alloc;
+    if (size_add(len, 1, &alloc) != 0) {
+        return NULL;
+    }
+    char *out = malloc(alloc);
     if (out == NULL) {
         return NULL;
     }
     for (size_t i = 0; i < len; i++) {
-        out[i] = toupper((unsigned char)str[i]);
+        out[i] = (char)toupper((unsigned char)str[i]);
     }
     out[len] = '\0';
     return out;
 }
 
-char *str_to_lower(const char *str) {
+char *lfstr_to_lower(const char *str) {
+    if (str == NULL) {
+        return NULL;
+    }
     size_t len = strlen(str);
-    char *out = malloc(len + 1);
+    size_t alloc;
+    if (size_add(len, 1, &alloc) != 0) {
+        return NULL;
+    }
+    char *out = malloc(alloc);
     if (out == NULL) {
         return NULL;
     }
     for (size_t i = 0; i < len; i++) {
-        out[i] = tolower((unsigned char)str[i]);
+        out[i] = (char)tolower((unsigned char)str[i]);
     }
     out[len] = '\0';
     return out;
 }
 
-char **str_split(const char *str, const char *delim, size_t *count) {
+char **lfstr_split(const char *str, const char *delim, size_t *count) {
+    if (str == NULL || delim == NULL || count == NULL) {
+        return NULL;
+    }
     *count = 0;
     size_t delim_len = strlen(delim);
 
     if (delim_len == 0) {
-        char **result = malloc(sizeof(char *));
+        char **result = lf_reallocarray(NULL, 1, sizeof(char *));
         if (result == NULL) {
             return NULL;
         }
@@ -275,11 +366,14 @@ char **str_split(const char *str, const char *delim, size_t *count) {
     size_t n = 1;
     const char *p = str;
     while ((p = strstr(p, delim)) != NULL) {
+        if (n == SIZE_MAX) {
+            return NULL;
+        }
         n++;
         p += delim_len;
     }
 
-    char **result = malloc(sizeof(char *) * n);
+    char **result = lf_reallocarray(NULL, n, sizeof(char *));
     if (result == NULL) {
         return NULL;
     }
@@ -288,13 +382,15 @@ char **str_split(const char *str, const char *delim, size_t *count) {
     p = str;
     const char *next;
     while ((next = strstr(p, delim)) != NULL) {
-        size_t seg_len = next - p;
-        result[i] = malloc(seg_len + 1);
+        size_t seg_len = (size_t)(next - p);
+        size_t alloc;
+        if (size_add(seg_len, 1, &alloc) != 0) {
+            lfstr_split_free(result, i);
+            return NULL;
+        }
+        result[i] = malloc(alloc);
         if (result[i] == NULL) {
-            for (size_t j = 0; j < i; j++) {
-                free(result[j]);
-            }
-            free(result);
+            lfstr_split_free(result, i);
             return NULL;
         }
         memcpy(result[i], p, seg_len);
@@ -306,16 +402,26 @@ char **str_split(const char *str, const char *delim, size_t *count) {
     /* last segment */
     result[i] = strdup(p);
     if (result[i] == NULL) {
-        for (size_t j = 0; j < i; j++) {
-            free(result[j]);
-        }
-        free(result);
+        lfstr_split_free(result, i);
         return NULL;
     }
     *count = n;
     return result;
 }
 
-int str_contains(const char *str, const char *substr) {
-    return strstr(str, substr) != NULL;
+void lfstr_split_free(char **parts, size_t count) {
+    if (parts == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < count; i++) {
+        free(parts[i]);
+    }
+    free(parts);
+}
+
+int lfstr_contains(const char *str, const char *substr) {
+    if (str == NULL || substr == NULL) {
+        return 0;
+    }
+    return lfstr_contains_view(lfstr_from(str), lfstr_from(substr));
 }
