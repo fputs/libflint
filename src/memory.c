@@ -75,7 +75,7 @@ static void *arena_malloc_align(ArenaAllocator *allocator, const size_t size, si
     uintptr_t offset = align_forward(cur_ptr, align);
     offset -= (uintptr_t)allocator->buf;
 
-    if (offset + size <= allocator->buf_sz) {
+    if (offset <= allocator->buf_sz && size <= allocator->buf_sz - offset) {
         void *ptr = &allocator->buf[offset];
         allocator->offset_prev = offset;
         allocator->offset_cur = offset + size;
@@ -99,7 +99,8 @@ static void *arena_resize_align(ArenaAllocator *allocator, void *mem, const size
 
     if (allocator->buf <= (unsigned char*)mem && (unsigned char*)mem < allocator->buf + allocator->buf_sz) {
         if (allocator->buf + allocator->offset_prev == old_mem) {
-            if (allocator->offset_prev + new_sz > allocator->buf_sz) {
+            if (allocator->offset_prev > allocator->buf_sz ||
+                new_sz > allocator->buf_sz - allocator->offset_prev) {
                 return NULL;
             }
             allocator->offset_cur = allocator->offset_prev + new_sz;

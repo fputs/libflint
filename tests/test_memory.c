@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "lftest.h"
 #include "lfmemory.h"
@@ -199,6 +200,17 @@ int main() {
     ASSERT_EQ(save_arena.offset_cur, outer_offset);
 
     arena_free(&save_arena);
+
+    /* size wrap: huge request must fail closed, not pass the bounds check */
+    ArenaAllocator wrap_arena;
+    ASSERT_EQ(arena_init(&wrap_arena, 64), 0);
+    ASSERT_NULL(arena_malloc(&wrap_arena, SIZE_MAX));
+    int *ok = arena_malloc(&wrap_arena, sizeof(int));
+    ASSERT_NOT_NULL(ok);
+    *ok = 7;
+    ASSERT_NULL(arena_resize(&wrap_arena, ok, sizeof(int), SIZE_MAX));
+    ASSERT_EQ(*ok, 7);
+    arena_free(&wrap_arena);
 
     TEST_REPORT();
 }
