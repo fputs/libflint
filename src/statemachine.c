@@ -1,15 +1,29 @@
-
 #include "lfstatemachine.h"
 
 #include <stddef.h>
 
-static const SmState *find_state(const StateMachine *sm, int id) {
-    for (size_t i = 0; i < sm->state_table_count; i++) {
-        if (sm->state_table[i].id == id) {
-            return &sm->state_table[i];
+static const SmState *find_state_in(const SmState *states, size_t state_count, int id) {
+    for (size_t i = 0; i < state_count; i++) {
+        if (states[i].id == id) {
+            return &states[i];
         }
     }
     return NULL;
+}
+
+static const SmState *find_state(const StateMachine *sm, int id) {
+    return find_state_in(sm->state_table, sm->state_table_count, id);
+}
+
+static int states_unique(const SmState *states, size_t state_count) {
+    for (size_t i = 0; i < state_count; i++) {
+        for (size_t j = i + 1; j < state_count; j++) {
+            if (states[i].id == states[j].id) {
+                return 0;
+            }
+        }
+    }
+    return 1;
 }
 
 int sm_init(StateMachine *sm, const SmState *states, size_t state_count, int initial_state,
@@ -17,18 +31,25 @@ int sm_init(StateMachine *sm, const SmState *states, size_t state_count, int ini
     if (sm == NULL || states == NULL || transitions == NULL || transition_count == 0 || state_count == 0) {
         return -1;
     }
+    if (!states_unique(states, state_count)) {
+        return -1;
+    }
+    if (find_state_in(states, state_count, initial_state) == NULL) {
+        return -1;
+    }
+    for (size_t i = 0; i < transition_count; i++) {
+        if (find_state_in(states, state_count, transitions[i].source) == NULL ||
+            find_state_in(states, state_count, transitions[i].destination) == NULL) {
+            return -1;
+        }
+    }
 
     sm->state_table = states;
     sm->state_table_count = state_count;
     sm->transition_table = transitions;
     sm->transition_table_count = transition_count;
     sm->ctx = ctx;
-
-    if (find_state(sm, initial_state) == NULL) {
-        return -1;
-    }
     sm->current_state = initial_state;
-
     return 0;
 }
 

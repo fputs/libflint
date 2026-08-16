@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "lftest.h"
 #include "lfstatemachine.h"
 
@@ -187,8 +188,39 @@ static void test_init_invalid(void) {
     ASSERT_EQ(sm_init(&sm, states, 0, ST_IDLE, transitions, TRANSITION_COUNT, NULL), -1);
     ASSERT_EQ(sm_init(&sm, states, ST_COUNT, ST_IDLE, transitions, 0, NULL), -1);
 
-    /* Invalid initial state */
+    /* Invalid initial state — sm must be left untouched */
+    memset(&sm, 0x5a, sizeof(sm));
+    StateMachine before = sm;
     ASSERT_EQ(sm_init(&sm, states, ST_COUNT, 99, transitions, TRANSITION_COUNT, NULL), -1);
+    ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+
+    /* Duplicate state IDs */
+    {
+        const SmState dup[] = {
+            { ST_IDLE, NULL, NULL },
+            { ST_IDLE, NULL, NULL },
+        };
+        ASSERT_EQ(sm_init(&sm, dup, 2, ST_IDLE, transitions, TRANSITION_COUNT, NULL), -1);
+        ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+    }
+
+    /* Destination ID with no state row */
+    {
+        const SmTransition bad_dest[] = {
+            { ST_IDLE, EV_TEMP_LOW, 99, NULL, NULL },
+        };
+        ASSERT_EQ(sm_init(&sm, states, ST_COUNT, ST_IDLE, bad_dest, 1, NULL), -1);
+        ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+    }
+
+    /* Source ID with no state row */
+    {
+        const SmTransition bad_src[] = {
+            { 99, EV_TEMP_LOW, ST_IDLE, NULL, NULL },
+        };
+        ASSERT_EQ(sm_init(&sm, states, ST_COUNT, ST_IDLE, bad_src, 1, NULL), -1);
+        ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+    }
 }
 
 int main(void) {

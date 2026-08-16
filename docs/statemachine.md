@@ -71,7 +71,7 @@ Members:
 
 ### sm_init
 
-Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. Returns `0` on success, `-1` on error (NULL arguments, zero counts, or invalid initial state).
+Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. State IDs must be unique. Every transition `source` and `destination` must name a state in the table. Validation runs before any write; a failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is **not** invoked. Returns `0` on success, `-1` on error (NULL arguments, zero counts, duplicate state IDs, or unknown state IDs).
 
 ```c
 int sm_init(
@@ -140,6 +140,10 @@ Returns the current state ID.
 ## Design Notes
 
 **Transition priority**: When multiple transitions match the same state and event (e.g., with different guards), the first match in the table wins. Order your transition table accordingly.
+
+**Self-transitions**: A transition whose `destination` equals `source` is still an external transition: `exit`, `action`, and `entry` all run.
+
+**No re-entry from callbacks**: `entry`, `exit`, `action`, and `guard` must not call `sm_handle_event` on the same machine.
 
 **Allocation-free**: The state machine performs no dynamic allocation. Both tables can be `const` and placed in flash/ROM on embedded targets. The `StateMachine` struct itself can live on the stack or in static memory.
 
