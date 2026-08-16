@@ -36,6 +36,7 @@ set(SOURCES
         src/ringbuf.c
         src/bytering.c
         src/statemachine.c
+        src/compat.c
 )
 
 add_library(flint ${SOURCES})
@@ -58,6 +59,7 @@ find_package(Threads REQUIRED)
 target_link_libraries(flint PRIVATE Threads::Threads)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # input.c uses strtonum from libbsd
     target_link_libraries(flint PRIVATE bsd)
 endif()
 

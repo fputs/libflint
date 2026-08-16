@@ -39,8 +39,10 @@ cmake --build build && ctest --test-dir build --output-on-failure -LE slow
 
 ## Requirements
 
-Building on Linux requires `libbsd`. Building on macOS, OpenBSD, or FreeBSD requires no extra dependencies.
+A C99 compiler and CMake. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
 
 ## Libraries
 
-`libflint` includes [uthash](https://github.com/troydhanson/uthash) for a hash table implementation. `uthash` is a single header file included in the source code of `libflint`. See the top of `include/uthash.h` for license information
+`libflint` includes [uthash](https://github.com/troydhanson/uthash) for a hash table implementation. `uthash` is a single header file included in the source code of `libflint`. See the top of `include/uthash.h` for license information.
+
+Overflow-checked array allocation is provided as `lf_reallocarray` in `lfcompat.h` on every platform.

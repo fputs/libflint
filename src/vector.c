@@ -2,10 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(__APPLE__) || defined(__MACH__)
-#include "lfmacos.h"
-#endif
-
+#include "lfcompat.h"
 #include "lfvector.h"
 
 #define VEC_INIT_CAP 2
@@ -31,7 +28,7 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
 }
 
 static int vec_expand(Vector *vec, size_t new_cap) {
-    void *tmp = reallocarray(vec->elements, new_cap, sizeof(void *));
+    void *tmp = lf_reallocarray(vec->elements, new_cap, sizeof(void *));
     if (tmp == NULL) {
         return -1;
     }

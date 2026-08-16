@@ -28,12 +28,10 @@
 ### Platform
 - [[network]] — Generic `Server` type that abstracts away socket setup and teardown
 - [[macos]] — Platform-specific code for macOS (conditionally compiled)
+- [[compat]] — Overflow-checked `lf_reallocarray` for every platform
 
 ## Requirements
-### Linux
-Requires `libbsd`. This should be available on all major Linux distros.
-### macOS, OpenBSD, FreeBSD
-Requires no extra dependencies
+A C99 compiler and CMake. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
 ## Memory Management
 
 The parts of this library that create data structures pass all responsibility of memory management to the user. This is clearly documented in the individual module's documentation.

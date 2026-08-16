@@ -22,7 +22,6 @@ typedef struct {
 ProcessData *new_ProcessData();
 void destroy_ProcessData(ProcessData *pd);
 int update_process(pid_t pid, ProcessData *proc);
-void *reallocarray(void *optr, size_t nmemb, size_t size);
 
 #endif /* defined(__APPLE__) || defined(__MACH__) */
 #endif /* LIBFLINT_MACOS_H */

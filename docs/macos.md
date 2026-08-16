@@ -63,11 +63,3 @@ for (int i = 0; i < 10; i++) {
 }
 destroy_ProcessData(pd);
 ```
-
-### reallocarray
-
-Reallocates memory for an array of `nmemb` elements of `size` bytes each. Checks for multiplication overflow before calling `realloc`. Returns `NULL` on overflow or allocation failure. This is a compatibility shim for platforms that don't provide `reallocarray` natively.
-
-```c
-void *reallocarray(void *optr, size_t nmemb, size_t size);
-```
