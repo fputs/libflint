@@ -1,11 +1,14 @@
-FIFO (first in first out) queue structure
+FIFO (first in first out) queue of `void *`. Backed by a `List`, but `Queue` is a real wrapper type so list operations do not compile against it.
+
 ## Structs
 
-`Queue` is a linked list with queue-based operations available
-
 ```c
-#define Queue List
+typedef struct {
+    List impl;
+} Queue;
 ```
+
+Enqueue is `ll_push_tail`. Dequeue and peek are at the head.
 
 ## Functions
 
@@ -48,7 +51,7 @@ queue_enqueue(queue, &a);
 
 ### queue_dequeue
 
-Removes the element at the front of the queue and stores its data in `data`. Returns `0` on success, `-1` if the queue is empty.
+Removes the element at the front of the queue and stores its data in `data`. Returns `0` on success, `-1` if the queue is empty or `data` is `NULL`. A null out-param does not drop the item.
 
 ```c
 int queue_dequeue(Queue *queue, void **data);
@@ -63,7 +66,7 @@ assert(*t == 1);
 
 ### queue_peek
 
-Returns a `void *` to the front element of the queue without removing it. Returns `NULL` if the queue is empty.
+Returns a `void *` to the front element of the queue without removing it. Returns `NULL` if the queue is empty or the stored payload is `NULL`.
 
 ```c
 void *queue_peek(Queue *queue);
@@ -82,7 +85,7 @@ assert(*t == 1);
 Returns the number of elements in the queue.
 
 ```c
-#define queue_size(q) ((q)->size)
+#define queue_size(q) ((q)->impl.size)
 ```
 
 ### queue_is_empty
@@ -90,5 +93,5 @@ Returns the number of elements in the queue.
 Returns true if the queue has no elements.
 
 ```c
-#define queue_is_empty(q) ((q)->size == 0)
+#define queue_is_empty(q) ((q)->impl.size == 0)
 ```

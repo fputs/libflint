@@ -114,5 +114,21 @@ int main() {
     queue_destroy(q);
     free(q);
 
+    /* dequeue with NULL out-param must not drop the item */
+    q = malloc(sizeof(Queue));
+    queue_init(q, NULL);
+
+    int keep = 5;
+    queue_enqueue(q, &keep);
+    ASSERT_EQ(queue_dequeue(q, NULL), -1);
+    ASSERT_EQ(queue_size(q), 1);
+    p = queue_peek(q);
+    ASSERT_EQ(*p, 5);
+    ASSERT_EQ(queue_dequeue(q, (void **)&p), 0);
+    ASSERT_EQ(*p, 5);
+
+    queue_destroy(q);
+    free(q);
+
     TEST_REPORT();
 }

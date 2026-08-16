@@ -5,7 +5,7 @@
 #include "lflinkedlist.h"
 
 static int match_int(const void *a, const void *b) {
-    return *(const int *)a - *(const int *)b;
+    return *(const int *)a == *(const int *)b ? 0 : 1;
 }
 
 static int cmp_int(const void *a, const void *b) {
@@ -23,9 +23,9 @@ int main() {
     int j = 2;
     int k = 4;
 
-    ll_ins_next(list, list->head, (void *) &i);
-    ll_ins_next(list, list->tail, (void *) &j);
-    ll_ins_next(list, list->tail, (void *) &k);
+    ll_push_tail(list, &i);
+    ll_push_tail(list, &j);
+    ll_push_tail(list, &k);
 
     ASSERT_EQ(list->size, 3);
 
@@ -297,6 +297,56 @@ int main() {
     ASSERT_EQ(*(int *)arr[1], 2);
     ASSERT_EQ(*(int *)arr[2], 3);
     free(arr);
+
+    ll_destroy(list);
+    free(list);
+
+    /* ll_push_head / ll_pop_head / ll_pop_tail */
+    list = malloc(sizeof(List));
+    ll_init(list, NULL, NULL);
+
+    int ph1 = 1, ph2 = 2, ph3 = 3;
+    ASSERT_EQ(ll_push_head(list, &ph1), 0);
+    ASSERT_EQ(ll_push_head(list, &ph2), 0);
+    ASSERT_EQ(ll_push_tail(list, &ph3), 0);
+    ASSERT_EQ(list->size, 3);
+    ASSERT_EQ(*(int *)list->head->data, 2);
+    ASSERT_EQ(*(int *)list->tail->data, 3);
+
+    ASSERT_EQ(ll_pop_head(list, &data), 0);
+    ASSERT_EQ(*(int *)data, 2);
+    ASSERT_EQ(ll_pop_tail(list, &data), 0);
+    ASSERT_EQ(*(int *)data, 3);
+    ASSERT_EQ(ll_pop_head(list, &data), 0);
+    ASSERT_EQ(*(int *)data, 1);
+    ASSERT_EQ(list->size, 0);
+    ASSERT_EQ(ll_pop_head(list, &data), -1);
+    ASSERT_EQ(ll_pop_tail(list, &data), -1);
+
+    ll_destroy(list);
+    free(list);
+
+    /* LL_FOREACH can nest; LL_ITER remains an alias */
+    list = malloc(sizeof(List));
+    ll_init(list, NULL, NULL);
+    int fa = 1, fb = 2, fc = 3;
+    ll_push_tail(list, &fa);
+    ll_push_tail(list, &fb);
+    ll_push_tail(list, &fc);
+
+    int nest_sum = 0;
+    LL_FOREACH(list, outer) {
+        LL_FOREACH(list, inner) {
+            nest_sum += *(int *)outer->data * *(int *)inner->data;
+        }
+    }
+    ASSERT_EQ(nest_sum, 36);
+
+    idx = 0;
+    LL_ITER(list) {
+        ASSERT_EQ(*(int *)node->data, ++idx);
+    }
+    ASSERT_EQ(idx, 3);
 
     ll_destroy(list);
     free(list);

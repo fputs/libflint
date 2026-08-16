@@ -4,8 +4,8 @@
 ### Data Structures
 - [[linkedlist]] — Doubly-linked list. Used as the foundation for many other modules in libflint
 - [[vector]] — Simple type-agnostic dynamic array
-- [[stack]] — LIFO (last in first out) stack
-- [[queue]] — FIFO (first in first out) queue
+- [[stack]] — LIFO stack. `Stack` wraps a `List`; top is the tail
+- [[queue]] — FIFO queue. `Queue` wraps a `List`; dequeue is at the head
 - [[set]] — Small uniqueness-constrained set over a `List` wrapper. Membership is O(n)
 - [[binarytree]] — Binary tree with standard leaf operations
 - [[ringbuf]] — Fixed-size circular buffer for FIFO operations with no runtime allocations after init

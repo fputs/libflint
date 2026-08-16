@@ -107,11 +107,13 @@ typedef struct {
 
 Members:
 
-- `size`: How many nodes are in the list
+- `size`: How many nodes are in the list (read-only after `ll_init`)
 - `destroy`: Optional deallocation function for member data. Use `NULL` if data is stack allocated
 - `match`: Comparison function between data inside two nodes. Used by `ll_find()` and by structures built on top of `List` such as `Set`
-- `head`: Pointer to the `ListNode` at the head of the list
-- `tail`: Pointer to the `ListNode` at the tail of the list
+- `head`: Pointer to the `ListNode` at the head of the list (read-only after `ll_init`)
+- `tail`: Pointer to the `ListNode` at the tail of the list (read-only after `ll_init`)
+
+`size`, `head`, and `tail` are maintained by the insert/remove helpers. Do not write them directly. The struct stays public so pool-style and cursor insert can read the fields.
 
 ### ListNode
 
@@ -175,6 +177,28 @@ Creates a new node containing `data` and inserts it before `node`.
 int ll_ins_prev(List *list, ListNode *node, const void *data);
 ```
 
+### ll_push_head / ll_push_tail
+
+Insert at the ends without naming a cursor. Empty lists are allowed. Returns `0` on success, `-1` on error. Stack and queue are implemented only in terms of these and the matching pops.
+
+```c
+int ll_push_head(List *list, const void *data);
+int ll_push_tail(List *list, const void *data);
+
+/* Usage */
+ll_push_tail(list, &i);
+ll_push_tail(list, &j);
+```
+
+### ll_pop_head / ll_pop_tail
+
+Remove the end node and store its payload in `data`. Returns `0` on success, `-1` if the list is empty or `data` is `NULL`. The destroy callback is not run.
+
+```c
+int ll_pop_head(List *list, void **data);
+int ll_pop_tail(List *list, void **data);
+```
+
 ### ll_remove
 
 Removes and deallocates the node pointed to by `node`. Returns `-1` if `node` or `data` is `NULL` or the list is empty. The user is responsible for managing the contained data's memory,
@@ -211,7 +235,7 @@ ListNode *ll_find(const List *list, const void *data);
 
 /* Usage */
 int match_int(const void *a, const void *b) {
-    return *(const int *)a - *(const int *)b;  /* 0 = equal */
+    return *(const int *)a == *(const int *)b ? 0 : 1;
 }
 
 ll_init(list, NULL, match_int);
@@ -260,30 +284,46 @@ free(arr);
 
 ## Macros
 
-### LL_ITER
+### LL_FOREACH
 
-A utility macro that helps with iterating over an entire list. A `ListNode` pointer named `node` is created as part of
-this macro and can be used to access the current node in the iteration, so be careful your own variable naming if you
-intend to use `LL_ITER`.
+Iterates the list with a caller-named cursor so loops can nest.
 
 ```c
-#define LL_ITER(list) for(ListNode *node = (list)->head; node != NULL; node = node->next)
+#define LL_FOREACH(list, n) \
+    for (ListNode *n = (list)->head; (n) != NULL; (n) = (n)->next)
 
 /* Example with list of strings */
-for LL_ITER(list) {
+LL_FOREACH(list, n) {
+    printf("%s\n", (char *)(n->data));
+}
+```
+
+### LL_FOREACH_REV
+
+Same as `LL_FOREACH` but walks from tail to head.
+
+```c
+#define LL_FOREACH_REV(list, n) \
+    for (ListNode *n = (list)->tail; (n) != NULL; (n) = (n)->prev)
+```
+
+### LL_ITER
+
+Compatibility alias for `LL_FOREACH(list, node)`. The cursor is always named `node`. Prefer `LL_FOREACH`.
+
+```c
+#define LL_ITER(list) LL_FOREACH(list, node)
+
+/* Example */
+LL_ITER(list) {
     printf("%s\n", (char *)(node->data));
 }
 ```
 
 ### LL_ITER_REV
 
-Same as `LL_ITER` but iterates from tail to head. A `ListNode` pointer named `node` is created as part of this macro.
+Compatibility alias for `LL_FOREACH_REV(list, node)`.
 
 ```c
-#define LL_ITER_REV(list) for(ListNode *node = (list)->tail; node != NULL; node = node->prev)
-
-/* Example */
-for LL_ITER_REV(list) {
-    printf("%s\n", (char *)(node->data));
-}
+#define LL_ITER_REV(list) LL_FOREACH_REV(list, node)
 ```

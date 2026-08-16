@@ -1,11 +1,14 @@
-LIFO (last in first out) stack structure
+LIFO (last in first out) stack of `void *`. Backed by a `List`, but `Stack` is a real wrapper type so list operations do not compile against it.
+
 ## Structs
 
-`Stack` is a linked list with stack-based operations available
-
 ```c
-#define Stack List
+typedef struct {
+    List impl;
+} Stack;
 ```
+
+Top is the list tail. Push and pop are `ll_push_tail` / `ll_pop_tail`.
 
 ## Functions
 
@@ -28,7 +31,7 @@ stack_init(stack, free);
 
 ### stack_destroy
 
-Destroys the nodes inside a `Stack` and calls the deallocation function on the data if one was provided. Does not destroy the list itself, that is left up to the user.
+Destroys the nodes inside a `Stack` and calls the deallocation function on the data if one was provided. Does not destroy the stack itself, that is left up to the user.
 
 ```c
 void stack_destroy(Stack *stack);
@@ -39,7 +42,7 @@ void stack_destroy(Stack *stack);
 Push a new element onto the top of the stack. Returns `0` on success, `-1` on error.
 
 ```c
-int stack_push(Stack *stack, void *data);
+int stack_push(Stack *stack, const void *data);
 
 /* Usage */
 int x = 42;
@@ -48,7 +51,7 @@ stack_push(stack, &x);
 
 ### stack_peek
 
-Returns a `void *` to the top element of the stack. Does not remove the element. Returns `NULL` if the stack is empty
+Returns a `void *` to the top element of the stack. Does not remove the element. Returns `NULL` if the stack is empty or the stored payload is `NULL`.
 
 ```c
 void *stack_peek(Stack *stack);
@@ -62,7 +65,7 @@ assert(*t == 3);
 
 ### stack_pop
 
-Pops the top element of the stack and stores its data in `data`. Returns `0` on success, `-1` on error
+Pops the top element of the stack and stores its data in `data`. Returns `0` on success, `-1` on error. `data` must not be `NULL`; a null out-param does not drop the item.
 
 ```c
 int stack_pop(Stack *stack, void **data);
@@ -82,7 +85,7 @@ assert(*t == 3);
 Returns the number of elements in the stack.
 
 ```c
-#define stack_size(s) ((s)->size)
+#define stack_size(s) ((s)->impl.size)
 ```
 
 ### stack_is_empty
@@ -90,5 +93,5 @@ Returns the number of elements in the stack.
 Returns true if the stack has no elements.
 
 ```c
-#define stack_is_empty(s) ((s)->size == 0)
+#define stack_is_empty(s) ((s)->impl.size == 0)
 ```

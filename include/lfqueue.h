@@ -3,9 +3,16 @@
 
 #include "lflinkedlist.h"
 
-#define Queue List
-#define queue_size(q) ((q)->size)
-#define queue_is_empty(q) ((q)->size == 0)
+/*
+ * Unbounded pointer FIFO over a List. The wrapper type is what
+ * keeps list operations from compiling against a Queue.
+ */
+typedef struct {
+    List impl;
+} Queue;
+
+#define queue_size(q) ((q)->impl.size)
+#define queue_is_empty(q) ((q)->impl.size == 0)
 
 void queue_init(Queue *queue, void (*destroy)(void *data));
 

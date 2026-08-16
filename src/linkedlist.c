@@ -83,6 +83,22 @@ int ll_ins_prev(List *list, ListNode *node, const void *data) {
     return 0;
 }
 
+int ll_push_head(List *list, const void *data) {
+    return ll_ins_prev(list, list->head, data);
+}
+
+int ll_push_tail(List *list, const void *data) {
+    return ll_ins_next(list, list->tail, data);
+}
+
+int ll_pop_head(List *list, void **data) {
+    return ll_remove(list, list->head, data);
+}
+
+int ll_pop_tail(List *list, void **data) {
+    return ll_remove(list, list->tail, data);
+}
+
 int ll_remove(List *list, ListNode *node, void **data) {
     if (node == NULL || data == NULL || list->size == 0) {
         return -1;

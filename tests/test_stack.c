@@ -71,7 +71,7 @@ int main() {
     stack_destroy(stack);
     free(stack);
 
-    /* destroy callback */
+    /* destroy callback (does not own the pointers) */
     stack = malloc(sizeof(Stack));
     destroyed_count = 0;
     stack_init(stack, counting_destroy);
@@ -89,6 +89,17 @@ int main() {
     free(d1); free(d2); free(d3);
     free(stack);
 
+    /* stack_init(..., free) is leak-free; destroy owns the payloads */
+    stack = malloc(sizeof(Stack));
+    stack_init(stack, free);
+    for (int n = 0; n < 3; n++) {
+        int *heap_val = malloc(sizeof(int));
+        *heap_val = n;
+        ASSERT_EQ(stack_push(stack, heap_val), 0);
+    }
+    stack_destroy(stack);
+    free(stack);
+
     /* single-element push and pop */
     stack = malloc(sizeof(Stack));
     stack_init(stack, NULL);
@@ -103,6 +114,28 @@ int main() {
     ret = stack_pop(stack, (void **)&p);
     ASSERT_EQ(ret, 0);
     ASSERT_EQ(*p, 99);
+    ASSERT_TRUE(stack_is_empty(stack));
+
+    stack_destroy(stack);
+    free(stack);
+
+    /* push after a full drain */
+    stack = malloc(sizeof(Stack));
+    stack_init(stack, NULL);
+
+    stack_push(stack, &a);
+    stack_push(stack, &b);
+    stack_pop(stack, (void **)&p);
+    stack_pop(stack, (void **)&p);
+    ASSERT_TRUE(stack_is_empty(stack));
+
+    int after = 7;
+    ASSERT_EQ(stack_push(stack, &after), 0);
+    ASSERT_EQ(stack_size(stack), 1);
+    p = stack_peek(stack);
+    ASSERT_EQ(*p, 7);
+    stack_pop(stack, (void **)&p);
+    ASSERT_EQ(*p, 7);
     ASSERT_TRUE(stack_is_empty(stack));
 
     stack_destroy(stack);
