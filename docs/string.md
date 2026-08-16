@@ -26,7 +26,7 @@ free(subs);
 
 ### str_substr
 
-Extracts a substring at a specific index and length. This function returns a copy of the substring in a heap allocated buffer that the user is responsible for freeing. Returns `NULL` if there is an error.
+Extracts a substring at a specific index and length. This function returns a copy of the substring in a heap allocated buffer that the user is responsible for freeing. Returns `NULL` if there is an error, including when `idx + len` would wrap `size_t`.
 
 ```c
 char* str_substr(const char* str, size_t idx, size_t len);
@@ -52,7 +52,7 @@ free(s);
 
 ### str_join
 
-Joins an array of strings with a separator. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. Returns an empty string if `count` is 0.
+Joins an array of strings with a separator. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. Returns an empty string if `count` is 0. Returns `NULL` if length math would wrap `size_t`.
 
 ```c
 char *str_join(const char **strs, size_t count, const char *sep);
@@ -82,7 +82,7 @@ int str_ends_with(const char *str, const char *suffix);
 
 ### str_replace
 
-Replaces all occurrences of `old` with `new` in `str`. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. If `old` is not found, returns a copy of the original string.
+Replaces all occurrences of `old` with `new` in `str`. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. If `old` is not found, returns a copy of the original string. Returns `NULL` if length math would wrap `size_t`.
 
 ```c
 char *str_replace(const char *str, const char *old, const char *new);

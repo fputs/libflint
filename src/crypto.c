@@ -1,7 +1,8 @@
-#include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "lfcrypto.h"
 
@@ -250,8 +251,14 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
 }
 
 char *hex_encode(const unsigned char *hex, size_t sz) {
+    if (sz > (SIZE_MAX - 1) / 2) {
+        return NULL;
+    }
+    if (hex == NULL && sz != 0) {
+        return NULL;
+    }
     size_t ssz = sz * 2 + 1;
-    char *s = malloc(sizeof(char) * ssz);
+    char *s = malloc(ssz);
     if (s == NULL) {
         return NULL;
     }

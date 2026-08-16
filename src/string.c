@@ -1,8 +1,25 @@
-#include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "lfstring.h"
+
+static int size_add(size_t a, size_t b, size_t *out) {
+    if (a > SIZE_MAX - b) {
+        return -1;
+    }
+    *out = a + b;
+    return 0;
+}
+
+static int size_mul(size_t a, size_t b, size_t *out) {
+    if (b != 0 && a > SIZE_MAX / b) {
+        return -1;
+    }
+    *out = a * b;
+    return 0;
+}
 
 int str_find(const char* haystack, const char* needle, size_t *num_substrings, size_t **substrings) {
     if (*substrings != NULL) {
@@ -43,12 +60,20 @@ int str_find(const char* haystack, const char* needle, size_t *num_substrings, s
 }
 
 char* str_substr(const char* str, size_t idx, size_t len) {
-   size_t sz_str = strlen(str);
-   if (sz_str < len || idx + len > sz_str) {
+   if (str == NULL) {
        return NULL;
    }
 
-   char *sub = malloc(sizeof(char) * (len + 1));
+   size_t sz_str = strlen(str);
+   if (len > sz_str || idx > sz_str - len) {
+       return NULL;
+   }
+
+   size_t alloc;
+   if (size_add(len, 1, &alloc) != 0) {
+       return NULL;
+   }
+   char *sub = malloc(alloc);
    if (sub == NULL) {
        return NULL;
    }
@@ -79,6 +104,9 @@ char *str_trim(const char *str) {
 }
 
 char *str_join(const char **strs, size_t count, const char *sep) {
+    if (sep == NULL || (count != 0 && strs == NULL)) {
+        return NULL;
+    }
     if (count == 0) {
         char *out = malloc(1);
         if (out != NULL) {
@@ -89,11 +117,26 @@ char *str_join(const char **strs, size_t count, const char *sep) {
     size_t sep_len = strlen(sep);
     size_t total = 0;
     for (size_t i = 0; i < count; i++) {
-        total += strlen(strs[i]);
+        if (strs[i] == NULL) {
+            return NULL;
+        }
+        if (size_add(total, strlen(strs[i]), &total) != 0) {
+            return NULL;
+        }
     }
-    total += sep_len * (count - 1);
+    if (count > 1) {
+        size_t seps;
+        if (size_mul(sep_len, count - 1, &seps) != 0 ||
+            size_add(total, seps, &total) != 0) {
+            return NULL;
+        }
+    }
 
-    char *out = malloc(total + 1);
+    size_t alloc;
+    if (size_add(total, 1, &alloc) != 0) {
+        return NULL;
+    }
+    char *out = malloc(alloc);
     if (out == NULL) {
         return NULL;
     }
@@ -125,6 +168,9 @@ int str_ends_with(const char *str, const char *suffix) {
 }
 
 char *str_replace(const char *str, const char *old, const char *new) {
+    if (str == NULL || old == NULL || new == NULL) {
+        return NULL;
+    }
     size_t old_len = strlen(old);
     size_t new_len = strlen(new);
     if (old_len == 0) {
@@ -135,17 +181,33 @@ char *str_replace(const char *str, const char *old, const char *new) {
     size_t count = 0;
     const char *p = str;
     while ((p = strstr(p, old)) != NULL) {
+        if (count == SIZE_MAX) {
+            return NULL;
+        }
         count++;
         p += old_len;
     }
 
+    size_t slen = strlen(str);
     size_t out_len;
     if (new_len >= old_len) {
-        out_len = strlen(str) + count * (new_len - old_len);
+        size_t extra;
+        if (size_mul(count, new_len - old_len, &extra) != 0 ||
+            size_add(slen, extra, &out_len) != 0) {
+            return NULL;
+        }
     } else {
-        out_len = strlen(str) - count * (old_len - new_len);
+        size_t extra;
+        if (size_mul(count, old_len - new_len, &extra) != 0 || slen < extra) {
+            return NULL;
+        }
+        out_len = slen - extra;
     }
-    char *out = malloc(out_len + 1);
+    size_t alloc;
+    if (size_add(out_len, 1, &alloc) != 0) {
+        return NULL;
+    }
+    char *out = malloc(alloc);
     if (out == NULL) {
         return NULL;
     }

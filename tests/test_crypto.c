@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,6 +81,12 @@ int main() {
     enc_s = hex_encode((const unsigned char *)"", 0);
     ASSERT_STR_EQ(enc_s, "");
     free(enc_s);
+
+    /* sz * 2 + 1 wrap must fail closed */
+    enc_s = hex_encode((const unsigned char *)"x", (SIZE_MAX - 1) / 2 + 1);
+    ASSERT_NULL(enc_s);
+    enc_s = hex_encode(NULL, 4);
+    ASSERT_NULL(enc_s);
 
     /* hex_to_str empty */
     enc_s = hex_to_str((const unsigned char *)"", 0);

@@ -37,7 +37,8 @@ free(decoded);
 ### hex_encode
 
 Encodes an array of bytes into a string in hex representation. For example, converts
-`[0xDE, 0xAD, 0xBE, 0xEF]` into `"deadbeef"`. User is responsible for freeing the returned string
+`[0xDE, 0xAD, 0xBE, 0xEF]` into `"deadbeef"`. User is responsible for freeing the returned string.
+Returns `NULL` if `sz * 2 + 1` would wrap `size_t`.
 
 ```c
 char *hex_encode(const unsigned char *hex, size_t sz);

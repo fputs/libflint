@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,6 +92,14 @@ int main() {
     s = str_substr("hello", 0, 6);
     ASSERT_NULL(s);
 
+    /* idx + len wrap must fail closed, not memcpy off the string */
+    s = str_substr("hello", SIZE_MAX - 1, 3);
+    ASSERT_NULL(s);
+    s = str_substr("hello", SIZE_MAX, 1);
+    ASSERT_NULL(s);
+    s = str_substr(NULL, 0, 0);
+    ASSERT_NULL(s);
+
     /* str_trim */
     s = str_trim("  hello world  ");
     ASSERT_STR_EQ(s, "hello world");
@@ -129,6 +138,9 @@ int main() {
     s = str_join(parts, 3, "");
     ASSERT_STR_EQ(s, "foobarbaz");
     free(s);
+
+    ASSERT_NULL(str_join(NULL, 3, ","));
+    ASSERT_NULL(str_join(parts, 3, NULL));
 
     /* str_starts_with */
     ASSERT_TRUE(str_starts_with("hello world", "hello"));
@@ -173,6 +185,10 @@ int main() {
     s = str_replace("", "a", "b");
     ASSERT_STR_EQ(s, "");
     free(s);
+
+    ASSERT_NULL(str_replace(NULL, "a", "b"));
+    ASSERT_NULL(str_replace("a", NULL, "b"));
+    ASSERT_NULL(str_replace("a", "a", NULL));
 
     /* str_to_upper / str_to_lower */
     s = str_to_upper("hello World 123");
