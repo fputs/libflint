@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include "lftest.h"
 #include "lfnetwork.h"
-#include "lfinput.h"
+#include "lfprocess.h"
 
 #define NET_MSG "TEST SEND"
 
@@ -79,7 +79,7 @@ int main() {
     pthread_create(&srv_tid, NULL, tcp_server_thread, NULL);
 
     sleep(1);
-    char *s = inp_capture_system("echo hello | nc localhost 18632", 0);
+    char *s = lf_capture_system("echo hello | nc localhost 18632", 0);
     ASSERT_STR_EQ(s, NET_MSG);
     free(s);
 

@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <limits.h>
-#include <errno.h>
 
 #ifdef __linux__
 
@@ -10,20 +10,25 @@
 
 #endif
 
+#include "lfcompat.h"
 #include "lfinput.h"
 
-static FILE* inp_open_file(const char *path, size_t *fsz, const char *mode) {
-    FILE *fp = NULL;
-    fp = fopen(path, mode);
-    if (fp == NULL) {
-        fprintf(stderr, "Failed to open %s. Returning NULL\n", path);
+static FILE *inp_open_file(const char *path, size_t *fsz, const char *mode) {
+    if (path == NULL || fsz == NULL || mode == NULL) {
         return NULL;
     }
 
-    fseek(fp, 0, SEEK_END);
+    FILE *fp = fopen(path, mode);
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return NULL;
+    }
     long pos = ftell(fp);
     if (pos < 0) {
-        fprintf(stderr, "ftell failed for %s. Returning NULL\n", path);
         fclose(fp);
         return NULL;
     }
@@ -39,15 +44,13 @@ unsigned char *inp_get_binary(const char *path, size_t *fsz) {
         return NULL;
     }
 
-    unsigned char *buf = NULL;
-    buf = (unsigned char*)malloc(sizeof(unsigned char) * (*fsz));
+    unsigned char *buf = malloc(*fsz == 0 ? 1 : *fsz);
     if (buf == NULL) {
-        fprintf(stderr, "Failed to malloc buf. Returning NULL\n");
         fclose(fp);
         return NULL;
     }
 
-    if (fread(buf, 1, *fsz, fp) != *fsz) {
+    if (*fsz > 0 && fread(buf, 1, *fsz, fp) != *fsz) {
         free(buf);
         fclose(fp);
         return NULL;
@@ -64,15 +67,13 @@ char *inp_get_input(const char *path) {
         return NULL;
     }
 
-    char *buf = NULL;
-    buf = malloc(fsz + 1);
+    char *buf = malloc(fsz + 1);
     if (buf == NULL) {
-        fprintf(stderr, "Failed to malloc buf. Returning NULL\n");
         fclose(fp);
         return NULL;
     }
 
-    if (fread(buf, 1, fsz, fp) != fsz) {
+    if (fsz > 0 && fread(buf, 1, fsz, fp) != fsz) {
         free(buf);
         fclose(fp);
         return NULL;
@@ -83,84 +84,73 @@ char *inp_get_input(const char *path) {
     return buf;
 }
 
-char **inp_split(char *s, size_t *lsz, const char *delim) {
-    if (s == NULL || lsz == NULL || delim == NULL) {
-        return NULL;
-    }
-
-    char **lines = NULL;
-    char *t = strtok(s, delim);
+static int split_into(char *s, const char *delim, LfLines *out, int own_base, int strip_cr) {
     size_t n = 0;
-
-    while (t != NULL) {
-        char **tmp = realloc(lines, sizeof(char *) * (n + 1));
-        if (tmp == NULL) {
-            fprintf(stderr, "Failed to realloc lines buffer. Returning NULL\n");
-            free(lines);
-            return NULL;
-        }
-        lines = tmp;
-        n++;
-        lines[n - 1] = t;
-        t = strtok(NULL, delim);
+    size_t cap = 8;
+    char **lines = lf_reallocarray(NULL, cap, sizeof(char *));
+    if (lines == NULL) {
+        return -1;
     }
-
-    *lsz = n;
-    return lines;
-}
-
-/*
- * Internal split used by inp_get_lines. Stores the original string pointer
- * at index [-1] (one slot before the returned array) so inp_del_lines can
- * free the correct base even when strtok skips leading delimiters.
- */
-static char **split_lines(char *s, size_t *lsz, const char *delim) {
-    if (s == NULL || lsz == NULL || delim == NULL) {
-        return NULL;
-    }
-
-    char *base = s;
-    /* Start with space for the hidden base slot + 1 token */
-    size_t n = 0;
-    size_t cap = 2;
-    char **raw = malloc(sizeof(char *) * cap);
-    if (raw == NULL) {
-        free(base);
-        return NULL;
-    }
-    raw[0] = base;  /* hidden slot stores original allocation */
 
     char *t = strtok(s, delim);
     while (t != NULL) {
-        n++;
-        if (n + 1 >= cap) {
-            cap *= 2;
-            char **tmp = realloc(raw, sizeof(char *) * cap);
-            if (tmp == NULL) {
-                free(raw);
-                free(base);
-                *lsz = 0;
-                return NULL;
+        if (strip_cr) {
+            size_t len = strlen(t);
+            if (len > 0 && t[len - 1] == '\r') {
+                t[len - 1] = '\0';
             }
-            raw = tmp;
         }
-        raw[n] = t;
+        if (n == cap) {
+            if (cap > SIZE_MAX / 2) {
+                free(lines);
+                return -1;
+            }
+            size_t ncap = cap * 2;
+            char **tmp = lf_reallocarray(lines, ncap, sizeof(char *));
+            if (tmp == NULL) {
+                free(lines);
+                return -1;
+            }
+            lines = tmp;
+            cap = ncap;
+        }
+        lines[n++] = t;
         t = strtok(NULL, delim);
     }
 
     if (n == 0) {
-        free(base);
-        free(raw);
-        *lsz = 0;
-        return NULL;
+        free(lines);
+        lines = NULL;
     }
 
-    *lsz = n;
-    return raw + 1;  /* return pointer past the hidden base slot */
+    out->base = own_base ? s : NULL;
+    out->lines = lines;
+    out->n = n;
+    return 0;
 }
 
-char **inp_get_lines(const char *path, size_t *lsz) {
-    return split_lines(inp_get_input(path), lsz, "\n");
+int inp_split(char *s, const char *delim, LfLines *out) {
+    if (s == NULL || delim == NULL || out == NULL) {
+        return -1;
+    }
+    return split_into(s, delim, out, 0, 0);
+}
+
+int inp_get_lines(const char *path, LfLines *out) {
+    if (path == NULL || out == NULL) {
+        return -1;
+    }
+
+    char *s = inp_get_input(path);
+    if (s == NULL) {
+        return -1;
+    }
+
+    if (split_into(s, "\n", out, 1, 1) != 0) {
+        free(s);
+        return -1;
+    }
+    return 0;
 }
 
 int *inp_get_ints(const char *path, size_t *sz) {
@@ -168,93 +158,40 @@ int *inp_get_ints(const char *path, size_t *sz) {
         return NULL;
     }
 
-    char **lines = inp_get_lines(path, sz);
-    if (lines == NULL) {
+    LfLines lines;
+    if (inp_get_lines(path, &lines) != 0) {
         return NULL;
     }
 
-    int *i = malloc(sizeof(int) * *sz);
+    int *i = lf_reallocarray(NULL, lines.n == 0 ? 1 : lines.n, sizeof(int));
     if (i == NULL) {
-        inp_del_lines(lines);
+        inp_lines_free(&lines);
         return NULL;
     }
 
-    for (size_t idx = 0; idx < *sz; idx++) {
-        int n;
+    for (size_t idx = 0; idx < lines.n; idx++) {
         const char *errstr;
-        n = (int) strtonum(lines[idx], INT_MIN, INT_MAX, &errstr);
+        int n = (int)strtonum(lines.lines[idx], INT_MIN, INT_MAX, &errstr);
         if (errstr) {
-            fprintf(stderr, "Failed to convert %s to int. Returning NULL\n", lines[idx]);
             free(i);
-            inp_del_lines(lines);
+            inp_lines_free(&lines);
             return NULL;
         }
         i[idx] = n;
     }
 
-    inp_del_lines(lines);
+    *sz = lines.n;
+    inp_lines_free(&lines);
     return i;
 }
 
-void inp_del_split(char **sp) {
-    if (sp == NULL) {
-        return;
-    }
-    free(sp);
-}
-
-void inp_del_lines(char **lines) {
+void inp_lines_free(LfLines *lines) {
     if (lines == NULL) {
         return;
     }
-    /* lines[-1] holds the original string base pointer (set by split_lines) */
-    free(lines[-1]);
-    free(lines - 1);
-}
-
-/*
- * Runs cmd via /bin/sh (popen). The command string is passed to the shell
- * unsanitized — callers must never pass untrusted or user-supplied input.
- */
-char *inp_capture_system(const char *cmd, size_t buf_sz) {
-    if (cmd == NULL) {
-        return NULL;
-    }
-
-    if (buf_sz == 0) {
-        buf_sz = DEFAULT_CAPTURE_SYSTEM_BUFSIZE;
-    }
-
-    FILE *tmp = popen(cmd, "r");
-    if (tmp == NULL) {
-        fprintf(stderr, "libflint: failed to open FILE *tmp in capture_system. Errno: %d\n", errno);
-        return NULL;
-    }
-
-    size_t total = 0;
-    size_t cap = buf_sz;
-    char *buf = malloc(cap);
-    if (buf == NULL) {
-        pclose(tmp);
-        return NULL;
-    }
-
-    size_t nread;
-    while ((nread = fread(buf + total, 1, cap - total - 1, tmp)) > 0) {
-        total += nread;
-        if (total + 1 >= cap) {
-            cap *= 2;
-            char *tmp2 = realloc(buf, cap);
-            if (tmp2 == NULL) {
-                free(buf);
-                pclose(tmp);
-                return NULL;
-            }
-            buf = tmp2;
-        }
-    }
-
-    buf[total] = '\0';
-    pclose(tmp);
-    return buf;
+    free(lines->lines);
+    free(lines->base);
+    lines->lines = NULL;
+    lines->base = NULL;
+    lines->n = 0;
 }

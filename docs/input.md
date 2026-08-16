@@ -1,10 +1,24 @@
-I/O module to assist with consuming data from files. All functions use the `inp_` prefix.
+One-shot slurp of a regular, seekable file. All slurp functions use `fseek`/`ftell`, so pipes and other non-seekable paths are not supported.
+
+`LfLines` is the explicit lines result. `base` is the slurped buffer when the function owns it (`inp_get_lines`), or `NULL` when the caller owns the mutable string (`inp_split`). `lines` points into that buffer. One destructor, `inp_lines_free`, frees both fields — there is no hidden `lines[-1]` pointer and no pair of `char **` destructors to swap.
+
+`inp_get_lines` strips a trailing `\r` from each line so `\r\n` and `\n` both work. Bare `\r` line endings are not treated as breaks. An empty file succeeds with `n == 0`. A missing file returns `-1`.
+
+## Structs
+
+```c
+typedef struct {
+    char *base;
+    char **lines;
+    size_t n;
+} LfLines;
+```
+
 ## Functions
 
 ### inp_get_binary
 
-Reads a file at `path` and returns the contents as an unsigned char* buffer. The `fsz` parameter stores the length of the
-returned array. The buffer is allocated inside the function, so the user is responsible for freeing it when finished.
+Reads a file at `path` and returns the contents as an `unsigned char *` buffer. `fsz` receives the length. `fsz` must not be NULL. An empty file returns a non-NULL buffer with `*fsz == 0`. A missing file returns NULL. The caller frees the buffer.
 
 ```c
 unsigned char *inp_get_binary(const char *path, size_t *fsz);
@@ -17,8 +31,7 @@ free(buf);
 
 ### inp_get_input
 
-Reads a file at `path` and returns the contents as a single string. The string is allocated inside the function and
-the user is responsible for freeing it when finished.
+Reads a file at `path` and returns the contents as a single NUL-terminated string. The caller frees it. Missing file returns NULL.
 
 ```c
 char *inp_get_input(const char *path);
@@ -30,36 +43,32 @@ free(str);
 
 ### inp_get_lines
 
-Reads a file at `path` and returns the contents as an array of strings. The newline character `\n` is used as the
-delimiter to determine where the file is split. The user is responsible for cleaning up the memory using `inp_del_lines()`.
-`lsz` is set to the number of lines in the array.
+Reads a regular file at `path` and splits on `\n` into `out`. Trailing `\r` is stripped. Returns `0` on success, including an empty file (`out->n == 0`). Returns `-1` on error (NULL arguments, missing file, I/O). Do not destroy `out` on failure.
 
 ```c
-char **inp_get_lines(const char *path, size_t *lsz);
+int inp_get_lines(const char *path, LfLines *out);
 
 /* Usage */
-size_t sz = 0;
-char **lines = inp_get_lines("/home/evan/textfile", &sz);
-for (size_t i = 0; i < sz; i++) {
-    printf("%s\n", lines[i]);
+LfLines lines;
+if (inp_get_lines("/home/evan/textfile", &lines) == 0) {
+    for (size_t i = 0; i < lines.n; i++) {
+        printf("%s\n", lines.lines[i]);
+    }
+    inp_lines_free(&lines);
 }
-inp_del_lines(lines);
 ```
 
-### inp_del_lines
+### inp_lines_free
 
-Frees all memory used by `inp_get_lines()`
+Frees `lines->lines` and `lines->base` and zeros the struct. Safe on NULL. The same function is used after `inp_get_lines` and `inp_split`.
 
 ```c
-void inp_del_lines(char **lines);
+void inp_lines_free(LfLines *lines);
 ```
 
 ### inp_get_ints
-Reads a file at `path` and returns the contents as an array of integers. The file is assumed to be a newline seperated
-list of integers and nothing else.
 
-The newline character `\n` is used as the delimiter to determine where the file is split. The user is responsible for
-cleaning up the memory using `free()`. `lsz` is set to the number of lines in the array. Returns `NULL` if input is `NULL`.
+Reads a newline-separated list of integers. The caller frees the returned array with `free()`. `sz` receives the count. Returns `NULL` if `path` or `sz` is NULL, the file is missing, or a line is not an integer. An empty file returns a freeable pointer with `*sz == 0`.
 
 ```c
 int *inp_get_ints(const char *path, size_t *sz);
@@ -75,43 +84,17 @@ free(nums);
 
 ### inp_split
 
-Takes a string `s` and splits it into an array of strings based on the delimiter. **`s` is modified in-place** by `strtok`, which inserts null terminators at delimiter positions. The user is responsible for cleaning up the memory of the split using `inp_del_split()`. `lsz` is set to the size of the split.
+Splits a **mutable** buffer `s` on `delim` using `strtok` (which writes NULs). Do not pass a string literal. The caller keeps ownership of `s`; `out->base` is NULL. Returns `0` on success, `-1` on error.
 
 ```c
-char **inp_split(char *s, size_t *lsz, const char *delim);
+int inp_split(char *s, const char *delim, LfLines *out);
 
 /* Usage */
-size_t sp_sz = 0;
-char **sp = inp_split("Split on whitespace", &sp_sz, " ");
-printf("%s\n", sp[0]); // Prints "Split"
+char buf[] = "Split on whitespace";
+LfLines sp;
+inp_split(buf, " ", &sp);
+printf("%s\n", sp.lines[0]); /* Prints "Split" */
+inp_lines_free(&sp);
 ```
 
-### inp_del_split
-
-Frees the array returned by `inp_split()`. Does not free the original string (which was modified in-place by `strtok`).
-
-```c
-void inp_del_split(char **sp);
-
-/* Usage */
-size_t sp_sz = 0;
-char **sp = inp_split("Delete Me!", &sp_sz, " ");
-inp_del_split(sp);
-```
-
-### inp_capture_system
-
-Runs a command on the system shell and returns stdout as a string. Reads the full output in a loop. `buf_sz` is the initial buffer size — passing `0` will use the default buffer size of `1024`.
-
-**Security warning:** The command string is passed directly to `/bin/sh` via `popen()` with no sanitization. Never pass untrusted or user-supplied input as `cmd` — shell metacharacters will be interpreted, which can lead to command injection.
-
-User is responsible for freeing the returned string. Returns `NULL` if input is `NULL` or on error.
-
-```c
-char *inp_capture_system(const char *cmd, size_t buf_sz);
-
-/* Usage */
-char *cap = inp_capture_system("ls $HOME", 0);
-printf("%s\n", cap);
-free(cap);
-```
+Process helpers (`lf_capture_system`) live in [[process]], not this header.

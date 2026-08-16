@@ -25,6 +25,7 @@ set(SOURCES
         src/queue.c
         src/binarytree.c
         src/input.c
+        src/process.c
         src/math.c
         src/string.c
         src/vector.c

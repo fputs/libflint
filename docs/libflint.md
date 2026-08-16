@@ -22,7 +22,8 @@
 - [[puzzle]] — Repeating-key XOR and Hamming distance (Cryptopals-style, not cryptography)
 - [[crypto]] — Compatibility include of codec + puzzle
 - [[parsing]] — String parsing tools
-- [[input]] — I/O module to assist with consuming data from files
+- [[input]] — One-shot slurp of a regular, seekable file (`LfLines` owns the buffer)
+- [[process]] — `lf_capture_system` (`popen`, unsanitized)
 - [[utility]] — Utility code that does not fit anywhere else
 - [[bool]] — Macro representation of truthy values
 - [[bitops]] — Bit manipulation macros for setting, clearing, toggling, testing, extracting, and inserting bit fields

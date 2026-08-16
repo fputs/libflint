@@ -1,24 +1,30 @@
 #ifndef LIBFLINT_INPUT_H
 #define LIBFLINT_INPUT_H
 
-#include <stdlib.h>
+#include <stddef.h>
 
-unsigned char *inp_get_binary(const char *, size_t *fsz);
+/*
+ * One-shot slurp of a regular, seekable file. fseek/ftell is required.
+ * Lines from inp_get_lines have a trailing '\r' stripped so \r\n and \n
+ * both work. inp_split requires a mutable buffer (strtok writes NULs).
+ */
 
-char *inp_get_input(const char *);
+typedef struct {
+    char *base;
+    char **lines;
+    size_t n;
+} LfLines;
 
-char **inp_split(char *, size_t *, const char *);
+unsigned char *inp_get_binary(const char *path, size_t *fsz);
 
-char **inp_get_lines(const char *, size_t *);
+char *inp_get_input(const char *path);
 
-int *inp_get_ints(const char *, size_t *);
+int inp_split(char *s, const char *delim, LfLines *out);
 
-void inp_del_split(char **);
+int inp_get_lines(const char *path, LfLines *out);
 
-void inp_del_lines(char **);
+int *inp_get_ints(const char *path, size_t *sz);
 
-#define DEFAULT_CAPTURE_SYSTEM_BUFSIZE 1024
+void inp_lines_free(LfLines *lines);
 
-char *inp_capture_system(const char *cmd, size_t buf_sz);
-
-#endif // LIBFLINT_INPUT_H
+#endif /* LIBFLINT_INPUT_H */
