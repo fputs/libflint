@@ -211,13 +211,15 @@ int main() {
     ASSERT_EQ(vec_cap(&ev), 0);
     ASSERT_NULL(ev.elements);
 
-    /* --- vec_clear return check --- */
+    /* --- vec_clear keeps capacity --- */
     Vector clv;
     vec_init(&clv, NULL);
     int cl1 = 1;
     vec_push(&clv, &cl1);
+    size_t kept_cap = vec_cap(&clv);
     ASSERT_EQ(vec_clear(&clv), 0);
     ASSERT_EQ(vec_len(&clv), 0);
+    ASSERT_EQ(vec_cap(&clv), kept_cap);
     vec_destroy(&clv);
 
     /* --- vec_remove out of bounds --- */
@@ -231,7 +233,77 @@ int main() {
     Vector gv;
     vec_init(&gv, NULL);
     ASSERT_EQ(vec_grow_to(&gv, 1), -1);
+    ASSERT_EQ(vec_grow_to(&gv, vec_cap(&gv)), 0);
     vec_destroy(&gv);
+
+    /* --- insert after grow preserves prior elements --- */
+    Vector ig;
+    vec_init(&ig, NULL);
+    int g0 = 0, g1 = 1, g2 = 2, g3 = 3, gmid = 99;
+    vec_push(&ig, &g0);
+    vec_push(&ig, &g1);
+    ASSERT_EQ(vec_len(&ig), vec_cap(&ig));
+    ASSERT_EQ(vec_insert(&ig, &gmid, 1), 0);
+    ASSERT_EQ(*(int *)vec_at(&ig, 0), 0);
+    ASSERT_EQ(*(int *)vec_at(&ig, 1), 99);
+    ASSERT_EQ(*(int *)vec_at(&ig, 2), 1);
+    vec_push(&ig, &g2);
+    vec_push(&ig, &g3);
+    ASSERT_EQ(vec_len(&ig), 5);
+    ASSERT_EQ(*(int *)vec_at(&ig, 3), 2);
+    ASSERT_EQ(*(int *)vec_at(&ig, 4), 3);
+    vec_destroy(&ig);
+
+    /* --- push after shrink of empty --- */
+    Vector se;
+    vec_init(&se, NULL);
+    ASSERT_EQ(vec_shrink(&se), 0);
+    ASSERT_EQ(vec_cap(&se), 0);
+    ASSERT_NULL(se.elements);
+    int se1 = 7;
+    ASSERT_EQ(vec_push(&se, &se1), 0);
+    ASSERT_EQ(vec_len(&se), 1);
+    ASSERT_EQ(*(int *)vec_at(&se, 0), 7);
+    vec_destroy(&se);
+
+    /* --- init_with_capacity(0) --- */
+    Vector zc;
+    ASSERT_EQ(vec_init_with_capacity(&zc, NULL, 0), 0);
+    ASSERT_EQ(vec_cap(&zc), 0);
+    ASSERT_EQ(vec_len(&zc), 0);
+    ASSERT_NULL(zc.elements);
+    int z1 = 11;
+    ASSERT_EQ(vec_push(&zc, &z1), 0);
+    ASSERT_EQ(*(int *)vec_at(&zc, 0), 11);
+    vec_destroy(&zc);
+
+    /* --- stored NULL payloads --- */
+    Vector nv;
+    vec_init(&nv, NULL);
+    ASSERT_EQ(vec_push(&nv, NULL), 0);
+    ASSERT_NULL(vec_at(&nv, 0));
+    ASSERT_EQ(vec_len(&nv), 1);
+    ASSERT_NULL(vec_pop(&nv));
+    ASSERT_EQ(vec_len(&nv), 0);
+    vec_destroy(&nv);
+
+    /* --- vec_reserve no-op when already large enough --- */
+    Vector rsv;
+    vec_init_with_capacity(&rsv, NULL, 8);
+    void **same = rsv.elements;
+    ASSERT_EQ(vec_reserve(&rsv, 4), 0);
+    ASSERT_EQ(vec_cap(&rsv), 8);
+    ASSERT_EQ(rsv.elements, same);
+    ASSERT_EQ(vec_reserve(&rsv, 16), 0);
+    ASSERT_EQ(vec_cap(&rsv), 16);
+    vec_destroy(&rsv);
+
+    /* --- double destroy is safe --- */
+    Vector dd;
+    vec_init(&dd, NULL);
+    vec_push(&dd, &e0);
+    vec_destroy(&dd);
+    vec_destroy(&dd);
 
     TEST_REPORT();
 }

@@ -1,5 +1,6 @@
-#include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "lfcompat.h"
@@ -15,15 +16,22 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t capa
     if (vec == NULL) {
         return -1;
     }
+
     vec->destroy = destroy;
-    vec_len(vec) = 0;
-    vec->capacity = capacity;
-    vec->elements = malloc(sizeof (void*) * capacity);
+    vec->length = 0;
+    vec->capacity = 0;
+    vec->elements = NULL;
+
+    if (capacity == 0) {
+        return 0;
+    }
+
+    vec->elements = lf_reallocarray(NULL, capacity, sizeof(void *));
     if (vec->elements == NULL) {
         return -1;
     }
-    memset(vec->elements, 0, vec->capacity * sizeof(void *));
-
+    memset(vec->elements, 0, capacity * sizeof(void *));
+    vec->capacity = capacity;
     return 0;
 }
 
@@ -33,6 +41,10 @@ static int vec_expand(Vector *vec, size_t new_cap) {
         return -1;
     }
     vec->elements = tmp;
+    if (new_cap > vec->capacity) {
+        memset(vec->elements + vec->capacity, 0,
+               (new_cap - vec->capacity) * sizeof(void *));
+    }
     vec->capacity = new_cap;
     return 0;
 }
@@ -41,6 +53,8 @@ static int vec_grow(Vector *const vec) {
     size_t new_cap;
     if (vec->capacity == 0) {
         new_cap = VEC_INIT_CAP;
+    } else if (vec->capacity > SIZE_MAX / 2) {
+        return -1;
     } else {
         new_cap = vec->capacity * 2;
     }
@@ -48,55 +62,70 @@ static int vec_grow(Vector *const vec) {
 }
 
 int vec_grow_to(Vector *vec, const size_t new_cap) {
-    if (vec->capacity > new_cap) {
+    if (vec == NULL || vec->capacity > new_cap) {
         return -1;
+    }
+    if (vec->capacity == new_cap) {
+        return 0;
     }
     return vec_expand(vec, new_cap);
 }
 
-int vec_clear(Vector *vec) {
-    void (*destroy)(void *data) = vec->destroy;
-    vec_destroy(vec);
-    if (vec_init(vec, destroy) != 0) {
+int vec_reserve(Vector *vec, size_t n) {
+    if (vec == NULL) {
         return -1;
     }
+    if (n <= vec->capacity) {
+        return 0;
+    }
+    return vec_expand(vec, n);
+}
+
+int vec_clear(Vector *vec) {
+    if (vec == NULL) {
+        return -1;
+    }
+    if (vec->destroy) {
+        for (size_t i = 0; i < vec_len(vec); ++i) {
+            vec->destroy(vec->elements[i]);
+        }
+    }
+    if (vec->elements != NULL && vec->capacity > 0) {
+        memset(vec->elements, 0, vec->capacity * sizeof(void *));
+    }
+    vec_len(vec) = 0;
     return 0;
 }
 
 void vec_destroy(Vector *vec) {
+    if (vec == NULL) {
+        return;
+    }
     if (vec->destroy) {
         for (size_t i = 0; i < vec_len(vec); ++i) {
             vec->destroy(vec->elements[i]);
         }
     }
     free(vec->elements);
+    memset(vec, 0, sizeof(*vec));
 }
 
 int vec_insert(Vector *vec, void *data, size_t index) {
-    if (index > vec_len(vec)) {
+    if (vec == NULL || index > vec_len(vec)) {
         return -1;
     }
 
-    if (vec_len(vec) + 1 > vec->capacity) {
+    if (vec_len(vec) == vec->capacity) {
         if (vec_grow(vec) != 0) {
             return -1;
         }
     }
 
     if (index < vec_len(vec)) {
-        void *a = vec->elements[index];
-        vec->elements[index] = data;
-
-        void *b = NULL;
-        for (size_t i = index + 1; i <= vec_len(vec); ++i) {
-            b = vec->elements[i];
-            vec->elements[i] = a;
-            a = b;
-        }
-    } else /* index == vec_len(vec) */ {
-        vec->elements[index] = data;
+        memmove(&vec->elements[index + 1], &vec->elements[index],
+                (vec_len(vec) - index) * sizeof(void *));
     }
-
+    vec->elements[index] = data;
     vec_len(vec) += 1;
     return 0;
 }
@@ -140,7 +169,7 @@ int vec_shrink(Vector *vec) {
 
     size_t new_cap = vec_len(vec);
 
-    void *tmp = realloc(vec->elements, sizeof(void *) * new_cap);
+    void *tmp = lf_reallocarray(vec->elements, new_cap, sizeof(void *));
 
     if (tmp == NULL) {
         return -1;

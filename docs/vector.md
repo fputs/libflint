@@ -33,7 +33,7 @@ int vec_init(Vector *vec, void (*destroy)(void *data));
 
 ### vec_init_with_capacity
 
-Initialize the vector with a user-specified capacity. User is responsible for freeing elements of the vector with `vec_destroy()`. Returns a non-zero integer if there is an error
+Initialize the vector with a user-specified capacity. `capacity == 0` is allowed: `elements` is `NULL` and the first insert grows from the default capacity. Failed init leaves a destroyable empty vector (`capacity == 0`, `elements == NULL`). Returns a non-zero integer if there is an error.
 
 ```c
 int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t cap);
@@ -41,7 +41,7 @@ int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t cap)
 
 ### vec_destroy
 
-Frees the underlying array inside a `Vector`. If `destroy` was provided when creating the vector, then it is called against each element in the array before the array is freed. Does not destroy the vector itself, that is left up to the user
+Frees the underlying array inside a `Vector`. If `destroy` was provided when creating the vector, then it is called against each element in the array before the array is freed. Does not destroy the vector itself, that is left up to the user. Zeros the handle so a second `vec_destroy` is a no-op.
 
 ```c
 void vec_destroy(Vector *vec);
@@ -53,7 +53,7 @@ free(vec);
 
 ### vec_clear
 
-Destroys all elements in the vector (calling `destroy` on each if provided), then re-initializes with default capacity. Equivalent to calling `vec_destroy` followed by `vec_init`. Returns `0` on success, `-1` on error.
+Destroys all elements in the vector (calling `destroy` on each if provided) and sets length to 0. Capacity and the backing array are kept. Returns `0` on success, `-1` on error.
 
 ```c
 int vec_clear(Vector *vec);
@@ -61,10 +61,18 @@ int vec_clear(Vector *vec);
 
 ### vec_grow_to
 
-Grows the capacity of the vector to `new_cap`. Returns `-1` if `new_cap` is less than the current capacity. Returns a non-zero integer if there is an error
+Grows the capacity of the vector to `new_cap`. Returns `-1` if `new_cap` is less than the current capacity. Returns `0` without reallocating when `new_cap` equals the current capacity.
 
 ```c
 int vec_grow_to(Vector *vec, const size_t new_cap);
+```
+
+### vec_reserve
+
+Ensure the vector can hold at least `n` elements. No-op (returns `0`) when `n` is already within capacity.
+
+```c
+int vec_reserve(Vector *vec, size_t n);
 ```
 
 ### vec_insert
