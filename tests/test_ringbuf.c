@@ -3,6 +3,13 @@
 #include "lftest.h"
 #include "lfringbuf.h"
 
+static int rb_dropped;
+
+static void counting_free(void *data) {
+    free(data);
+    rb_dropped++;
+}
+
 static void test_stackalloc() {
     /* Basic insertion and size */
     RingBuffer *rb = malloc(sizeof(RingBuffer));
@@ -165,10 +172,44 @@ static void test_init_and_pop_null(void) {
     rb_destroy(&rb);
 }
 
+static void test_force_push(void) {
+    RingBuffer rb;
+    ASSERT_EQ(rb_init(&rb, 2, NULL), 0);
+    int a = 1, b = 2, c = 3;
+    ASSERT_EQ(rb_force_push(&rb, &a), 0);
+    ASSERT_EQ(rb_force_push(&rb, &b), 0);
+    ASSERT_TRUE(rb_is_full(&rb));
+    ASSERT_EQ(rb_force_push(&rb, &c), 0);
+    ASSERT_EQ(rb_count(&rb), 2);
+    ASSERT_EQ(*(int *)rb_peek(&rb), 2);
+    void *data;
+    ASSERT_EQ(rb_pop(&rb, &data), 0);
+    ASSERT_EQ(*(int *)data, 2);
+    ASSERT_EQ(rb_pop(&rb, &data), 0);
+    ASSERT_EQ(*(int *)data, 3);
+    rb_destroy(&rb);
+
+    ASSERT_EQ(rb_force_push(NULL, &a), -1);
+
+    rb_dropped = 0;
+    RingBuffer own;
+    ASSERT_EQ(rb_init(&own, 1, counting_free), 0);
+    int *p = malloc(sizeof(int));
+    int *q = malloc(sizeof(int));
+    *p = 1;
+    *q = 2;
+    ASSERT_EQ(rb_force_push(&own, p), 0);
+    ASSERT_EQ(rb_force_push(&own, q), 0);
+    ASSERT_EQ(rb_dropped, 1);
+    rb_destroy(&own);
+    ASSERT_EQ(rb_dropped, 2);
+}
+
 int main() {
     test_stackalloc();
     test_heapalloc();
     test_wrap();
     test_init_and_pop_null();
+    test_force_push();
     TEST_REPORT();
 }

@@ -1,4 +1,4 @@
-Binary tree node / forest kit. This is for constructing and splicing nodes (`ins_left`, `merge`, prune subtree), not a searchable BST.
+Binary tree node / forest kit. This is for constructing and splicing nodes (`ins_left`, `merge`, prune subtree), not a searchable BST. For `insert(key)`, see [[bst]].
 
 ## Usage
 

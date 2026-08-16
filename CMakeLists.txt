@@ -36,6 +36,8 @@ set(SOURCES
         src/bytering.c
         src/statemachine.c
         src/compat.c
+        src/bst.c
+        src/hashset.c
 )
 
 add_library(flint ${SOURCES})
@@ -81,6 +83,8 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         statemachine
         bitops
         network
+        bst
+        hashset
     )
 
     foreach(t ${TESTS})

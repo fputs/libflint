@@ -38,8 +38,12 @@ int sm_init(StateMachine *sm, const SmState *states, size_t state_count, int ini
         return -1;
     }
     for (size_t i = 0; i < transition_count; i++) {
-        if (find_state_in(states, state_count, transitions[i].source) == NULL ||
-            find_state_in(states, state_count, transitions[i].destination) == NULL) {
+        int src = transitions[i].source;
+        int dst = transitions[i].destination;
+        if ((src != SM_ANY_STATE &&
+             find_state_in(states, state_count, src) == NULL) ||
+            dst == SM_ANY_STATE ||
+            find_state_in(states, state_count, dst) == NULL) {
             return -1;
         }
     }
@@ -54,8 +58,15 @@ int sm_init(StateMachine *sm, const SmState *states, size_t state_count, int ini
 }
 
 int sm_handle_event(StateMachine *sm, const int event) {
+    if (sm == NULL) {
+        return -1;
+    }
     for (size_t i = 0; i < sm->transition_table_count; i++) {
-        if (sm->transition_table[i].source == sm_current_state(sm) && sm->transition_table[i].event == event) {
+        int src_ok = (sm->transition_table[i].source == sm_current_state(sm) ||
+                      sm->transition_table[i].source == SM_ANY_STATE);
+        int ev_ok = (sm->transition_table[i].event == event ||
+                     sm->transition_table[i].event == SM_ANY_EVENT);
+        if (src_ok && ev_ok) {
             if (sm->transition_table[i].guard != NULL) {
                 if (sm->transition_table[i].guard(sm->ctx, event) == 0) {
                     continue;

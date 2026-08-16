@@ -34,13 +34,28 @@ void rb_destroy(RingBuffer *rb) {
 }
 
 int rb_push(RingBuffer *rb, void *data) {
-   if (rb == NULL || rb_is_full(rb)) {
+   if (rb == NULL || rb->buf == NULL || rb_is_full(rb)) {
       return -1;
    }
    rb->buf[rb->tail] = data;
    rb->tail = (rb->tail + 1) % rb->capacity;
    rb->count++;
    return 0;
+}
+
+int rb_force_push(RingBuffer *rb, void *data) {
+   if (rb == NULL || rb->buf == NULL || rb->capacity == 0) {
+      return -1;
+   }
+   if (rb_is_full(rb)) {
+      if (rb->destroy != NULL) {
+         rb->destroy(rb->buf[rb->head]);
+      }
+      rb->buf[rb->head] = NULL;
+      rb->head = (rb->head + 1) % rb->capacity;
+      rb->count--;
+   }
+   return rb_push(rb, data);
 }
 
 int rb_pop(RingBuffer *rb, void **data) {

@@ -56,6 +56,14 @@ int a = 1;
 rb_push(rb, &a);
 ```
 
+### rb_force_push
+
+Adds an element to the back. If the buffer is full, the oldest element is dropped first. If a `destroy` callback was given, it is called on the dropped item. Returns `0` on success, `-1` if `rb` is NULL or was not initialized.
+
+```c
+int rb_force_push(RingBuffer *rb, void *data);
+```
+
 ### rb_pop
 
 Removes the element at the front of the buffer and stores its data in `data`. Returns `0` on success, `-1` if the buffer is empty or `data` is `NULL` (the item is left in the buffer). The caller is responsible for freeing the popped element if it was heap-allocated.

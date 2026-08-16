@@ -1,7 +1,11 @@
 #ifndef LIBFLINT_STATE_MACHINE_H
 #define LIBFLINT_STATE_MACHINE_H
 
+#include <limits.h>
 #include <stddef.h>
+
+#define SM_ANY_STATE INT_MIN
+#define SM_ANY_EVENT INT_MIN
 
 typedef struct {
     int id;

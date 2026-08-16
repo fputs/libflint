@@ -172,6 +172,49 @@ static void test_full_cycle(void) {
     ASSERT_EQ(sm_current_state(&sm), ST_IDLE);
 }
 
+static void test_wildcard(void) {
+    ThermoCtx ctx = { .heater_ok = 1 };
+    StateMachine sm;
+    static const SmTransition wild[] = {
+        { ST_IDLE,    EV_TEMP_LOW, ST_HEATING, guard_heater_ok, NULL },
+        { ST_HEATING, EV_TEMP_OK,  ST_IDLE,    NULL,            NULL },
+        { SM_ANY_STATE, EV_FAULT,  ST_ERROR,   NULL,            action_fault },
+        { ST_ERROR,   EV_RESET,    ST_IDLE,    NULL,            NULL },
+        { ST_IDLE,    SM_ANY_EVENT, ST_ERROR,  NULL,            NULL },
+    };
+
+    ASSERT_EQ(sm_init(&sm, states, ST_COUNT, ST_IDLE, wild, 5, &ctx), 0);
+
+    /* specific TEMP_LOW still wins over SM_ANY_EVENT because it is first */
+    ASSERT_EQ(sm_handle_event(&sm, EV_TEMP_LOW), 0);
+    ASSERT_EQ(sm_current_state(&sm), ST_HEATING);
+
+    /* FAULT from HEATING via SM_ANY_STATE */
+    ASSERT_EQ(sm_handle_event(&sm, EV_FAULT), 0);
+    ASSERT_EQ(sm_current_state(&sm), ST_ERROR);
+    ASSERT_EQ(ctx.fault_action_called, 1);
+    ASSERT_EQ(ctx.exited_heating, 1);
+    ASSERT_EQ(ctx.entered_error, 1);
+
+    ASSERT_EQ(sm_handle_event(&sm, EV_RESET), 0);
+    ASSERT_EQ(sm_current_state(&sm), ST_IDLE);
+
+    /* unmatched-at-IDLE event hits SM_ANY_EVENT */
+    ASSERT_EQ(sm_handle_event(&sm, EV_TEMP_OK), 0);
+    ASSERT_EQ(sm_current_state(&sm), ST_ERROR);
+
+    ASSERT_EQ(sm_handle_event(NULL, EV_RESET), -1);
+
+    /* destination cannot be SM_ANY_STATE */
+    memset(&sm, 0x5a, sizeof(sm));
+    StateMachine before = sm;
+    static const SmTransition bad[] = {
+        { ST_IDLE, EV_FAULT, SM_ANY_STATE, NULL, NULL },
+    };
+    ASSERT_EQ(sm_init(&sm, states, ST_COUNT, ST_IDLE, bad, 1, &ctx), -1);
+    ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+}
+
 static void test_init_invalid(void) {
     StateMachine sm;
 
@@ -229,6 +272,7 @@ int main(void) {
     test_action_callback();
     test_no_matching_transition();
     test_full_cycle();
+    test_wildcard();
     test_init_invalid();
     TEST_REPORT();
 }

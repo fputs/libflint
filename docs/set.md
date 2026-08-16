@@ -1,4 +1,4 @@
-A small uniqueness-constrained collection over a `List`. Membership is O(n). The public type is a wrapper, not a `#define`, so list operations do not compile against a `Set` and cannot break uniqueness.
+A small uniqueness-constrained collection over a `List`. Membership is O(n). The public type is a wrapper, not a `#define`, so list operations do not compile against a `Set` and cannot break uniqueness. For amortized O(1) membership, see [[hashset]].
 
 ## Structs
 

@@ -15,6 +15,7 @@ typedef struct {
 int rb_init(RingBuffer *rb, size_t capacity, void (*destroy)(void *));
 void rb_destroy(RingBuffer *rb);
 int rb_push(RingBuffer *rb, void *data);
+int rb_force_push(RingBuffer *rb, void *data);
 int rb_pop(RingBuffer *rb, void **data);
 void *rb_peek(RingBuffer *rb);
 void rb_clear(RingBuffer *rb);
