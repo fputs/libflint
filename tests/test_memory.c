@@ -138,6 +138,27 @@ int main() {
     PoolAllocator pool_bp;
     ASSERT_EQ(pool_init(&pool_bp, 4, 16, LF_DEFAULT_ALIGNMENT), -1);  /* buf too small */
     ASSERT_EQ(pool_init(NULL, 64, 16, LF_DEFAULT_ALIGNMENT), -1);     /* NULL allocator */
+    ASSERT_EQ(pool_init(&pool_bp, 64, 16, 3), -1);                   /* not power of two */
+    ASSERT_EQ(pool_init(&pool_bp, 64, 16, 0), -1);
+    ASSERT_EQ(pool_init(&pool_bp, 64, 16, (size_t)1 << (sizeof(size_t) * 8 - 1)), -1);
+    ASSERT_EQ(pool_init(&pool_bp, 64, 0, LF_DEFAULT_ALIGNMENT), -1);
+
+    /* Double-free does not hand the same chunk to two allocs */
+    PoolAllocator pool_df;
+    ASSERT_EQ(pool_init(&pool_df, 64, 16, LF_DEFAULT_ALIGNMENT), 0);
+    size_t df_n = pool_count_available(&pool_df);
+    void *df_x = pool_alloc(&pool_df);
+    ASSERT_NOT_NULL(df_x);
+    pool_free(&pool_df, df_x);
+    ASSERT_EQ(pool_count_available(&pool_df), df_n);
+    pool_free(&pool_df, df_x);
+    ASSERT_EQ(pool_count_available(&pool_df), df_n);
+    void *df_y = pool_alloc(&pool_df);
+    void *df_z = pool_alloc(&pool_df);
+    ASSERT_NOT_NULL(df_y);
+    ASSERT_NOT_NULL(df_z);
+    ASSERT_TRUE(df_y != df_z);
+    pool_destroy(&pool_df);
 
     /* arena save/restore */
     ArenaAllocator save_arena;

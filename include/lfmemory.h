@@ -3,8 +3,6 @@
 
 #include <stddef.h>
 
-#include "lflinkedlist.h"
-
 #ifndef LF_DEFAULT_ALIGNMENT
 #define LF_DEFAULT_ALIGNMENT (2*sizeof(void*))
 #endif // LF_DEFAULT_ALIGNMENT
@@ -37,8 +35,8 @@ typedef struct {
     size_t buf_sz;
     size_t chunk_size;
     size_t aligned_start;
-
-    List *free_list;
+    size_t free_count;
+    void *free_head;
 } PoolAllocator;
 
 int pool_init(PoolAllocator *allocator, size_t buf_sz, size_t chunk_sz, size_t chunk_align);
@@ -47,6 +45,6 @@ void pool_free_all(PoolAllocator *allocator);
 void *pool_alloc(PoolAllocator *allocator);
 void pool_destroy(PoolAllocator *allocator);
 
-#define pool_count_available(x) (x)->free_list->size
+#define pool_count_available(x) ((x)->free_count)
 
 #endif // LIBFLINT_H_MEMORY

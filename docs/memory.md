@@ -6,7 +6,7 @@ A simple arena-style allocator
 
 ### ArenaAllocator
 
-Represents an arena allocator. `ArenaAllocator` holds its own buffer, but managing its size is left to the user. Like most structs in `libflint`, it must be malloc'd first before being passed to `arena_init()`.
+Represents an arena allocator. `ArenaAllocator` holds its own buffer. The handle may be stack- or heap-allocated.
 
 ```c
 typedef struct {
@@ -24,14 +24,14 @@ typedef struct {
 
 ### arena_init
 
-Initializes the `ArenaAllocator`. The struct must first be created by the user using `malloc()`, see the example below. `buf_sz` is the size of the underlying buffer in bytes. Returns `0` on success, `-1` on error (NULL allocator or malloc failure).
+Initializes the `ArenaAllocator`. `buf_sz` is the size of the underlying buffer in bytes. Returns `0` on success, `-1` on error (NULL allocator or malloc failure).
 
 ```c
 int arena_init(ArenaAllocator *allocator, size_t buf_sz);
 
 /* Usage */
-ArenaAllocator *a = malloc(sizeof(ArenaAllocator));
-arena_init(a, 1024);
+ArenaAllocator a;
+arena_init(&a, 1024);
 ```
 
 ### arena_free
@@ -125,13 +125,13 @@ Maximum number of nested save points for `arena_save()`/`arena_restore()`. Can b
 
 # Pool Allocator
 
-A pool-based allocator for chunks of the same size. Useful for quickly allocating and using memory of the same size without worrying about order; most operations are `O(1)`
+A pool of same-sized chunks carved from one buffer. The free list is intrusive: a free chunk stores `void *next` in its first word. `pool_alloc` and `pool_free` do not call the system allocator. `lfmemory.h` does not include `lflinkedlist.h`.
+
+The handle may be stack- or heap-allocated. `chunk_align` must be a non-zero power of two. Double-`pool_free` of the same live chunk is ignored so two later allocs cannot return the same address.
 
 ## Structs
 
 ### PoolAllocator
-
-Represents a pool allocator. `PoolAllocator` holds its own buffer, but managing its size is left to the user. Like most structs in `libflint`, it must be malloc'd first before being passed to `pool_init()`.
 
 ```c
 typedef struct {
@@ -139,8 +139,8 @@ typedef struct {
     size_t buf_sz;
     size_t chunk_size;
     size_t aligned_start;
-
-    List *free_list;
+    size_t free_count;
+    void *free_head;
 } PoolAllocator;
 ```
 
@@ -148,23 +148,23 @@ typedef struct {
 
 ### pool_init
 
-Initializes the `PoolAllocator`. The struct must first be created by the user using `malloc()`, see the example below. Returns `0` on success, `-1` on error (NULL allocator, malloc failure, invalid chunk size, or buffer too small to fit alignment and at least one chunk).
+Initializes the `PoolAllocator`. Returns `0` on success, `-1` on error (NULL allocator, zero sizes, non-power-of-two or unsatisfiable `chunk_align`, malloc failure, or buffer too small for one aligned chunk).
 
 - `buf_sz`: Size of the underlying buffer in bytes
-- `chunk_sz`: Size of each chunk in bytes
-- `chunk_align`: The alignment of the chunks. The`LF_DEFAULT_ALIGNMENT` macro is available as a good default for basic types
+- `chunk_sz`: Size of each chunk in bytes (rounded up to `chunk_align`; must fit a `void *`)
+- `chunk_align`: Alignment of the chunks. `LF_DEFAULT_ALIGNMENT` is a good default for basic types
 
 ```c
 int pool_init(PoolAllocator *allocator, size_t buf_sz, size_t chunk_sz, size_t chunk_align);
 
 /* Usage */
-PoolAllocator *pool = malloc(sizeof(PoolAllocator));
-pool_init(pool, 64, 16, LF_DEFAULT_ALIGNMENT);
+PoolAllocator pool;
+pool_init(&pool, 64, 16, LF_DEFAULT_ALIGNMENT);
 ```
 
 ### pool_free
 
-Return a single chunk back to the pool. `ptr` is a pointer to the allocated chunk.
+Return a single chunk back to the pool. `ptr` is a pointer to the allocated chunk. Pointers outside the pool, misaligned pointers, NULL, and a chunk already on the free list are ignored.
 
 ```c
 void pool_free(PoolAllocator *allocator, void *ptr);
@@ -172,7 +172,7 @@ void pool_free(PoolAllocator *allocator, void *ptr);
 
 ### pool_free_all
 
-Returns all chunks back to the pool. Any pointers received before this call are now invalid and must be reasigned with `pool_alloc` or set to `NULL`.
+Returns all chunks back to the pool. Any pointers received before this call are now invalid and must be reassigned with `pool_alloc` or set to `NULL`.
 
 ```c
 void pool_free_all(PoolAllocator *allocator);
@@ -180,7 +180,7 @@ void pool_free_all(PoolAllocator *allocator);
 
 ### pool_alloc
 
-Allocate a chunk from the pool. Returns `NULL` on failure.
+Allocate a chunk from the pool. Returns `NULL` on failure. The chunk is zeroed.
 
 ```c
 void *pool_alloc(PoolAllocator *allocator);
@@ -188,7 +188,7 @@ void *pool_alloc(PoolAllocator *allocator);
 
 ### pool_destroy
 
-Destroys the underlying buffer and `List` in `allocator`. Does not free the `allocator` struct itself — the user is responsible for freeing it (matching the convention of other libflint modules).
+Frees the underlying buffer and zeros the handle. Does not free the `allocator` struct itself.
 
 ```c
 void pool_destroy(PoolAllocator *allocator);
@@ -198,10 +198,10 @@ void pool_destroy(PoolAllocator *allocator);
 
 ### pool_count_available
 
-Returns the amount of chunks left available in the pool
+Returns the number of chunks left available in the pool.
 
 ```c
-#define pool_count_available(x) (x)->free_list->size
+#define pool_count_available(x) ((x)->free_count)
 ```
 
 ### LF_DEFAULT_ALIGNMENT

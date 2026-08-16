@@ -1,9 +1,12 @@
-#include <lfmath.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "lfmemory.h"
+
+static int is_pow2_uptr(uintptr_t n) {
+    return n != 0 && (n & (n - 1)) == 0;
+}
 
 int arena_init(ArenaAllocator *allocator, size_t buf_sz) {
     if (allocator == NULL) {
@@ -56,14 +59,18 @@ void arena_restore(ArenaAllocator *allocator) {
 }
 
 static uintptr_t align_forward(const uintptr_t ptr, const uintptr_t align) {
-    if (!is_power_of_two(align)) {
+    if (!is_pow2_uptr(align)) {
         return 0;
     }
     uintptr_t p = ptr;
     const uintptr_t m = p & (align - 1);
 
     if (m != 0) {
-        p += align - m;
+        uintptr_t add = align - m;
+        if (p > UINTPTR_MAX - add) {
+            return 0;
+        }
+        p += add;
     }
     return p;
 }
@@ -89,7 +96,7 @@ static void *arena_malloc_align(ArenaAllocator *allocator, const size_t size, si
 
 static void *arena_resize_align(ArenaAllocator *allocator, void *mem, const size_t old_sz, const size_t new_sz, size_t align) {
     unsigned char *old_mem = mem;
-    if (!is_power_of_two(align)) {
+    if (!is_pow2_uptr(align)) {
         return NULL;
     }
 
@@ -143,86 +150,122 @@ void *arena_resize(ArenaAllocator *allocator, void *mem, const size_t old_sz, co
     return arena_resize_align(allocator, mem, old_sz, new_sz, LF_DEFAULT_ALIGNMENT);
 }
 
+static void pool_zero(PoolAllocator *allocator) {
+    allocator->buf = NULL;
+    allocator->buf_sz = 0;
+    allocator->chunk_size = 0;
+    allocator->aligned_start = 0;
+    allocator->free_count = 0;
+    allocator->free_head = NULL;
+}
+
 int pool_init(PoolAllocator *allocator, size_t buf_sz, size_t chunk_sz, size_t chunk_align) {
-    if (allocator == NULL) {
+    if (allocator == NULL || buf_sz == 0 || chunk_sz == 0) {
+        return -1;
+    }
+    if (!is_pow2_uptr(chunk_align)) {
         return -1;
     }
 
-    allocator->buf = malloc(sizeof(unsigned char) * buf_sz);
-    if (allocator->buf == NULL) {
+    unsigned char *buf = malloc(buf_sz);
+    if (buf == NULL) {
         return -1;
     }
-    uintptr_t istart = (uintptr_t)allocator->buf;
+
+    uintptr_t istart = (uintptr_t)buf;
     uintptr_t start = align_forward(istart, chunk_align);
-    allocator->aligned_start = (size_t)(start - istart);
-    allocator->buf_sz = buf_sz - allocator->aligned_start;
-
-    allocator->chunk_size = align_forward(chunk_sz, chunk_align);
-    if (allocator->chunk_size < sizeof(void *) || allocator->buf_sz < allocator->chunk_size) {
-        free(allocator->buf);
-        allocator->buf = NULL;
-        allocator->buf_sz = 0;
+    if (start == 0 || start < istart) {
+        free(buf);
         return -1;
     }
 
-    allocator->free_list = malloc(sizeof(List));
-    if (allocator->free_list == NULL) {
-        free(allocator->buf);
-        allocator->buf = NULL;
-        allocator->buf_sz = 0;
+    size_t aligned_start = (size_t)(start - istart);
+    if (aligned_start >= buf_sz) {
+        free(buf);
         return -1;
     }
-    ll_init(allocator->free_list, NULL, NULL);
 
+    size_t usable = buf_sz - aligned_start;
+    uintptr_t aligned_chunk = align_forward((uintptr_t)chunk_sz, chunk_align);
+    if (aligned_chunk == 0 || aligned_chunk < sizeof(void *) ||
+        aligned_chunk > usable) {
+        free(buf);
+        return -1;
+    }
+
+    allocator->buf = buf;
+    allocator->aligned_start = aligned_start;
+    allocator->buf_sz = usable;
+    allocator->chunk_size = (size_t)aligned_chunk;
+    allocator->free_head = NULL;
+    allocator->free_count = 0;
     pool_free_all(allocator);
     return 0;
 }
 
 void pool_free(PoolAllocator *allocator, void *ptr) {
-    const void *start = allocator->buf + allocator->aligned_start;
-    const void *end = allocator->buf + allocator->aligned_start + allocator->buf_sz;
-
-    if (ptr == NULL) {
+    if (allocator == NULL || allocator->buf == NULL || ptr == NULL) {
         return;
     }
 
-    if (!(start <= ptr && ptr < end)) {
+    unsigned char *start = allocator->buf + allocator->aligned_start;
+    unsigned char *end = start + allocator->buf_sz;
+    unsigned char *p = ptr;
+
+    if (p < start || p >= end) {
+        return;
+    }
+    size_t off = (size_t)(p - start);
+    if (allocator->chunk_size == 0 || off % allocator->chunk_size != 0) {
         return;
     }
 
-    ll_ins_next(allocator->free_list, allocator->free_list->tail, ptr);
+    size_t seen = 0;
+    for (void *n = allocator->free_head; n != NULL; n = *(void **)n) {
+        if (n == ptr || seen >= allocator->free_count) {
+            return;
+        }
+        seen++;
+    }
+
+    *(void **)ptr = allocator->free_head;
+    allocator->free_head = ptr;
+    allocator->free_count++;
 }
 
 void pool_free_all(PoolAllocator *allocator) {
-    ll_destroy(allocator->free_list);
-    ll_init(allocator->free_list, NULL, NULL);
+    if (allocator == NULL || allocator->buf == NULL || allocator->chunk_size == 0) {
+        return;
+    }
+
+    allocator->free_head = NULL;
+    allocator->free_count = 0;
 
     size_t chunk_count = allocator->buf_sz / allocator->chunk_size;
-    for (size_t i = 0; i < chunk_count; ++i) {
-        ll_ins_next(allocator->free_list, allocator->free_list->head,
-                    &allocator->buf[allocator->aligned_start + i * allocator->chunk_size]);
+    for (size_t i = chunk_count; i > 0; --i) {
+        void *chunk = &allocator->buf[allocator->aligned_start +
+                                      (i - 1) * allocator->chunk_size];
+        *(void **)chunk = allocator->free_head;
+        allocator->free_head = chunk;
+        allocator->free_count++;
     }
 }
 
 void *pool_alloc(PoolAllocator *allocator) {
-    ListNode *node = allocator->free_list->head;
-    if (node == NULL) {
+    if (allocator == NULL || allocator->free_head == NULL) {
         return NULL;
     }
 
-    void *tmp;
-    ll_remove(allocator->free_list, allocator->free_list->head, &tmp);
-    return memset(tmp, 0, allocator->chunk_size);
+    void *ptr = allocator->free_head;
+    allocator->free_head = *(void **)ptr;
+    allocator->free_count--;
+    return memset(ptr, 0, allocator->chunk_size);
 }
 
 void pool_destroy(PoolAllocator *allocator) {
     if (allocator == NULL) {
         return;
     }
-    ll_destroy(allocator->free_list);
-    free(allocator->free_list);
     free(allocator->buf);
-    allocator->buf = NULL;
-    allocator->free_list = NULL;
-    allocator->buf_sz = 0;
+    pool_zero(allocator);
 }
