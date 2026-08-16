@@ -12,12 +12,17 @@ My personal library of common C data structures and algorithms. Supports Linux, 
 
 ## Cmake
 
-### If libflint is in ./lib/libflint
+```cmake
+# If libflint is in ./lib/libflint
 add_subdirectory(lib/libflint)
 
-### when building target...
-target_include_directories(${TARGET} PRIVATE lib/libflint/include)
-target_link_libraries(${TARGET} PRIVATE flint )
+# when building a target...
+target_link_libraries(${TARGET} PRIVATE flint)
+```
+
+`flint` exports its `include/` directory, so consumers do not need a separate
+`target_include_directories` for libflint headers. Compile definitions stay on
+the `flint` target and are not injected into the parent project.
 
 ## Testing
 

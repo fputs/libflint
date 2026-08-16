@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 project(flint C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux"))
-    add_compile_definitions(flint __USE_XOPEN_EXTENDED)
-endif()
-
 set(CMAKE_C_STANDARD 99)
-include_directories(include)
 
 set(SOURCES
         src/linkedlist.c
@@ -29,24 +23,31 @@ set(SOURCES
         src/statemachine.c
 )
 
-if ((${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
-    add_library(flint ${SOURCES} src/macos.c)
-else()
-    add_library(flint ${SOURCES})
+add_library(flint ${SOURCES})
+
+if(APPLE)
+    target_sources(flint PRIVATE src/macos.c)
 endif()
 
-if ((${CMAKE_SYSTEM_NAME} STREQUAL "Linux"))
-    target_link_libraries(flint pthread bsd)
+# Public headers for both in-tree tests and add_subdirectory() consumers.
+# Feature-test macros stay PRIVATE so they do not leak into a parent project.
+target_include_directories(flint PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_compile_definitions(flint PRIVATE _DEFAULT_SOURCE _GNU_SOURCE)
 endif()
 
-if(${CMAKE_PROJECT_NAME} STREQUAL flint)
+find_package(Threads REQUIRED)
+target_link_libraries(flint PRIVATE Threads::Threads)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(flint PRIVATE bsd)
+endif()
+
+if(CMAKE_PROJECT_NAME STREQUAL flint)
     enable_testing()
-
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-        set(FLINT_TEST_LIBS flint pthread bsd)
-    else()
-        set(FLINT_TEST_LIBS flint pthread)
-    endif()
 
     set(TESTS
         linkedlist
@@ -70,28 +71,32 @@ if(${CMAKE_PROJECT_NAME} STREQUAL flint)
 
     foreach(t ${TESTS})
         add_executable(test_${t} tests/test_${t}.c)
-        target_include_directories(test_${t} PRIVATE include)
-        target_link_libraries(test_${t} ${FLINT_TEST_LIBS})
+        target_link_libraries(test_${t} PRIVATE flint)
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            target_compile_definitions(test_${t} PRIVATE _DEFAULT_SOURCE)
+        endif()
         add_test(NAME ${t} COMMAND test_${t})
     endforeach()
 
     # Network test (slow, uses sleep + sockets)
     add_executable(test_network tests/test_network.c)
-    target_include_directories(test_network PRIVATE include)
-    target_link_libraries(test_network ${FLINT_TEST_LIBS})
+    target_link_libraries(test_network PRIVATE flint)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(test_network PRIVATE _DEFAULT_SOURCE)
+    endif()
     add_test(NAME network COMMAND test_network)
     set_tests_properties(network PROPERTIES LABELS "slow")
 
-    # macOS-only test
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    if(APPLE)
         add_executable(test_macos tests/test_macos.c)
-        target_include_directories(test_macos PRIVATE include)
-        target_link_libraries(test_macos ${FLINT_TEST_LIBS})
+        target_link_libraries(test_macos PRIVATE flint)
         add_test(NAME macos COMMAND test_macos)
         set_tests_properties(macos PROPERTIES LABELS "slow")
     endif()
 
     add_executable(netmanual tests/netmanual.c)
-    target_include_directories(netmanual PRIVATE include)
-    target_link_libraries(netmanual ${FLINT_TEST_LIBS})
+    target_link_libraries(netmanual PRIVATE flint)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(netmanual PRIVATE _DEFAULT_SOURCE)
+    endif()
 endif()
