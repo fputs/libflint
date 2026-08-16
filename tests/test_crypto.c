@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lftest.h"
-#include "lfcrypto.h"
+#include "lfcodec.h"
+#include "lfpuzzle.h"
 
 int main() {
     const unsigned char *in = (const unsigned char *)"BUTT";
@@ -168,6 +169,35 @@ int main() {
     /* extra junk after padding */
     us = b64_decode("QlVUVA==x", 9, &s_sz);
     ASSERT_NULL(us);
+
+    /* *_into: caller-sized buffers */
+    char hex_buf[9];
+    ASSERT_EQ(hex_encode_into(h, 4, hex_buf, sizeof hex_buf), 0);
+    ASSERT_STR_EQ(hex_buf, "deadbeef");
+    ASSERT_EQ(hex_encode_into(h, 4, hex_buf, 8), -1);
+
+    unsigned char hex_out[4];
+    size_t hex_n = 0;
+    ASSERT_EQ(hex_decode_into("DEADBEEF", hex_out, sizeof hex_out, &hex_n), 0);
+    ASSERT_EQ(hex_n, (size_t)4);
+    ASSERT_EQ(hex_out[0], (unsigned char)0xDE);
+    ASSERT_EQ(hex_decode_into("DEADBEEF", hex_out, 3, &hex_n), -1);
+    ASSERT_EQ(hex_n, (size_t)4); /* unchanged on failure */
+
+    char b64_buf[16];
+    ASSERT_EQ(b64_encode_into((const unsigned char *)"Hi", 2, b64_buf, sizeof b64_buf), 0);
+    ASSERT_STR_EQ(b64_buf, "SGk=");
+    ASSERT_EQ(b64_encode_into((const unsigned char *)"Hi", 2, b64_buf, 4), -1);
+
+    unsigned char b64_out[8];
+    size_t b64_n = 99;
+    ASSERT_EQ(b64_decode_into("SGk=", 4, b64_out, sizeof b64_out, &b64_n), 0);
+    ASSERT_EQ(b64_n, (size_t)2);
+    ASSERT_EQ(b64_out[0], (unsigned char)'H');
+    ASSERT_EQ(b64_out[1], (unsigned char)'i');
+    b64_n = 99;
+    ASSERT_EQ(b64_decode_into("SGk=", 4, b64_out, 1, &b64_n), -1);
+    ASSERT_EQ(b64_n, (size_t)99);
 
     /* binary payload containing NUL — do not use ASSERT_STR_EQ */
     unsigned char raw_nul[3] = { 0x00, 0x41, 0x00 };

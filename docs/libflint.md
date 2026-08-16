@@ -18,7 +18,9 @@
 ### Utilities
 - [[string]] — C string helpers
 - [[math]] — General math functions
-- [[crypto]] — Cryptographic tools
+- [[codec]] — Hex and Base64 codecs (not cryptography)
+- [[puzzle]] — Repeating-key XOR and Hamming distance (Cryptopals-style, not cryptography)
+- [[crypto]] — Compatibility include of codec + puzzle
 - [[parsing]] — String parsing tools
 - [[input]] — I/O module to assist with consuming data from files
 - [[utility]] — Utility code that does not fit anywhere else

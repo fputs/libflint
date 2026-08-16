@@ -3,10 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lfcompat.h"
-#include "lfcrypto.h"
-
-#define B64_BUF_SZ 256
+#include "lfcodec.h"
+#include "lfpuzzle.h"
 
 static const char b64_table[] = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
@@ -19,41 +17,73 @@ static const char b64_table[] = {
         '4', '5', '6', '7', '8', '9', '+', '/'
 };
 
-typedef struct {
-    unsigned char *ptr;
-    size_t count;
-} b64_buf;
-
-static int new_b64_buf(b64_buf *b) {
-    b->ptr = malloc(B64_BUF_SZ);
-    if (b->ptr == NULL) {
-        return 1;
+static int b64_encoded_len(size_t n, size_t *need) {
+    size_t groups = n / 3 + (n % 3 != 0);
+    if (groups > (SIZE_MAX - 1) / 4) {
+        return -1;
     }
-    b->count = 1;
+    *need = groups * 4 + 1;
     return 0;
 }
 
-static int resize_b64_buf(b64_buf *b, size_t sz) {
-    size_t need = b->count;
-    while (need <= SIZE_MAX / B64_BUF_SZ && sz > need * B64_BUF_SZ) {
-        if (need == SIZE_MAX) {
-            return 1;
+static void b64_encode_triplet(const unsigned char t[3], char out[4]) {
+    out[0] = b64_table[(t[0] & 0xfc) >> 2];
+    out[1] = b64_table[((t[0] & 0x03) << 4) | ((t[1] & 0xf0) >> 4)];
+    out[2] = b64_table[((t[1] & 0x0f) << 2) | ((t[2] & 0xc0) >> 6)];
+    out[3] = b64_table[t[2] & 0x3f];
+}
+
+int b64_encode_into(const unsigned char *s, size_t sz, char *dest, size_t dest_cap) {
+    size_t need;
+    if (dest == NULL || (s == NULL && sz != 0)) {
+        return -1;
+    }
+    if (b64_encoded_len(sz, &need) != 0 || dest_cap < need) {
+        return -1;
+    }
+
+    size_t o = 0;
+    size_t i = 0;
+    while (i + 3 <= sz) {
+        b64_encode_triplet(s + i, dest + o);
+        i += 3;
+        o += 4;
+    }
+    if (i < sz) {
+        unsigned char t[3] = {s[i], 0, 0};
+        if (sz - i == 2) {
+            t[1] = s[i + 1];
         }
-        need++;
+        char q[4];
+        b64_encode_triplet(t, q);
+        dest[o++] = q[0];
+        dest[o++] = q[1];
+        if (sz - i == 2) {
+            dest[o++] = q[2];
+            dest[o++] = '=';
+        } else {
+            dest[o++] = '=';
+            dest[o++] = '=';
+        }
     }
-    if (need > SIZE_MAX / B64_BUF_SZ || sz > need * B64_BUF_SZ) {
-        return 1;
-    }
-    if (need == b->count) {
-        return 0;
-    }
-    void *tmp = lf_reallocarray(b->ptr, need, B64_BUF_SZ);
-    if (tmp == NULL) {
-        return 1;
-    }
-    b->ptr = tmp;
-    b->count = need;
+    dest[o] = '\0';
     return 0;
+}
+
+char *b64_encode(const unsigned char *s, size_t sz) {
+    size_t need;
+    if (b64_encoded_len(sz, &need) != 0) {
+        return NULL;
+    }
+    char *out = malloc(need);
+    if (out == NULL) {
+        return NULL;
+    }
+    if (b64_encode_into(s, sz, out, need) != 0) {
+        free(out);
+        return NULL;
+    }
+    return out;
 }
 
 static int b64_val(unsigned char c) {
@@ -90,98 +120,25 @@ static int b64_decode_quartet(unsigned char tmp[4], unsigned char buf[3]) {
     return 0;
 }
 
-char *b64_encode(const unsigned char *s, size_t sz) {
-    int i = 0;
-    b64_buf encbuf;
-    size_t size = 0;
-    unsigned char buf[4];
-    unsigned char tmp[3];
-
-    if (new_b64_buf(&encbuf) != 0) {
-        return NULL;
-    }
-
-    while (sz--) {
-        tmp[i++] = *(s++);
-        if (i == 3) {
-            buf[0] = (tmp[0] & 0xfc) >> 2;
-            buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
-            buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
-            buf[3] = tmp[2] & 0x3f;
-
-            if (resize_b64_buf(&encbuf, size + 4) != 0) {
-                free(encbuf.ptr);
-                return NULL;
-            }
-
-            for (i = 0; i < 4; ++i) {
-                encbuf.ptr[size++] = b64_table[buf[i]];
-            }
-
-            i = 0;
-        }
-    }
-
-    if (i > 0) {
-        for (int j = i; j < 3; ++j) {
-            tmp[j] = '\0';
-        }
-
-        buf[0] = (tmp[0] & 0xfc) >> 2;
-        buf[1] = ((tmp[0] & 0x03) << 4) + ((tmp[1] & 0xf0) >> 4);
-        buf[2] = ((tmp[1] & 0x0f) << 2) + ((tmp[2] & 0xc0) >> 6);
-        buf[3] = tmp[2] & 0x3f;
-
-        for (int j = 0; (j < i + 1); ++j) {
-            if (resize_b64_buf(&encbuf, size + 1) != 0) {
-                free(encbuf.ptr);
-                return NULL;
-            }
-            encbuf.ptr[size++] = b64_table[buf[j]];
-        }
-
-        while (i++ < 3) {
-            if (resize_b64_buf(&encbuf, size + 1) != 0) {
-                free(encbuf.ptr);
-                return NULL;
-            }
-            encbuf.ptr[size++] = '=';
-        }
-    }
-
-    if (resize_b64_buf(&encbuf, size + 1) != 0) {
-        free(encbuf.ptr);
-        return NULL;
-    }
-    encbuf.ptr[size] = '\0';
-
-    return (char *)encbuf.ptr;
-}
-
-unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
-    if (s == NULL && sz != 0) {
-        return NULL;
+int b64_decode_into(const char *s, size_t sz, unsigned char *dest, size_t dest_cap,
+                    size_t *decode_sz) {
+    if ((s == NULL && sz != 0) || dest == NULL) {
+        return -1;
     }
 
     int i = 0;
     size_t size = 0;
-    b64_buf decbuf;
     unsigned char buf[3];
     unsigned char tmp[4];
-
-    if (new_b64_buf(&decbuf) != 0) {
-        return NULL;
-    }
-
     size_t n = 0;
+
     while (n < sz) {
         unsigned char c = (unsigned char)s[n];
         if (c == '=') {
             break;
         }
         if (b64_val(c) < 0) {
-            free(decbuf.ptr);
-            return NULL;
+            return -1;
         }
 
         tmp[i++] = c;
@@ -189,40 +146,34 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
 
         if (i == 4) {
             if (b64_decode_quartet(tmp, buf) != 0) {
-                free(decbuf.ptr);
-                return NULL;
+                return -1;
             }
-            if (resize_b64_buf(&decbuf, size + 3) != 0) {
-                free(decbuf.ptr);
-                return NULL;
+            if (dest_cap - size < 3) {
+                return -1;
             }
-            for (i = 0; i < 3; ++i) {
-                decbuf.ptr[size++] = buf[i];
-            }
+            dest[size++] = buf[0];
+            dest[size++] = buf[1];
+            dest[size++] = buf[2];
             i = 0;
         }
     }
 
     if (n < sz && (unsigned char)s[n] == '=') {
         if (i != 2 && i != 3) {
-            free(decbuf.ptr);
-            return NULL;
+            return -1;
         }
         size_t pads = 4 - (size_t)i;
         for (size_t p = 0; p < pads; ++p) {
             if (n >= sz || (unsigned char)s[n] != '=') {
-                free(decbuf.ptr);
-                return NULL;
+                return -1;
             }
             n++;
         }
         if (n != sz) {
-            free(decbuf.ptr);
-            return NULL;
+            return -1;
         }
     } else if (i == 1) {
-        free(decbuf.ptr);
-        return NULL;
+        return -1;
     }
 
     if (i > 0) {
@@ -230,29 +181,47 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
             tmp[j] = 'A';
         }
         if (b64_decode_quartet(tmp, buf) != 0) {
-            free(decbuf.ptr);
-            return NULL;
+            return -1;
         }
-        if (resize_b64_buf(&decbuf, size + (size_t)(i - 1)) != 0) {
-            free(decbuf.ptr);
-            return NULL;
+        size_t extra = (size_t)(i - 1);
+        if (dest_cap - size < extra) {
+            return -1;
         }
         for (int j = 0; j < i - 1; ++j) {
-            decbuf.ptr[size++] = buf[j];
+            dest[size++] = buf[j];
         }
     }
 
-    if (resize_b64_buf(&decbuf, size + 1) != 0) {
-        free(decbuf.ptr);
-        return NULL;
+    if (size < dest_cap) {
+        dest[size] = '\0';
     }
-    decbuf.ptr[size] = '\0';
-
     if (decode_sz != NULL) {
         *decode_sz = size;
     }
+    return 0;
+}
 
-    return decbuf.ptr;
+unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
+    if (s == NULL && sz != 0) {
+        return NULL;
+    }
+    size_t cap = sz + 1;
+    if (sz > SIZE_MAX - 1) {
+        return NULL;
+    }
+    unsigned char *out = malloc(cap);
+    if (out == NULL) {
+        return NULL;
+    }
+    size_t got = 0;
+    if (b64_decode_into(s, sz, out, cap, &got) != 0) {
+        free(out);
+        return NULL;
+    }
+    if (decode_sz != NULL) {
+        *decode_sz = got;
+    }
+    return out;
 }
 
 static int hex_nibble(char c) {
@@ -268,34 +237,44 @@ static int hex_nibble(char c) {
     return -1;
 }
 
-unsigned char *hex_decode(const char *orig, size_t *sz) {
-    if (orig == NULL || sz == NULL) {
-        return NULL;
-    }
-
+static int hex_decoded_len(const char *orig, const char **body, size_t *out_sz, int *pad) {
     const char *sptr = orig;
     if (sptr[0] == '0' && (sptr[1] == 'x' || sptr[1] == 'X')) {
         sptr += 2;
     }
 
     size_t slen = strlen(sptr);
-    int pad = (slen % 2 != 0);
-    size_t out_sz = (slen + (size_t)pad) / 2;
+    int odd = (slen % 2 != 0);
+    *body = sptr;
+    *pad = odd;
+    *out_sz = (slen + (size_t)odd) / 2;
+    return 0;
+}
 
-    unsigned char *hex = malloc(out_sz == 0 ? 1 : out_sz);
-    if (hex == NULL) {
-        return NULL;
+int hex_decode_into(const char *src, unsigned char *dest, size_t dest_cap, size_t *out_sz) {
+    if (src == NULL || dest == NULL) {
+        return -1;
     }
 
+    const char *sptr;
+    int pad;
+    size_t need;
+    if (hex_decoded_len(src, &sptr, &need, &pad) != 0) {
+        return -1;
+    }
+    if (dest_cap < need) {
+        return -1;
+    }
+
+    size_t slen = strlen(sptr);
     size_t out_i = 0;
     size_t in_i = 0;
     if (pad) {
         int lo = hex_nibble(sptr[0]);
         if (lo < 0) {
-            free(hex);
-            return NULL;
+            return -1;
         }
-        hex[out_i++] = (unsigned char)lo;
+        dest[out_i++] = (unsigned char)lo;
         in_i = 1;
     }
 
@@ -303,14 +282,58 @@ unsigned char *hex_decode(const char *orig, size_t *sz) {
         int hi = hex_nibble(sptr[in_i]);
         int lo = hex_nibble(sptr[in_i + 1]);
         if (hi < 0 || lo < 0) {
-            free(hex);
-            return NULL;
+            return -1;
         }
-        hex[out_i++] = (unsigned char)((hi << 4) | lo);
+        dest[out_i++] = (unsigned char)((hi << 4) | lo);
     }
 
+    if (out_sz != NULL) {
+        *out_sz = need;
+    }
+    return 0;
+}
+
+unsigned char *hex_decode(const char *orig, size_t *sz) {
+    if (orig == NULL || sz == NULL) {
+        return NULL;
+    }
+
+    const char *body;
+    int pad;
+    size_t out_sz;
+    if (hex_decoded_len(orig, &body, &out_sz, &pad) != 0) {
+        return NULL;
+    }
+
+    unsigned char *hex = malloc(out_sz == 0 ? 1 : out_sz);
+    if (hex == NULL) {
+        return NULL;
+    }
+    if (hex_decode_into(orig, hex, out_sz == 0 ? 1 : out_sz, &out_sz) != 0) {
+        free(hex);
+        return NULL;
+    }
     *sz = out_sz;
     return hex;
+}
+
+int hex_encode_into(const unsigned char *src, size_t n, char *dest, size_t dest_cap) {
+    if (n > (SIZE_MAX - 1) / 2) {
+        return -1;
+    }
+    if ((src == NULL && n != 0) || dest == NULL) {
+        return -1;
+    }
+    size_t need = n * 2 + 1;
+    if (dest_cap < need) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < n; ++i) {
+        snprintf(dest + i * 2, 3, "%02x", src[i]);
+    }
+    dest[need - 1] = '\0';
+    return 0;
 }
 
 char *hex_encode(const unsigned char *hex, size_t sz) {
@@ -320,25 +343,23 @@ char *hex_encode(const unsigned char *hex, size_t sz) {
     if (hex == NULL && sz != 0) {
         return NULL;
     }
-    size_t ssz = sz * 2 + 1;
-    char *s = malloc(ssz);
+    size_t need = sz * 2 + 1;
+    char *s = malloc(need);
     if (s == NULL) {
         return NULL;
     }
-
-    char *pos = s;
-
-    for (size_t i = 0; i < sz; ++i) {
-        snprintf(pos, 3, "%02x", hex[i]);
-        pos += 2;
+    if (hex_encode_into(hex, sz, s, need) != 0) {
+        free(s);
+        return NULL;
     }
-    s[ssz - 1] = '\0';
-
     return s;
 }
 
 char *hex_to_str(const unsigned char *hex, size_t sz) {
-    char *s = malloc(sizeof(char) * (sz + 1));
+    if (sz == SIZE_MAX || (hex == NULL && sz != 0)) {
+        return NULL;
+    }
+    char *s = malloc(sz + 1);
     if (s == NULL) {
         return NULL;
     }
@@ -350,12 +371,13 @@ char *hex_to_str(const unsigned char *hex, size_t sz) {
     return s;
 }
 
-unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsigned char* key, size_t k_sz) {
-    if (k_sz == 0) {
+unsigned char *repeating_key_xor(const unsigned char *s, size_t s_sz,
+                                 const unsigned char *key, size_t k_sz) {
+    if (k_sz == 0 || (s == NULL && s_sz != 0) || key == NULL) {
         return NULL;
     }
 
-    unsigned char* r = malloc(sizeof(unsigned char) * s_sz);
+    unsigned char *r = malloc(s_sz == 0 ? 1 : s_sz);
     if (r == NULL) {
         return NULL;
     }
@@ -367,11 +389,18 @@ unsigned char* repeating_key_xor(const unsigned char* s, size_t s_sz, const unsi
     return r;
 }
 
-unsigned char *repeating_key_xor_s(const char* s, const char* key) {
-    return repeating_key_xor((unsigned char*)s, strlen(s), (unsigned char*)key, strlen(key));
+unsigned char *repeating_key_xor_s(const char *s, const char *key) {
+    if (s == NULL || key == NULL) {
+        return NULL;
+    }
+    return repeating_key_xor((const unsigned char *)s, strlen(s),
+                             (const unsigned char *)key, strlen(key));
 }
 
 int hamming_distance_s(const char *a, const char *b) {
+    if (a == NULL || b == NULL) {
+        return -1;
+    }
     size_t sz = strlen(a);
     if (sz != strlen(b)) {
         return -1;
@@ -381,6 +410,9 @@ int hamming_distance_s(const char *a, const char *b) {
 }
 
 int hamming_distance(const unsigned char *a, const unsigned char *b, size_t sz) {
+    if ((a == NULL || b == NULL) && sz != 0) {
+        return -1;
+    }
     int hamming = 0;
     for (size_t i = 0; i < sz; ++i) {
         if (a[i] == b[i]) {
