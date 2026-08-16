@@ -27,7 +27,7 @@ int clamp_int(int i, int low, int high);
 
 ### binstr_to_int
 
-Converts a string representing a binary number into an integer. Supports underscores as visual separators. Returns `-1` if `s` is `NULL` or if any character is not `'0'`, `'1'`, or `'_'`. Returns `0` for an empty string.
+Converts a string representing a binary number into an integer. Supports underscores as visual separators. Returns `-1` if `s` is `NULL`, if there are no `0`/`1` digits (empty or only underscores), if any character is not `'0'`, `'1'`, or `'_'`, or if the value does not fit in `int`. `-1` is only an error code; overflow is rejected so a valid result is never negative.
 
 ```c
 int binstr_to_int(const char *s);
@@ -40,7 +40,7 @@ binstr_to_int(NULL);    // -1 (null)
 
 ### bresenham
 
-Uses bresenham's line algorithm to generate a line in 2D space. Returns a pointer to an array of `Point`. The `sz` parameter holds the size of the array.
+Uses bresenham's line algorithm to generate a line in 2D space. Returns a pointer to an array of `Point`. The `sz` parameter holds the size of the array. Returns `NULL` if `sz` is `NULL` or if the span cannot be allocated. Deltas are computed without signed overflow.
 
 ```c
 Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
@@ -84,7 +84,7 @@ gcd(7, 13);  // returns 1
 
 ### lcm
 
-Returns the least common multiple of `a` and `b`. Returns `0` if either input is `0`. Handles negative inputs.
+Returns the least common multiple of `a` and `b`. Returns `0` if either input is `0`. Handles negative inputs. Returns `-1` if the result does not fit in `int` (including any call involving `INT_MIN`).
 
 ```c
 int lcm(int a, int b);
@@ -106,7 +106,7 @@ lerp(0.0f, 10.0f, 0.5f);  // returns 5.0
 
 ### isqrt
 
-Returns the integer square root (floor) of `n`. Returns `-1` for negative inputs.
+Returns the integer square root (floor) of `n`. Returns `-1` for negative inputs. Safe for `INT_MAX`.
 
 ```c
 int isqrt(int n);

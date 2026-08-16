@@ -19,6 +19,13 @@ int main() {
     ASSERT_EQ(binstr_to_int("10101101"), 173);
     ASSERT_EQ(binstr_to_int("1010_1101"), 173);
     ASSERT_EQ(binstr_to_int(NULL), -1);
+    ASSERT_EQ(binstr_to_int(""), -1);
+    ASSERT_EQ(binstr_to_int("_"), -1);
+    ASSERT_EQ(binstr_to_int("__"), -1);
+    ASSERT_EQ(binstr_to_int("0"), 0);
+    ASSERT_EQ(binstr_to_int("2"), -1);
+    ASSERT_EQ(binstr_to_int("1111111111111111111111111111111"), INT_MAX);
+    ASSERT_EQ(binstr_to_int("10000000000000000000000000000000"), -1);
 
     /* clamp_int - all branches */
     ASSERT_EQ(clamp_int(10, 2, 5), 5);   /* above high */
@@ -49,6 +56,10 @@ int main() {
     ASSERT_EQ(lcm(7, 13), 91);
     ASSERT_EQ(lcm(1, 5), 5);
     ASSERT_EQ(lcm(0, 5), 0);
+    ASSERT_EQ(lcm(INT_MIN, INT_MIN), -1);
+    ASSERT_EQ(lcm(INT_MIN, 2), -1);
+    ASSERT_EQ(lcm(INT_MAX, INT_MAX), INT_MAX);
+    ASSERT_EQ(lcm(INT_MAX, INT_MAX - 1), -1);
 
     /* lerp */
     ASSERT_TRUE(lerp(0.0f, 10.0f, 0.0f) == 0.0f);
@@ -63,6 +74,7 @@ int main() {
     ASSERT_EQ(isqrt(26), 5);
     ASSERT_EQ(isqrt(100), 10);
     ASSERT_EQ(isqrt(-1), -1);
+    ASSERT_EQ(isqrt(INT_MAX), 46340);
 
     /* bresenham coordinate verification */
     size_t sz = 0;
@@ -94,6 +106,8 @@ int main() {
     ASSERT_EQ(line[0].x, 0);
     ASSERT_EQ(line[4].x, 4);
     free(line);
+
+    ASSERT_NULL(bresenham(0, 0, 1, 1, NULL));
 
     TEST_REPORT();
 }

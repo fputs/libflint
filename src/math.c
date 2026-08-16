@@ -1,7 +1,8 @@
 #include <limits.h>
-#include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 
+#include "lfcompat.h"
 #include "lfmath.h"
 
 int abs_int(int a) {
@@ -40,58 +41,86 @@ int clamp_int(int i, int low, int high) {
 }
 
 int binstr_to_int(const char *s) {
-    if (!s) {
+    if (s == NULL) {
         return -1;
     }
-    int n = 0, m = 1;
-    for (int i = (int) strlen(s) - 1; i >= 0; --i) {
+    int n = 0;
+    int saw_digit = 0;
+    for (size_t i = 0; s[i] != '\0'; ++i) {
         if (s[i] == '_') {
             continue;
         }
-        if (s[i] == '1') {
-            n += m;
-        } else if (s[i] != '0') {
+        if (s[i] != '0' && s[i] != '1') {
             return -1;
         }
-        m *= 2;
+        saw_digit = 1;
+        if (n > INT_MAX / 2) {
+            return -1;
+        }
+        n *= 2;
+        if (s[i] == '1') {
+            if (n == INT_MAX) {
+                return -1;
+            }
+            n += 1;
+        }
+    }
+    if (!saw_digit) {
+        return -1;
     }
     return n;
 }
 
 Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
+    if (sz == NULL) {
+        return NULL;
+    }
     *sz = 0;
 
-    int dx = abs(x1 - x0);
-    int dy = abs(y1 - y0);
-    size_t npts = (size_t)(dx > dy ? dx : dy) + 1;
+    long long dx = (long long)x1 - (long long)x0;
+    if (dx < 0) {
+        dx = -dx;
+    }
+    long long dy = (long long)y1 - (long long)y0;
+    if (dy < 0) {
+        dy = -dy;
+    }
 
-    Point *line = malloc(sizeof(Point) * npts);
-    if (!line) {
+    long long span = dx > dy ? dx : dy;
+    if (span < 0 || (unsigned long long)span > (unsigned long long)SIZE_MAX - 1) {
+        return NULL;
+    }
+    size_t npts = (size_t)span + 1;
+
+    Point *line = lf_reallocarray(NULL, npts, sizeof(Point));
+    if (line == NULL) {
         return NULL;
     }
 
     int sx = x0 < x1 ? 1 : -1;
     int sy = y0 < y1 ? 1 : -1;
-    int err = (dx > dy ? dx : -dy) / 2, e2;
+    long long err = (dx > dy ? dx : -dy) / 2;
     size_t n = 0;
+    int x = x0;
+    int y = y0;
 
     for (;;) {
-        line[n].x = x0;
-        line[n].y = y0;
+        line[n].x = x;
+        line[n].y = y;
         n++;
 
-        if (x0 == x1 && y0 == y1) {
+        if (x == x1 && y == y1) {
             break;
         }
 
-        e2 = err;
+        long long e2 = err;
         if (e2 > -dx) {
             err -= dy;
-            x0 += sx;
+            x += sx;
         }
         if (e2 < dy) {
             err += dx;
-            y0 += sy;
+            y += sy;
         }
     }
 
@@ -122,7 +151,17 @@ int lcm(int a, int b) {
     if (a == 0 || b == 0) {
         return 0;
     }
-    return abs_int(a / gcd(a, b) * b);
+    if (a == INT_MIN || b == INT_MIN) {
+        return -1;
+    }
+    int ga = abs_int(a);
+    int gb = abs_int(b);
+    int d = gcd(ga, gb);
+    int q = ga / d;
+    if (q != 0 && gb > INT_MAX / q) {
+        return -1;
+    }
+    return q * gb;
 }
 
 float lerp(float a, float b, float t) {
@@ -136,11 +175,12 @@ int isqrt(int n) {
     if (n < 2) {
         return n;
     }
-    int x = n;
-    int y = (x + 1) / 2;
+    unsigned int un = (unsigned int)n;
+    unsigned int x = un;
+    unsigned int y = (x + 1u) / 2u;
     while (y < x) {
         x = y;
-        y = (x + n / x) / 2;
+        y = (x + un / x) / 2u;
     }
-    return x;
+    return (int)x;
 }
