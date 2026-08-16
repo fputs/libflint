@@ -7,16 +7,35 @@
 #include "lfprocess.h"
 
 static void test_split_basic(void) {
-    char *s = strdup("one,two,three");
+    const char *s = "one,two,three";
     LfLines parts;
     ASSERT_EQ(inp_split(s, ",", &parts), 0);
     ASSERT_EQ(parts.n, 3);
     ASSERT_NULL(parts.base);
+    ASSERT_EQ(parts.heap, 1);
     ASSERT_STR_EQ(parts.lines[0], "one");
     ASSERT_STR_EQ(parts.lines[1], "two");
     ASSERT_STR_EQ(parts.lines[2], "three");
+    ASSERT_STR_EQ(s, "one,two,three");
     inp_lines_free(&parts);
-    free(s);
+}
+
+static void test_split_empties(void) {
+    LfLines parts;
+    ASSERT_EQ(inp_split("a,,b,", ",", &parts), 0);
+    ASSERT_EQ(parts.n, 4);
+    ASSERT_STR_EQ(parts.lines[0], "a");
+    ASSERT_STR_EQ(parts.lines[1], "");
+    ASSERT_STR_EQ(parts.lines[2], "b");
+    ASSERT_STR_EQ(parts.lines[3], "");
+    inp_lines_free(&parts);
+
+    ASSERT_EQ(inp_split("a::b::c", "::", &parts), 0);
+    ASSERT_EQ(parts.n, 3);
+    ASSERT_STR_EQ(parts.lines[0], "a");
+    ASSERT_STR_EQ(parts.lines[1], "b");
+    ASSERT_STR_EQ(parts.lines[2], "c");
+    inp_lines_free(&parts);
 }
 
 static void test_split_single(void) {
@@ -76,7 +95,8 @@ static void test_file_roundtrip(void) {
 
     LfLines lines;
     ASSERT_EQ(inp_get_lines(tmppath, &lines), 0);
-    ASSERT_NOT_NULL(lines.base);
+    ASSERT_NULL(lines.base);
+    ASSERT_EQ(lines.heap, 1);
     ASSERT_EQ(lines.n, 3);
     ASSERT_STR_EQ(lines.lines[0], "line1");
     ASSERT_STR_EQ(lines.lines[1], "line2");
@@ -113,7 +133,7 @@ static void test_empty_vs_missing(void) {
     ASSERT_EQ(inp_get_lines(tmppath, &lines), 0);
     ASSERT_EQ(lines.n, 0);
     ASSERT_NULL(lines.lines);
-    ASSERT_NOT_NULL(lines.base);
+    ASSERT_NULL(lines.base);
     inp_lines_free(&lines);
 
     memset(&lines, 0x5a, sizeof lines);
@@ -181,6 +201,38 @@ static void test_get_ints(void) {
     remove(tmppath);
 }
 
+static void test_blank_lines(void) {
+    const char *tmppath = "/tmp/libflint_test_blank.txt";
+    FILE *f = fopen(tmppath, "w");
+    ASSERT_NOT_NULL(f);
+    fprintf(f, "a\n\nb\n");
+    fclose(f);
+
+    LfLines lines;
+    ASSERT_EQ(inp_get_lines(tmppath, &lines), 0);
+    ASSERT_EQ(lines.n, 3);
+    ASSERT_STR_EQ(lines.lines[0], "a");
+    ASSERT_STR_EQ(lines.lines[1], "");
+    ASSERT_STR_EQ(lines.lines[2], "b");
+    inp_lines_free(&lines);
+    remove(tmppath);
+}
+
+static void test_split_arena(void) {
+    unsigned char storage[256];
+    ArenaAllocator arena;
+    ASSERT_EQ(arena_init_buf(&arena, storage, sizeof storage), 0);
+
+    LfLines parts;
+    ASSERT_EQ(inp_split_arena(&arena, "x,y", ",", &parts), 0);
+    ASSERT_EQ(parts.heap, 0);
+    ASSERT_EQ(parts.n, 2);
+    ASSERT_STR_EQ(parts.lines[0], "x");
+    ASSERT_STR_EQ(parts.lines[1], "y");
+    inp_lines_free(&parts);
+    arena_free(&arena);
+}
+
 static void test_get_ints_null(void) {
     size_t n = 0;
     ASSERT_NULL(inp_get_ints(NULL, &n));
@@ -228,14 +280,17 @@ static void test_arena_slurp(void) {
 
 int main(void) {
     test_split_basic();
+    test_split_empties();
     test_split_single();
     test_split_null();
+    test_split_arena();
     test_lines_free_null();
     test_capture_system();
     test_capture_system_null();
     test_capture_system_large();
     test_file_roundtrip();
     test_crlf();
+    test_blank_lines();
     test_empty_vs_missing();
     test_get_binary();
     test_get_ints();

@@ -8,7 +8,8 @@
 /*
  * One-shot slurp of a regular, seekable file. fseek/ftell is required.
  * Lines from inp_get_lines have a trailing '\r' stripped so \r\n and \n
- * both work. inp_split requires a mutable buffer (strtok writes NULs).
+ * both work. Split is lfstr_split: string delimiter, empty tokens kept,
+ * source is not mutated.
  *
  * *_arena variants allocate from the arena. Do not free those results
  * with free(); inp_lines_free on an arena-backed LfLines is a no-op
@@ -31,7 +32,10 @@ char *inp_get_input(const char *path);
 
 char *inp_get_input_arena(ArenaAllocator *arena, const char *path);
 
-int inp_split(char *s, const char *delim, LfLines *out);
+int inp_split(const char *s, const char *delim, LfLines *out);
+
+int inp_split_arena(ArenaAllocator *arena, const char *s, const char *delim,
+                    LfLines *out);
 
 int inp_get_lines(const char *path, LfLines *out);
 

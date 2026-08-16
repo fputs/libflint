@@ -12,6 +12,7 @@
 
 #include "lfcompat.h"
 #include "lfinput.h"
+#include "lfstring.h"
 
 static FILE *inp_open_file(const char *path, size_t *fsz, const char *mode) {
     if (path == NULL || fsz == NULL || mode == NULL) {
@@ -111,72 +112,36 @@ char *inp_get_input(const char *path) {
     return inp_get_input_arena(NULL, path);
 }
 
-static int split_into(char *s, const char *delim, LfLines *out, int own_base,
-                      int strip_cr, ArenaAllocator *arena) {
-    size_t n = 0;
-    size_t cap = 8;
-    char **lines;
-    if (arena != NULL) {
-        lines = arena_malloc(arena, cap * sizeof(char *));
-    } else {
-        lines = lf_reallocarray(NULL, cap, sizeof(char *));
+static void strip_trailing_cr(char **parts, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        size_t len = strlen(parts[i]);
+        if (len > 0 && parts[i][len - 1] == '\r') {
+            parts[i][len - 1] = '\0';
+        }
     }
-    if (lines == NULL) {
+}
+
+int inp_split_arena(ArenaAllocator *arena, const char *s, const char *delim,
+                    LfLines *out) {
+    if (s == NULL || delim == NULL || out == NULL) {
         return -1;
     }
 
-    char *t = strtok(s, delim);
-    while (t != NULL) {
-        if (strip_cr) {
-            size_t len = strlen(t);
-            if (len > 0 && t[len - 1] == '\r') {
-                t[len - 1] = '\0';
-            }
-        }
-        if (n == cap) {
-            if (cap > SIZE_MAX / 2) {
-                inp_alloc_fail(arena, lines);
-                return -1;
-            }
-            size_t ncap = cap * 2;
-            char **tmp;
-            if (arena != NULL) {
-                tmp = arena_malloc(arena, ncap * sizeof(char *));
-                if (tmp == NULL) {
-                    return -1;
-                }
-                memcpy(tmp, lines, n * sizeof(char *));
-            } else {
-                tmp = lf_reallocarray(lines, ncap, sizeof(char *));
-                if (tmp == NULL) {
-                    free(lines);
-                    return -1;
-                }
-            }
-            lines = tmp;
-            cap = ncap;
-        }
-        lines[n++] = t;
-        t = strtok(NULL, delim);
+    size_t n = 0;
+    char **parts = lfstr_split_arena(arena, s, delim, &n);
+    if (parts == NULL) {
+        return -1;
     }
 
-    if (n == 0) {
-        inp_alloc_fail(arena, lines);
-        lines = NULL;
-    }
-
-    out->base = own_base ? s : NULL;
-    out->lines = lines;
+    out->base = NULL;
+    out->lines = parts;
     out->n = n;
     out->heap = (arena == NULL);
     return 0;
 }
 
-int inp_split(char *s, const char *delim, LfLines *out) {
-    if (s == NULL || delim == NULL || out == NULL) {
-        return -1;
-    }
-    return split_into(s, delim, out, 0, 0, NULL);
+int inp_split(const char *s, const char *delim, LfLines *out) {
+    return inp_split_arena(NULL, s, delim, out);
 }
 
 int inp_get_lines_arena(ArenaAllocator *arena, const char *path, LfLines *out) {
@@ -189,10 +154,44 @@ int inp_get_lines_arena(ArenaAllocator *arena, const char *path, LfLines *out) {
         return -1;
     }
 
-    if (split_into(s, "\n", out, 1, 1, arena) != 0) {
+    if (s[0] == '\0') {
+        inp_alloc_fail(arena, s);
+        out->base = NULL;
+        out->lines = NULL;
+        out->n = 0;
+        out->heap = (arena == NULL);
+        return 0;
+    }
+
+    size_t slen = strlen(s);
+    size_t n = 0;
+    char **parts = lfstr_split_arena(arena, s, "\n", &n);
+    if (parts == NULL) {
         inp_alloc_fail(arena, s);
         return -1;
     }
+
+    int drop_last = (n > 0 && parts[n - 1][0] == '\0' && s[slen - 1] == '\n');
+    inp_alloc_fail(arena, s);
+    strip_trailing_cr(parts, n);
+
+    if (drop_last) {
+        if (arena == NULL) {
+            free(parts[n - 1]);
+        }
+        n--;
+        if (n == 0) {
+            if (arena == NULL) {
+                free(parts);
+            }
+            parts = NULL;
+        }
+    }
+
+    out->base = NULL;
+    out->lines = parts;
+    out->n = n;
+    out->heap = (arena == NULL);
     return 0;
 }
 
@@ -250,7 +249,7 @@ void inp_lines_free(LfLines *lines) {
         return;
     }
     if (lines->heap) {
-        free(lines->lines);
+        lfstr_split_free(lines->lines, lines->n);
         free(lines->base);
     }
     lines->lines = NULL;

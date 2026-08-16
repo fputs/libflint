@@ -159,6 +159,8 @@ char **lfstr_split_arena(ArenaAllocator *arena, const char *str,
                          const char *delim, size_t *count);
 void lfstr_split_free(char **parts, size_t count);
 
+/* inp_split / inp_get_lines use this same split (string delimiter, empty tokens kept). */
+
 /* Usage */
 size_t count = 0;
 char **parts = lfstr_split("foo,bar,baz", ",", &count);

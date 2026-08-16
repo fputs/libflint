@@ -1,8 +1,8 @@
 One-shot slurp of a regular, seekable file. All slurp functions use `fseek`/`ftell`, so pipes and other non-seekable paths are not supported.
 
-`LfLines` is the explicit lines result. `base` is the slurped buffer when the function owns it (`inp_get_lines`), or `NULL` when the caller owns the mutable string (`inp_split`). `lines` points into that buffer. `heap` is 1 when those pointers were malloc'd. One destructor, `inp_lines_free`, frees both fields when `heap` is set — there is no hidden `lines[-1]` pointer and no pair of `char **` destructors to swap.
+`LfLines` is the explicit lines result. Split uses `lfstr_split`: the delimiter is a string (not a `strtok` charset), empty tokens are kept, and the source is not mutated. `lines` is a table of copies; `base` is unused and NULL. `heap` is 1 when those pointers were malloc'd. One destructor, `inp_lines_free`, frees the table when `heap` is set.
 
-`*_arena` variants allocate the slurp and the line table from an `ArenaAllocator`. `heap` is then 0, so `inp_lines_free` only zeros the struct. Do not `free()` arena results.
+`*_arena` variants allocate from an `ArenaAllocator`. `heap` is then 0, so `inp_lines_free` only zeros the struct. Do not `free()` arena results.
 
 `inp_get_lines` strips a trailing `\r` from each line so `\r\n` and `\n` both work. Bare `\r` line endings are not treated as breaks. An empty file succeeds with `n == 0`. A missing file returns `-1`.
 
@@ -49,7 +49,7 @@ free(str);
 
 ### inp_get_lines
 
-Reads a regular file at `path` and splits on `\n` into `out`. Trailing `\r` is stripped. Returns `0` on success, including an empty file (`out->n == 0`). Returns `-1` on error (NULL arguments, missing file, I/O). Do not destroy `out` on failure.
+Reads a regular file at `path` and splits on `\n` into `out`. Trailing `\r` is stripped. A trailing newline does not produce an extra empty line; blank lines in the middle are kept. Returns `0` on success, including an empty file (`out->n == 0`). Returns `-1` on error (NULL arguments, missing file, I/O). Do not destroy `out` on failure.
 
 ```c
 int inp_get_lines(const char *path, LfLines *out);
@@ -92,15 +92,16 @@ free(nums);
 
 ### inp_split
 
-Splits a **mutable** buffer `s` on `delim` using `strtok` (which writes NULs). Do not pass a string literal. The caller keeps ownership of `s`; `out->base` is NULL. Returns `0` on success, `-1` on error.
+Splits `s` on the string delimiter `delim` via `lfstr_split`. Does not mutate `s`. Empty tokens are kept (`"a,,b"` on `","` is three parts). Returns `0` on success, `-1` on error.
 
 ```c
-int inp_split(char *s, const char *delim, LfLines *out);
+int inp_split(const char *s, const char *delim, LfLines *out);
+int inp_split_arena(ArenaAllocator *arena, const char *s, const char *delim,
+                    LfLines *out);
 
 /* Usage */
-char buf[] = "Split on whitespace";
 LfLines sp;
-inp_split(buf, " ", &sp);
+inp_split("Split on whitespace", " ", &sp);
 printf("%s\n", sp.lines[0]); /* Prints "Split" */
 inp_lines_free(&sp);
 ```
