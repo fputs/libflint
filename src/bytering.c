@@ -7,7 +7,7 @@ int br_init(ByteRing *br, uint8_t *buf, const size_t capacity) {
         return -1;
     }
 
-    if (capacity == 0 || (capacity & (capacity - 1)) != 0) {
+    if (capacity < 2 || (capacity & (capacity - 1)) != 0) {
         return -1;
     }
 

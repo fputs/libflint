@@ -15,8 +15,9 @@ static void test_init() {
     ASSERT_EQ(br_init(&br, buf, 3), -1);
     ASSERT_EQ(br_init(&br, buf, 10), -1);
 
-    /* zero and null rejected */
+    /* zero, one (power of two, zero usable slots), and null rejected */
     ASSERT_EQ(br_init(&br, buf, 0), -1);
+    ASSERT_EQ(br_init(&br, buf, 1), -1);
     ASSERT_EQ(br_init(&br, NULL, 8), -1);
     ASSERT_EQ(br_init(NULL, buf, 8), -1);
 }

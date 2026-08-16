@@ -20,7 +20,7 @@ typedef struct {
 
 ### br_init
 
-Initializes the byte ring buffer with a caller-provided backing buffer. `capacity` must be a power of 2. Returns `0` on success, `-1` on error (NULL pointer, zero capacity, or non-power-of-2 capacity).
+Initializes the byte ring buffer with a caller-provided backing buffer. `capacity` must be a power of 2 and at least 2. One slot is reserved, so usable size is `N - 1`. Returns `0` on success, `-1` on error (NULL pointer, `capacity < 2`, or non-power-of-2 capacity).
 
 ```c
 int br_init(ByteRing *br, uint8_t *buf, size_t capacity);
@@ -102,7 +102,7 @@ void br_reset(ByteRing *br);
 
 ### br_capacity
 
-Returns the total capacity of the buffer.
+Returns the backing-buffer length `N`. Usable storage is `N - 1`.
 
 ```c
 #define br_capacity(br) ((br)->capacity)
