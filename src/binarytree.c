@@ -1,6 +1,7 @@
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "lfbinarytree.h"
 
@@ -35,6 +36,11 @@ int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data) {
         return -1;
     }
 
+    if (tree->size == SIZE_MAX) {
+        free(new_node);
+        return -1;
+    }
+
     new_node->data = data;
     new_node->left = NULL;
     new_node->right = NULL;
@@ -61,6 +67,11 @@ int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data) {
     }
 
     if ((new_node = malloc(sizeof(BinTreeNode))) == NULL) {
+        return -1;
+    }
+
+    if (tree->size == SIZE_MAX) {
+        free(new_node);
         return -1;
     }
 
@@ -122,13 +133,24 @@ void bintree_rem_right(BinTree *tree, BinTreeNode *node) {
 }
 
 int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
-    if (left == right) {
+    if (merge == NULL || left == NULL || right == NULL) {
+        return -1;
+    }
+    if (merge == left || merge == right || left == right) {
+        return -1;
+    }
+    if (merge->root != NULL || merge->size != 0) {
+        return -1;
+    }
+    if (left->destroy != right->destroy) {
+        return -1;
+    }
+    if (left->size > SIZE_MAX - 1 || right->size > SIZE_MAX - 1 - left->size) {
         return -1;
     }
 
-    bintree_init(merge, left->destroy);
+    merge->destroy = left->destroy;
     if (bintree_ins_left(merge, NULL, data) != 0) {
-        bintree_destroy(merge);
         return -1;
     }
 
@@ -138,11 +160,8 @@ int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data) {
 
     left->root = NULL;
     left->size = 0;
-
-    /* Preserve right's destroy callback before clearing */
     right->root = NULL;
     right->size = 0;
-
     return 0;
 }
 

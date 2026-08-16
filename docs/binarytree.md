@@ -1,4 +1,5 @@
-Binary tree with standard leaf operations
+Binary tree node / forest kit. This is for constructing and splicing nodes (`ins_left`, `merge`, prune subtree), not a searchable BST.
+
 ## Usage
 
 Create the tree. The user is responsible for memory management of the `BinTree` struct.
@@ -87,7 +88,7 @@ Binary tree struct
 
 ```c
 typedef struct {
-    int size;
+    size_t size;
     void (*destroy)(void *data);
     struct BinTreeNode *root;
 } BinTree;
@@ -169,7 +170,7 @@ void bintree_rem_right(BinTree *tree, BinTreeNode *node)
 
 ### bintree_merge
 
-Merges two trees into a new tree with `data` at the root. `left` becomes the left subtree and `right` becomes the right subtree. Returns `-1` if `left == right` (same pointer). The merged tree takes ownership of both subtrees.
+Merges two trees into `merge` with `data` at the root. `merge` must already be initialized and empty. `left` and `right` must be distinct from each other and from `merge`, and must share the same `destroy`. Returns `-1` if those contracts are broken or if `merge` already has nodes. The merged tree takes ownership of both subtrees.
 
 ```c
 int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data);
@@ -217,8 +218,10 @@ Utility macro that checks if the node is the End Of Branch.
 
 ### bintree_is_leaf
 
-Utility macro that checks if a node is a leaf (has no children).
+Utility macro that checks if a node is a leaf (has no children). `NULL` is not a leaf.
 
 ```c
-#define bintree_is_leaf(node) ((node)->left == NULL && (node)->right == NULL)
+#define bintree_is_leaf(node) ((node) != NULL && \
+    ((const BinTreeNode *)(node))->left == NULL && \
+    ((const BinTreeNode *)(node))->right == NULL)
 ```

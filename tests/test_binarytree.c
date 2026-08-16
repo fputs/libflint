@@ -59,6 +59,7 @@ int main() {
     ASSERT_TRUE(bintree_is_eob(NULL));
     ASSERT_FALSE(bintree_is_leaf(tree->root));
     ASSERT_TRUE(bintree_is_leaf(tree->root->left->left));
+    ASSERT_FALSE(bintree_is_leaf(NULL));
 
     bintree_destroy(tree);
     ASSERT_EQ(tree->size, 0);
@@ -151,6 +152,7 @@ int main() {
     int mroot = 100, mlv = 10, mrv = 20;
     bintree_init(&ml, NULL);
     bintree_init(&mr, NULL);
+    bintree_init(&mm, NULL);
     bintree_ins_left(&ml, NULL, &mlv);
     bintree_ins_left(&mr, NULL, &mrv);
 
@@ -170,8 +172,35 @@ int main() {
     bintree_init(&self, NULL);
     bintree_ins_left(&self, NULL, &a);
     BinTree merged;
+    bintree_init(&merged, NULL);
     ASSERT_EQ(bintree_merge(&merged, &self, &self, &b), -1);
+    ASSERT_EQ(bintree_merge(&merged, &self, &merged, &b), -1);
+    ASSERT_EQ(bintree_merge(&self, &self, &merged, &b), -1);
     bintree_destroy(&self);
+
+    /* Merge: already-populated dest is refused */
+    BinTree live_l, live_r, live_m;
+    bintree_init(&live_l, NULL);
+    bintree_init(&live_r, NULL);
+    bintree_init(&live_m, NULL);
+    bintree_ins_left(&live_l, NULL, &a);
+    bintree_ins_left(&live_r, NULL, &b);
+    bintree_ins_left(&live_m, NULL, &c);
+    ASSERT_EQ(bintree_merge(&live_m, &live_l, &live_r, &mroot), -1);
+    ASSERT_EQ(live_m.size, 1);
+    ASSERT_EQ(*(int *)live_m.root->data, 30);
+    bintree_destroy(&live_l);
+    bintree_destroy(&live_r);
+    bintree_destroy(&live_m);
+
+    /* Merge: mismatched destroy callbacks */
+    BinTree dl, dr, dm;
+    bintree_init(&dl, counting_destroy);
+    bintree_init(&dr, NULL);
+    bintree_init(&dm, NULL);
+    ASSERT_EQ(bintree_merge(&dm, &dl, &dr, &a), -1);
+    bintree_destroy(&dl);
+    bintree_destroy(&dr);
 
     /* Size tracking through insertions and removals */
     BinTree st;

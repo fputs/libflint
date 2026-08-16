@@ -10,7 +10,7 @@ typedef struct BinTreeNode {
 } BinTreeNode;
 
 typedef struct {
-    int size;
+    size_t size;
 
     void (*destroy)(void *data);
 
@@ -44,6 +44,8 @@ void bintree_debug_print(BinTree *tree,
                          void (*print_fn)(void *data, char *buf, size_t buf_sz));
 
 #define bintree_is_eob(node) ((node) == NULL)
-#define bintree_is_leaf(node) ((node)->left == NULL && (node)->right == NULL)
+#define bintree_is_leaf(node) ((node) != NULL && \
+    ((const BinTreeNode *)(node))->left == NULL && \
+    ((const BinTreeNode *)(node))->right == NULL)
 
 #endif
