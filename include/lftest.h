@@ -1,6 +1,7 @@
 #ifndef LFTEST_H
 #define LFTEST_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -21,7 +22,9 @@ static int lf_tests_failed;
     lf_tests_total++; \
     if ((a) != (b)) { \
         lf_tests_failed++; \
-        fprintf(stderr, "  FAIL %s:%d: %s != %s\n", __FILE__, __LINE__, #a, #b); \
+        fprintf(stderr, "  FAIL %s:%d: %s != %s (%lld != %lld)\n", \
+            __FILE__, __LINE__, #a, #b, \
+            (long long)(intptr_t)(a), (long long)(intptr_t)(b)); \
     } \
 } while(0)
 
@@ -29,7 +32,8 @@ static int lf_tests_failed;
     lf_tests_total++; \
     if ((a) == (b)) { \
         lf_tests_failed++; \
-        fprintf(stderr, "  FAIL %s:%d: %s == %s\n", __FILE__, __LINE__, #a, #b); \
+        fprintf(stderr, "  FAIL %s:%d: %s == %s (%lld)\n", \
+            __FILE__, __LINE__, #a, #b, (long long)(intptr_t)(a)); \
     } \
 } while(0)
 
@@ -37,15 +41,27 @@ static int lf_tests_failed;
     lf_tests_total++; \
     if (!((a) < (b))) { \
         lf_tests_failed++; \
-        fprintf(stderr, "  FAIL %s:%d: %s >= %s\n", __FILE__, __LINE__, #a, #b); \
+        fprintf(stderr, "  FAIL %s:%d: %s >= %s (%lld >= %lld)\n", \
+            __FILE__, __LINE__, #a, #b, \
+            (long long)(intptr_t)(a), (long long)(intptr_t)(b)); \
     } \
 } while(0)
 
 #define ASSERT_STR_EQ(a, b) do { \
     lf_tests_total++; \
-    if (strcmp((a), (b)) != 0) { \
+    const char *_lf_sa = (a); \
+    const char *_lf_sb = (b); \
+    if (_lf_sa == NULL || _lf_sb == NULL) { \
+        if (_lf_sa != _lf_sb) { \
+            lf_tests_failed++; \
+            fprintf(stderr, "  FAIL %s:%d: %s != %s (%s vs %s)\n", \
+                __FILE__, __LINE__, #a, #b, \
+                _lf_sa ? _lf_sa : "NULL", _lf_sb ? _lf_sb : "NULL"); \
+        } \
+    } else if (strcmp(_lf_sa, _lf_sb) != 0) { \
         lf_tests_failed++; \
-        fprintf(stderr, "  FAIL %s:%d: \"%s\" != \"%s\"\n", __FILE__, __LINE__, (a), (b)); \
+        fprintf(stderr, "  FAIL %s:%d: \"%s\" != \"%s\"\n", \
+            __FILE__, __LINE__, _lf_sa, _lf_sb); \
     } \
 } while(0)
 
