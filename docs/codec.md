@@ -1,4 +1,4 @@
-Hex and Base64 codecs. This is not a cryptography module.
+Hex and Base64 encode and decode. These are codecs, not cryptographic primitives.
 
 Allocating helpers return a heap buffer the caller must free. `*_into` writes into a caller-owned buffer and returns `0` on success or `-1` on error (NULL arguments, size wrap, or `dest_cap` too small). Decode is fail-closed: invalid input returns an error and does not publish an output size.
 
@@ -25,7 +25,7 @@ b64_encode_into((unsigned char *)"Hello", 5, buf, sizeof buf);
 
 ### b64_decode / b64_decode_into
 
-Invalid characters, truncated input, and incomplete padding fail closed. A valid prefix of a corrupt string is not returned. The allocating form is NUL-terminated but may contain interior NULs — use `decode_sz`, not `strlen`. `*decode_sz` is written only on success.
+Invalid characters, truncated input, and incomplete padding return an error. A valid prefix of a corrupt string is not returned. The allocating form is NUL-terminated but may contain interior NULs, so use `decode_sz`, not `strlen`. `*decode_sz` is written only on success.
 
 ```c
 unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz);

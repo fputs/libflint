@@ -1,6 +1,6 @@
-Open-addressed set of `void *`. Use this when membership must be faster than the list-backed [[set]]. `match` is the same equality callback as `Set` (`0` means equal). `hash` is required.
+A set of unique `void *` values with hashed membership. Use [[set]] when you want union, intersection, and difference, or when the collection stays small.
 
-This is a separate type. It does not replace `Set` and has no algebra.
+`match` is the same equality callback as `Set` (`0` means equal). `hash` is required. There is no algebra API on this type.
 
 ## Structs
 

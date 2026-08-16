@@ -1,10 +1,10 @@
-One-shot slurp of a regular, seekable file. All slurp functions use `fseek`/`ftell`, so pipes and other non-seekable paths are not supported.
+Read a regular, seekable file into memory. These functions use `fseek`/`ftell`, so pipes and other non-seekable paths are not supported.
 
-`LfLines` is the explicit lines result. Split uses `lfstr_split`: the delimiter is a string (not a `strtok` charset), empty tokens are kept, and the source is not mutated. `lines` is a table of copies; `base` is unused and NULL. `heap` is 1 when those pointers were malloc'd. One destructor, `inp_lines_free`, frees the table when `heap` is set.
+`LfLines` holds a table of line or split pieces. The delimiter is a whole string. Empty tokens are kept, and the source string is not modified. `heap` is 1 when the table was allocated with `malloc`; call `inp_lines_free` to release it.
 
-`*_arena` variants allocate from an `ArenaAllocator`. `heap` is then 0, so `inp_lines_free` only zeros the struct. Do not `free()` arena results.
+`*_arena` variants allocate from an `ArenaAllocator`. `heap` is then 0, and `inp_lines_free` only zeros the struct. Do not call `free` on arena results.
 
-`inp_get_lines` strips a trailing `\r` from each line so `\r\n` and `\n` both work. Bare `\r` line endings are not treated as breaks. An empty file succeeds with `n == 0`. A missing file returns `-1`.
+`inp_get_lines` strips a trailing `\r` from each line so `\r\n` and `\n` both work. Bare `\r` is not treated as a line break. An empty file succeeds with `n == 0`. A missing file returns `-1`.
 
 ## Structs
 
@@ -30,7 +30,7 @@ unsigned char *inp_get_binary_arena(ArenaAllocator *arena, const char *path,
 
 /* Usage */
 size_t fsz = 0;
-unsigned char *buf = inp_get_binary("/home/evan/binfile", &fsz);
+unsigned char *buf = inp_get_binary("data.bin", &fsz);
 free(buf);
 ```
 
@@ -43,7 +43,7 @@ char *inp_get_input(const char *path);
 char *inp_get_input_arena(ArenaAllocator *arena, const char *path);
 
 /* Usage */
-char *str = inp_get_input("/home/evan/textfile");
+char *str = inp_get_input("data.txt");
 free(str);
 ```
 
@@ -57,7 +57,7 @@ int inp_get_lines_arena(ArenaAllocator *arena, const char *path, LfLines *out);
 
 /* Usage */
 LfLines lines;
-if (inp_get_lines("/home/evan/textfile", &lines) == 0) {
+if (inp_get_lines("data.txt", &lines) == 0) {
     for (size_t i = 0; i < lines.n; i++) {
         printf("%s\n", lines.lines[i]);
     }
@@ -67,7 +67,7 @@ if (inp_get_lines("/home/evan/textfile", &lines) == 0) {
 
 ### inp_lines_free
 
-If `heap` is set, frees `lines->lines` and `lines->base`. Always zeros the struct. Safe on NULL. The same function is used after `inp_get_lines` and `inp_split`. Arena-backed results have `heap == 0`.
+Frees a heap-allocated table (`heap == 1`) and zeros the struct. Safe on NULL. Use this after `inp_get_lines` and `inp_split`. Arena-backed results have `heap == 0` and need no `free`.
 
 ```c
 void inp_lines_free(LfLines *lines);
@@ -83,7 +83,7 @@ int *inp_get_ints_arena(ArenaAllocator *arena, const char *path, size_t *sz);
 
 /* Usage */
 size_t sz = 0;
-int *nums = inp_get_ints("/home/evan/intfile", &sz);
+int *nums = inp_get_ints("nums.txt", &sz);
 for (size_t i = 0; i < sz; i++) {
     printf("%d\n", nums[i]);
 }
@@ -92,7 +92,7 @@ free(nums);
 
 ### inp_split
 
-Splits `s` on the string delimiter `delim` via `lfstr_split`. Does not mutate `s`. Empty tokens are kept (`"a,,b"` on `","` is three parts). Returns `0` on success, `-1` on error.
+Splits `s` on the string delimiter `delim`. Does not modify `s`. Empty tokens are kept (`"a,,b"` split on `","` is three parts). Returns `0` on success, `-1` on error.
 
 ```c
 int inp_split(const char *s, const char *delim, LfLines *out);

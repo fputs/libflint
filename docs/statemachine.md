@@ -71,7 +71,7 @@ Members:
 
 ### sm_init
 
-Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. State IDs must be unique. Every transition `source` must be a state id or `SM_ANY_STATE`. Every `destination` must name a real state — `SM_ANY_STATE` is not a valid dest. Validation runs before any write; a failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is **not** invoked. Returns `0` on success, `-1` on error (NULL arguments, zero counts, duplicate state IDs, or unknown state IDs).
+Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. State IDs must be unique. Every transition `source` must be a state id or `SM_ANY_STATE`. Every `destination` must name a real state; `SM_ANY_STATE` is not a valid destination. Validation runs before any write. A failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is not invoked. Returns `0` on success, `-1` on error (NULL arguments, zero counts, duplicate state IDs, or unknown state IDs).
 
 ```c
 int sm_init(
@@ -108,7 +108,7 @@ sm_init(&sm, states, ST_COUNT, ST_IDLE,
 
 ### sm_handle_event
 
-Processes an event. Scans the transition table for the first entry matching the current state and event whose guard (if any) returns nonzero. `SM_ANY_STATE` matches any current state; `SM_ANY_EVENT` matches any event. List specific rows before wildcards — first match wins. When a match is found, executes in order:
+Processes an event. Scans the transition table for the first entry matching the current state and event whose guard (if any) returns nonzero. `SM_ANY_STATE` matches any current state. `SM_ANY_EVENT` matches any event. Put specific rows before wildcards; the first match wins. When a match is found, the machine runs:
 
 1. Source state's `exit` callback
 2. Transition's `action` callback
@@ -120,7 +120,7 @@ Returns `0` if a transition was taken, `1` if no matching transition was found (
 ```c
 int sm_handle_event(StateMachine *sm, int event);
 
-/* Usage — typical super-loop */
+/* Usage: typical super-loop */
 while (1) {
     int event = poll_events();
     sm_handle_event(&sm, event);
@@ -137,7 +137,7 @@ Wildcard source and event. Destination cannot be `SM_ANY_STATE`. Values are `INT
 #define SM_ANY_STATE INT_MIN
 #define SM_ANY_EVENT INT_MIN
 
-/* Usage — one FAULT row instead of one per state */
+/* Usage: one FAULT row instead of one per state */
 { SM_ANY_STATE, EV_FAULT, ST_ERROR, NULL, log_fault },
 ```
 

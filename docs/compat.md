@@ -1,4 +1,4 @@
-Portable overflow-checked allocation used by containers. Not a Darwin grab-bag — every platform compiles `src/compat.c`.
+Overflow-checked array allocation used by the containers. Available on every platform.
 
 ## Functions
 

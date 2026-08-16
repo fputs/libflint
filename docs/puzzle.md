@@ -1,4 +1,4 @@
-Cryptopals-style byte puzzles: repeating-key XOR, Hamming distance, and a toy English-likelihood scorer. This is not a cryptography library. Do not grow it into AES, SHA, or an RNG.
+Repeating-key XOR, Hamming distance, and a simple English-likelihood scorer. These are encoding and puzzle helpers, not cryptographic primitives.
 
 ## Functions
 

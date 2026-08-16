@@ -1,6 +1,6 @@
-Compatibility page. This module is not cryptography.
+This header is not a cryptography API. It includes the codec and puzzle helpers:
 
-- Hex and Base64 live in [[codec]] (`lfcodec.h`).
-- Repeating-key XOR, Hamming distance, and English scoring live in [[puzzle]] (`lfpuzzle.h`).
+- Hex and Base64: [[codec]] (`lfcodec.h`)
+- Repeating-key XOR, Hamming distance, and English scoring: [[puzzle]] (`lfpuzzle.h`)
 
-`lfcrypto.h` includes both headers so existing `#include "lfcrypto.h"` still compiles.
+`#include "lfcrypto.h"` pulls in both.

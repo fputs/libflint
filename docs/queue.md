@@ -1,4 +1,4 @@
-FIFO (first in first out) queue of `void *`. Backed by a `List`, but `Queue` is a real wrapper type so list operations do not compile against it.
+FIFO queue of `void *`. List functions do not compile against a `Queue`.
 
 ## Structs
 
@@ -8,7 +8,7 @@ typedef struct {
 } Queue;
 ```
 
-Enqueue is `ll_push_tail`. Dequeue and peek are at the head.
+Enqueue adds at the back. Dequeue and peek read the front.
 
 ## Functions
 

@@ -1,4 +1,4 @@
-Binary tree node / forest kit. This is for constructing and splicing nodes (`ins_left`, `merge`, prune subtree), not a searchable BST. For `insert(key)`, see [[bst]].
+A binary tree you build by attaching left and right children. Nodes are not ordered by key. For insert, find, and remove by comparison, see [[bst]].
 
 ## Usage
 
@@ -10,7 +10,7 @@ BinTree *tree = malloc(sizeof(BinTree));
 
 After the tree is created, init it. The second argument on `bintree_init()` is an optional memory freeing function pointer with signature `void (*destroy)(void *data)`. Use `free()` from the stdlib if you are creating the data with `malloc()`. If allocation of your data is more complex, you can pass your own memory deallocation function as long as it fits the signature.
 
-In this example, we are passing `NULL` because all memory will be stack allocated.
+This example passes `NULL` because the payloads are stack allocated.
 
 ```c
 bintree_init(tree, NULL);
@@ -21,8 +21,7 @@ int r1 = 12;
 int r2 = 200;
 ```
 
-Next lets insert our data into the tree. The insert functions signature is `bintree_ins_...(tree, parent, data)`. If you are inserting data at the root of the tree, you may use either `bintree_ins_left()` or `bintree_ins_right()` as long as
-`NULL` is passed as the parent argument.
+Insert with `bintree_ins_left(tree, parent, data)` or `bintree_ins_right`. To insert the root, pass `NULL` as the parent.
 
 ```c
 bintree_ins_left(tree, NULL, &root);
@@ -45,7 +44,7 @@ We can use `bintree_debug_print(tree, NULL)` to print a graphical representation
         └──200
 ```
 
-To cleanup the tree, first destroy the nodes. If you passed a deallocation function, it will be called on the data member of each node before the node itself is freed. `bintree_destroy()` does not free the tree itself, just the nodes inside of it, hence we must also call `free()` on the tree.
+`bintree_destroy` frees the nodes. If you passed a `destroy` callback, it is called on each payload first. The `BinTree` handle is yours to free.
 
 ```c
 bintree_destroy(tree);
@@ -198,7 +197,7 @@ bintree_traverse(tree, tree->root, BINTREE_INORDER, print_int);
 
 ### bintree_debug_print
 
-Prints a representation of the tree to stdout. Accepts an optional `print_fn` callback to format node data — pass `NULL` to use the default integer printer. Gets very messy with large trees.
+Prints a representation of the tree to stdout. Pass a `print_fn` to format node data, or `NULL` to print integer payloads. Large trees produce a lot of output.
 
 ```c
 void bintree_debug_print(BinTree *tree,

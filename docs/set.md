@@ -1,4 +1,4 @@
-A small uniqueness-constrained collection over a `List`. Membership is O(n). The public type is a wrapper, not a `#define`, so list operations do not compile against a `Set` and cannot break uniqueness. For amortized O(1) membership, see [[hashset]].
+A small collection of unique `void *` values. Membership is linear in the size of the set. List functions do not compile against a `Set`. For hashed membership, see [[hashset]].
 
 ## Structs
 
@@ -8,7 +8,7 @@ typedef struct {
 } Set;
 ```
 
-`match` is required at `set_init`. It returns `0` if two elements are equal (comparator convention, like `strcmp`). Equality is `==`, not `a - b` (signed overflow).
+`match` is required at `set_init`. It returns `0` if two elements are equal (the same convention as `strcmp`). Compare with `==`, not subtraction, so signed overflow is not an issue.
 
 ## Functions
 
@@ -69,7 +69,7 @@ set_remove(&set, &removed);
 
 ### Algebra (borrowed)
 
-`set_union`, `set_intersection`, and `set_difference` write a borrowed view into a caller-initialized destination. The destination must be empty, share `a` and `b`'s `match`, and have `destroy == NULL`. Result nodes alias the input payloads — do not destroy `a` or `b` while the view is live. `dest == a` and `dest == b` are rejected (that path used to leak `a`'s nodes). The functions never call `set_init` on a destination the caller already owns. Returns `0` on success, `-1` on error.
+`set_union`, `set_intersection`, and `set_difference` write into a destination you initialize. The destination must be empty, use the same `match` as `a` and `b`, and have `destroy == NULL`. Result members alias the payloads in `a` and `b`. Do not destroy `a` or `b` while the result is in use. `dest` cannot be `a` or `b`. Returns `0` on success, `-1` on error.
 
 ```c
 int set_union(Set *dest, const Set *a, const Set *b);

@@ -1,16 +1,16 @@
 # libflint
 
-My personal library of common C data structures and algorithms. Supports Linux, macOS, OpenBSD, and FreeBSD.
+A C library of containers and helpers. Supports Linux, macOS, OpenBSD, and FreeBSD.
 
 ## Documentation
 
-[Extensive documentation can be found here](https://burkey.co/Software+Documentation/libflint/libflint). You can also check out the per-module test files in `tests/` for example usage.
+[Module documentation](https://burkey.co/Software+Documentation/libflint/libflint). The files under `tests/` are also usable as examples.
 
 ## Building
 
-`libflint` requires Cmake to be built. It can then be built using either `cmake` or `make` with the provided build files. The `Makefile` is a wrapper around Cmake for Makefile compatibility.
+CMake is required. Use CMake directly, or the `Makefile`, which is a thin wrapper around it.
 
-## Cmake
+## CMake
 
 ```cmake
 # If libflint is in ./lib/libflint
@@ -20,9 +20,9 @@ add_subdirectory(lib/libflint)
 target_link_libraries(${TARGET} PRIVATE flint)
 ```
 
-`flint` exports its `include/` directory, so consumers do not need a separate
+The `flint` target exports `include/`, so you do not need a separate
 `target_include_directories` for libflint headers. Compile definitions stay on
-the `flint` target and are not injected into the parent project.
+the `flint` target and are not added to the rest of your project.
 
 ## Testing
 

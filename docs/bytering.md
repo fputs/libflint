@@ -1,6 +1,6 @@
-Lock-free, embedded-friendly byte ring buffer (circular buffer) with no dynamic allocation. Designed for single-producer single-consumer (SPSC) use cases such as UART RX/TX buffers, sensor data streams, and DMA staging. Requires power-of-2 capacity for efficient index wrapping via bitmask. One slot is sacrificed to distinguish full from empty, so a capacity of N holds N-1 bytes.
+Lock-free byte ring with no dynamic allocation. One producer and one consumer may run concurrently (for example UART RX/TX, sensor streams, or DMA staging). Capacity must be a power of two. One slot is reserved, so a capacity of N holds N-1 bytes.
 
-The SPSC contract is implemented with C11 atomics (`atomic_size_t` in `<stdatomic.h>`). The producer publishes `tail` with release after writing bytes; the consumer observes `tail` with acquire before reading. The consumer publishes `head` with release after consuming bytes; the producer observes `head` with acquire before writing. Each operation snapshots its indices once. `br_reset` is quiescent-only: both sides must be idle. The caller owns the backing buffer — `ByteRing` does not allocate or free it.
+You provide the backing buffer. `ByteRing` does not allocate or free it. Use `br_write` / `br_bulk_write` from the producer only, and `br_read` / `br_bulk_read` from the consumer only. Call `br_reset` only when both sides are idle.
 
 ## Structs
 

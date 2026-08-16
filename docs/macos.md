@@ -1,11 +1,11 @@
-Platform-specific code for macOS. Everything in this module, including the headers, is wrapped in the following preprocessor macro
+Process CPU and memory sampling on macOS. The header and implementation are compiled only on Apple platforms:
 
 ```c
 #if defined(__APPLE__) || defined(__MACH__)
 /*
 ... code ...
 */
-#endif /* defined(__APPLE__) || defined(__MACH__) */
+#endif
 ```
 ## Structs
 

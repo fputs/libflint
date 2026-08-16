@@ -1,4 +1,4 @@
-LIFO (last in first out) stack of `void *`. Backed by a `List`, but `Stack` is a real wrapper type so list operations do not compile against it.
+LIFO stack of `void *`. List functions do not compile against a `Stack`.
 
 ## Structs
 
@@ -8,7 +8,7 @@ typedef struct {
 } Stack;
 ```
 
-Top is the list tail. Push and pop are `ll_push_tail` / `ll_pop_tail`.
+The top of the stack is the most recently pushed element.
 
 ## Functions
 

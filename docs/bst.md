@@ -1,6 +1,6 @@
-Searchable binary search tree layered on the [[binarytree]] node kit. Insert walks with a qsort-style `cmp` and calls `bintree_ins_left` / `bintree_ins_right`. Remove splices one node; it does not prune a subtree.
+Ordered binary search tree of `void *`. Insert, find, and remove walk the tree with a qsort-style `cmp`. Removing an element splices that one node and leaves the rest of the tree in order.
 
-This is the `insert(key)` layer. The kit underneath is still a forest constructor, not a BST.
+To attach children by hand instead of by key, use [[binarytree]].
 
 ## Structs
 
@@ -50,7 +50,7 @@ void *bst_find(const Bst *tree, const void *key);
 
 ### bst_remove
 
-Removes the node matching `*data` and writes the stored payload back through `data`. Does not call `destroy` — ownership transfers to the caller. Returns `0` on success, `-1` if missing.
+Removes the node matching `*data` and writes the stored payload back through `data`. Does not call `destroy`; the caller owns the payload after a successful remove. Returns `0` on success, `-1` if missing.
 
 ```c
 int bst_remove(Bst *tree, void **data);
@@ -72,4 +72,4 @@ void *bst_max(const Bst *tree);
 #define bst_root(t) ((t)->tree.root)
 ```
 
-In-order walk uses the kit: `bintree_traverse(&t.tree, bst_root(&t), BINTREE_INORDER, visitor)`.
+Walk the tree in order with `bintree_traverse(&t.tree, bst_root(&t), BINTREE_INORDER, visitor)`.

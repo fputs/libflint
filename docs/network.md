@@ -1,6 +1,6 @@
-IPv4 bind helpers. There is no `Server` type, no runloop, and no thread-per-connection echo in the library. `lf_listen_tcp` returns a listening TCP fd; `lf_bind_udp` returns a bound UDP fd. The caller owns accept, recv, send, and shutdown.
+IPv4 bind helpers. `lf_listen_tcp` returns a listening TCP socket. `lf_bind_udp` returns a bound UDP socket. You own `accept`, `recv`, `send`, and shutdown.
 
-`host == NULL` binds `INADDR_ANY`. Port `"0"` lets the kernel pick an ephemeral port — use `getsockname` to read it back.
+`host == NULL` binds `INADDR_ANY`. Port `"0"` lets the kernel pick an ephemeral port; use `getsockname` to read it back.
 
 ## Functions
 

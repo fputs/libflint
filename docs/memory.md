@@ -72,7 +72,7 @@ void arena_clear(ArenaAllocator *allocator);
 ```
 
 
-### *arena_malloc
+### arena_malloc
 
 Request memory of `size` bytes in length from the arena. Returns `NULL` if the assignment failed.
 
@@ -88,7 +88,7 @@ Reallocates the underlying buffer in the arena to `new_sz`. You can grow or shri
 int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz);
 ```
 
-### *arena_resize
+### arena_resize
 
 Resize an allocated pointer from the arena. Returns `NULL` if the arena doesn't have enough space or if `mem` doesn't belong to the arena. When growing, the new bytes are zeroed. See the example below for a simple use case.
 
@@ -143,9 +143,9 @@ Maximum number of nested save points for `arena_save()`/`arena_restore()`. Can b
 
 # Pool Allocator
 
-A pool of same-sized chunks carved from one buffer. The free list is intrusive: a free chunk stores `void *next` in its first word. `pool_alloc` and `pool_free` do not call the system allocator. `lfmemory.h` does not include `lflinkedlist.h`.
+A pool of same-sized chunks carved from one buffer. Free chunks keep a next pointer in their first word, so `pool_alloc` and `pool_free` do not call the system allocator.
 
-The handle may be stack- or heap-allocated. `chunk_align` must be a non-zero power of two. Double-`pool_free` of the same live chunk is ignored so two later allocs cannot return the same address.
+The handle may be stack- or heap-allocated. `chunk_align` must be a non-zero power of two. A second `pool_free` of the same live chunk is ignored.
 
 ## Structs
 

@@ -1,6 +1,6 @@
-C string helpers. Public names are `lfstr_*` — `str_*` is reserved by the C standard and is not aliased.
+C string helpers. All public names start with `lfstr_`.
 
-Non-allocating predicates take an `LfStr` view (`{const char *p; size_t n}`). The C-string wrappers (`lfstr_starts_with`, `lfstr_contains`, `lfstr_trim`, …) stay for convenience. Constructors still allocate — from the heap, or from an `ArenaAllocator` via the `*_arena` variants. Arena results must not be passed to `free` or `lfstr_split_free`; they die with the arena.
+Predicates that do not allocate take an `LfStr` view (`{const char *p; size_t n}`). The C-string wrappers (`lfstr_starts_with`, `lfstr_contains`, `lfstr_trim`, and so on) call those views for you. Functions that build a new string allocate from the heap, or from an `ArenaAllocator` if you use the `*_arena` variant. Free heap results with `free` or `lfstr_split_free`. Do not free arena results; they are released when the arena is cleared or freed.
 
 ## Types
 
@@ -118,7 +118,7 @@ int lfstr_ends_with(const char *str, const char *suffix);
 
 ### lfstr_replace
 
-Replaces all occurrences of `old` with `replacement` in `str`. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. If `old` is not found, returns a copy of the original string. Returns `NULL` if length math would wrap `size_t`. The replacement parameter is not named `new` so the header is C++-includable.
+Replaces all occurrences of `old` with `replacement` in `str`. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. If `old` is not found, returns a copy of the original string. Returns `NULL` if length math would wrap `size_t`. The replacement parameter is named `replacement` so the header can be included from C++.
 
 ```c
 char *lfstr_replace(const char *str, const char *old, const char *replacement);
@@ -158,8 +158,6 @@ char **lfstr_split(const char *str, const char *delim, size_t *count);
 char **lfstr_split_arena(ArenaAllocator *arena, const char *str,
                          const char *delim, size_t *count);
 void lfstr_split_free(char **parts, size_t count);
-
-/* inp_split / inp_get_lines use this same split (string delimiter, empty tokens kept). */
 
 /* Usage */
 size_t count = 0;

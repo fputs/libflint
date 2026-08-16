@@ -10,7 +10,7 @@ List *list = malloc(sizeof(List));
 After the list is created, init it. The second argument on `ll_init()` is an optional memory freeing function pointer
 with signature `void (*destroy)(void *data)`. Use `free()` from the stdlib if you are creating the data with `malloc()`.
 If allocation of your data is more complex, you can pass your own memory deallocation function as long as it fits the
-signature. The third argument is an optional `match` callback used by `ll_find()` — pass `NULL` if not needed.
+signature. The third argument is an optional `match` callback used by `ll_find()`. Pass `NULL` if not needed.
 
 In this example, we are passing `NULL` for both because all memory will be stack allocated and we don't need find.
 
@@ -137,7 +137,7 @@ Members:
 
 ### ll_init
 
-Initialize the list. User is responsible for creating the initial `List` structure and freeing memory with `ll_destroy()`. `destroy` is a deallocation function for the members of `List`, pass `NULL` if the memory is stack-allocated. `match` is an optional comparison function used by `ll_find()` — it should return `0` when two elements are equal (comparator convention). Pass `NULL` if not needed; `ll_find` will fall back to pointer comparison.
+Initialize the list. You own the `List` handle and free it after `ll_destroy()`. `destroy` is called on remaining payloads at destroy time; pass `NULL` if the payloads are not heap-allocated. `match` is an optional comparison function used by `ll_find()`. It should return `0` when two elements are equal. Pass `NULL` if not needed; `ll_find` then compares pointers.
 
 ```c
 void ll_init(List *list, void (*destroy)(void *data),
@@ -179,7 +179,7 @@ int ll_ins_prev(List *list, ListNode *node, const void *data);
 
 ### ll_push_head / ll_push_tail
 
-Insert at the ends without naming a cursor. Empty lists are allowed. Returns `0` on success, `-1` on error. Stack and queue are implemented only in terms of these and the matching pops.
+Insert at the head or tail. Works on an empty list. Returns `0` on success, `-1` on error.
 
 ```c
 int ll_push_head(List *list, const void *data);

@@ -1,4 +1,4 @@
-Process helpers. This is not a file-slurp API.
+Run a command and capture its stdout.
 
 ## Functions
 
@@ -6,7 +6,7 @@ Process helpers. This is not a file-slurp API.
 
 Runs a command through `/bin/sh` via `popen` and returns stdout as a heap string. `buf_sz` is the initial buffer size; `0` uses `LF_CAPTURE_SYSTEM_BUFSIZE` (1024).
 
-The command string is not sanitized. Never pass untrusted or user-supplied input — shell metacharacters are interpreted.
+The command string is not sanitized. Do not pass untrusted input; `/bin/sh` interprets metacharacters.
 
 The caller frees the returned string. Returns `NULL` if `cmd` is NULL or on error.
 

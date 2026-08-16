@@ -1,4 +1,4 @@
-General math functions. 2D `LfPoint` lives here next to Bresenham.
+Integer helpers, a 2D `LfPoint`, and Bresenham line generation.
 
 ## Types
 
@@ -9,7 +9,7 @@ typedef struct {
 } LfPoint;
 ```
 
-`lf_point` constructs by value. `LfPoint_eq` / `LfPoint_eq_p` return `1` if equal — they are not `qsort` comparators. `LfPoint_match` returns `0` if equal and is the callback to pass to `List` / `Set`.
+`lf_point` constructs by value. `LfPoint_eq` and `LfPoint_eq_p` return `1` if equal. They are not `qsort` comparators. `LfPoint_match` returns `0` if equal and is the callback to pass to `List` or `Set`.
 
 ```c
 LfPoint lf_point(int x, int y);
@@ -117,7 +117,7 @@ lf_lerp(0.0f, 10.0f, 0.5f);  // returns 5.0
 
 ### lf_isqrt
 
-Returns the integer square root (floor) of `n`. Returns `-1` for negative inputs. Safe for `INT_MAX`. `isqrt` is a reserved `is*` name and is not provided.
+Returns the integer square root (floor) of `n`. Returns `-1` for negative inputs. Safe for `INT_MAX`.
 
 ```c
 int lf_isqrt(int n);
