@@ -3,6 +3,21 @@ project(flint C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 99)
 
+option(FLINT_ENABLE_WARNINGS "Enable -Wall -Wextra on flint and its tests" ON)
+option(FLINT_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+
+function(flint_apply_c_flags tgt)
+    if(FLINT_ENABLE_WARNINGS AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${tgt} PRIVATE -Wall -Wextra)
+    endif()
+    if(FLINT_SANITIZE)
+        target_compile_options(${tgt} PRIVATE
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer)
+        target_link_options(${tgt} PRIVATE -fsanitize=address,undefined)
+    endif()
+endfunction()
+
 set(SOURCES
         src/linkedlist.c
         src/set.c
@@ -46,6 +61,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(flint PRIVATE bsd)
 endif()
 
+flint_apply_c_flags(flint)
+
 if(CMAKE_PROJECT_NAME STREQUAL flint)
     enable_testing()
 
@@ -75,6 +92,7 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             target_compile_definitions(test_${t} PRIVATE _DEFAULT_SOURCE)
         endif()
+        flint_apply_c_flags(test_${t})
         add_test(NAME ${t} COMMAND test_${t})
     endforeach()
 
@@ -84,12 +102,14 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(test_network PRIVATE _DEFAULT_SOURCE)
     endif()
+    flint_apply_c_flags(test_network)
     add_test(NAME network COMMAND test_network)
     set_tests_properties(network PROPERTIES LABELS "slow")
 
     if(APPLE)
         add_executable(test_macos tests/test_macos.c)
         target_link_libraries(test_macos PRIVATE flint)
+        flint_apply_c_flags(test_macos)
         add_test(NAME macos COMMAND test_macos)
         set_tests_properties(macos PROPERTIES LABELS "slow")
     endif()
@@ -99,4 +119,5 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(netmanual PRIVATE _DEFAULT_SOURCE)
     endif()
+    flint_apply_c_flags(netmanual)
 endif()

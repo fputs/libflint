@@ -19,3 +19,19 @@ jobs:
         run: cmake --build build
       - name: Test
         run: ctest --test-dir build --output-on-failure -LE slow
+
+  sanitize:
+    runs-on: docker
+    container: alpine
+    steps:
+      - run: apk add --no-cache build-base cmake libbsd-dev
+      - uses: actions/checkout@v6
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DFLINT_SANITIZE=ON
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -LE slow
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1,print_stacktrace=1

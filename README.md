@@ -31,6 +31,10 @@ cmake -B build && cmake --build build
 ctest --test-dir build                # run all tests
 ctest --test-dir build --parallel     # run in parallel
 ctest --test-dir build --label-exclude slow  # skip slow tests (network, macos)
+
+# AddressSanitizer + UndefinedBehaviorSanitizer
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DFLINT_SANITIZE=ON
+cmake --build build && ctest --test-dir build --output-on-failure -LE slow
 ```
 
 ## Requirements
