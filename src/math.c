@@ -5,6 +5,28 @@
 #include "lfcompat.h"
 #include "lfmath.h"
 
+LfPoint lf_point(int x, int y) {
+    LfPoint p;
+    p.x = x;
+    p.y = y;
+    return p;
+}
+
+int LfPoint_eq(LfPoint a, LfPoint b) {
+    return a.x == b.x && a.y == b.y;
+}
+
+int LfPoint_eq_p(const LfPoint *a, const LfPoint *b) {
+    if (a == NULL || b == NULL) {
+        return a == b;
+    }
+    return LfPoint_eq(*a, *b);
+}
+
+int LfPoint_match(const void *a, const void *b) {
+    return LfPoint_eq_p(a, b) ? 0 : 1;
+}
+
 int abs_int(int a) {
     if (a == INT_MIN) {
         return INT_MAX;
@@ -71,7 +93,7 @@ int binstr_to_int(const char *s) {
     return n;
 }
 
-Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
+LfPoint *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
     if (sz == NULL) {
         return NULL;
     }
@@ -92,7 +114,7 @@ Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
     }
     size_t npts = (size_t)span + 1;
 
-    Point *line = lf_reallocarray(NULL, npts, sizeof(Point));
+    LfPoint *line = lf_reallocarray(NULL, npts, sizeof(LfPoint));
     if (line == NULL) {
         return NULL;
     }
@@ -128,7 +150,7 @@ Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz) {
     return line;
 }
 
-Point *bresenham_p(Point p1, Point p2, size_t *sz) {
+LfPoint *bresenham_p(LfPoint p1, LfPoint p2, size_t *sz) {
     return bresenham(p1.x, p1.y, p2.x, p2.y, sz);
 }
 

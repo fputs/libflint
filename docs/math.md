@@ -1,4 +1,23 @@
-General math functions
+General math functions. 2D `LfPoint` lives here next to Bresenham.
+
+## Types
+
+```c
+typedef struct {
+    int x;
+    int y;
+} LfPoint;
+```
+
+`lf_point` constructs by value. `LfPoint_eq` / `LfPoint_eq_p` return `1` if equal — they are not `qsort` comparators. `LfPoint_match` returns `0` if equal and is the callback to pass to `List` / `Set`.
+
+```c
+LfPoint lf_point(int x, int y);
+int LfPoint_eq(LfPoint a, LfPoint b);
+int LfPoint_eq_p(const LfPoint *a, const LfPoint *b);
+int LfPoint_match(const void *a, const void *b);
+```
+
 ## Functions
 
 ### max_int
@@ -40,18 +59,18 @@ binstr_to_int(NULL);    // -1 (null)
 
 ### bresenham
 
-Uses bresenham's line algorithm to generate a line in 2D space. Returns a pointer to an array of `Point`. The `sz` parameter holds the size of the array. Returns `NULL` if `sz` is `NULL` or if the span cannot be allocated. Deltas are computed without signed overflow.
+Uses bresenham's line algorithm to generate a line in 2D space. Returns a pointer to an array of `LfPoint`. The `sz` parameter holds the size of the array. Returns `NULL` if `sz` is `NULL` or if the span cannot be allocated. Deltas are computed without signed overflow.
 
 ```c
-Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
+LfPoint *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
 ```
 
 ### bresenham_p
 
-Works the same as `bresenham()` but uses the `Point` struct instead of `int`
+Works the same as `bresenham()` but uses `LfPoint` instead of `int`.
 
 ```c
-Point *bresenham_p(Point p1, Point p2, size_t *sz);
+LfPoint *bresenham_p(LfPoint p1, LfPoint p2, size_t *sz);
 ```
 
 ### abs_int

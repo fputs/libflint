@@ -76,9 +76,26 @@ int main() {
     ASSERT_EQ(isqrt(-1), -1);
     ASSERT_EQ(isqrt(INT_MAX), 46340);
 
+    /* LfPoint */
+    LfPoint pa = lf_point(3, 7);
+    ASSERT_EQ(pa.x, 3);
+    ASSERT_EQ(pa.y, 7);
+    ASSERT_TRUE(LfPoint_eq(lf_point(1, 2), lf_point(1, 2)));
+    ASSERT_FALSE(LfPoint_eq(lf_point(1, 2), lf_point(3, 4)));
+
+    LfPoint ea = lf_point(1, 2);
+    LfPoint eb = lf_point(1, 2);
+    LfPoint ec = lf_point(9, 9);
+    ASSERT_TRUE(LfPoint_eq_p(&ea, &eb));
+    ASSERT_FALSE(LfPoint_eq_p(&ea, &ec));
+    ASSERT_TRUE(LfPoint_eq_p(NULL, NULL));
+    ASSERT_FALSE(LfPoint_eq_p(&ea, NULL));
+    ASSERT_EQ(LfPoint_match(&ea, &eb), 0);
+    ASSERT_EQ(LfPoint_match(&ea, &ec), 1);
+
     /* bresenham coordinate verification */
     size_t sz = 0;
-    Point *line = bresenham(0, 0, 2, 5, &sz);
+    LfPoint *line = bresenham(0, 0, 2, 5, &sz);
     ASSERT_NOT_NULL(line);
     ASSERT_TRUE(sz > 0);
     /* first point */
@@ -98,8 +115,8 @@ int main() {
     free(line);
 
     /* bresenham_p */
-    Point p1 = Point_new(0, 0);
-    Point p2 = Point_new(4, 0);
+    LfPoint p1 = lf_point(0, 0);
+    LfPoint p2 = lf_point(4, 0);
     line = bresenham_p(p1, p2, &sz);
     ASSERT_NOT_NULL(line);
     ASSERT_EQ(sz, 5);

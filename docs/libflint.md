@@ -17,13 +17,12 @@
 
 ### Utilities
 - [[string]] — `lfstr_*` helpers and `LfStr` views
-- [[math]] — General math functions
+- [[math]] — Integer helpers, `LfPoint`, and Bresenham
 - [[codec]] — Hex and Base64 codecs (not cryptography)
 - [[puzzle]] — Repeating-key XOR, Hamming distance, English scoring (Cryptopals-style, not cryptography)
 - [[crypto]] — Compatibility include of codec + puzzle
 - [[input]] — One-shot slurp of a regular, seekable file (`LfLines` owns the buffer)
 - [[process]] — `lf_capture_system` (`popen`, unsanitized)
-- [[utility]] — Utility code that does not fit anywhere else
 - [[bool]] — Macro representation of truthy values
 - [[bitops]] — Bit manipulation macros for setting, clearing, toggling, testing, extracting, and inserting bit fields
 

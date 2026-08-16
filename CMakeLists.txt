@@ -29,7 +29,6 @@ set(SOURCES
         src/math.c
         src/string.c
         src/vector.c
-        src/utility.c
         src/crypto.c
         src/network.c
         src/memory.c
@@ -76,7 +75,6 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         string
         crypto
         memory
-        utility
         input
         ringbuf
         bytering

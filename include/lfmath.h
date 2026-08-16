@@ -3,7 +3,20 @@
 
 #include <stddef.h>
 
-#include "lfutility.h"
+typedef struct {
+    int x;
+    int y;
+} LfPoint;
+
+LfPoint lf_point(int x, int y);
+
+/* 1 if equal, 0 otherwise. Not a qsort comparator. */
+int LfPoint_eq(LfPoint a, LfPoint b);
+
+int LfPoint_eq_p(const LfPoint *a, const LfPoint *b);
+
+/* 0 if equal, 1 otherwise. Safe as a List/Set match callback. */
+int LfPoint_match(const void *a, const void *b);
 
 int abs_int(int a);
 
@@ -25,8 +38,8 @@ float lerp(float a, float b, float t);
 
 int isqrt(int n);
 
-Point *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
+LfPoint *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
 
-Point *bresenham_p(Point p1, Point p2, size_t *sz);
+LfPoint *bresenham_p(LfPoint p1, LfPoint p2, size_t *sz);
 
-#endif // LIBFLINT_H_MATH
+#endif /* LIBFLINT_H_MATH */
