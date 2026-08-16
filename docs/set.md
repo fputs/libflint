@@ -1,29 +1,32 @@
-A set data structure built on top of `List`. Ensures uniqueness of elements using a user-provided match function
+A small uniqueness-constrained collection over a `List`. Membership is O(n). The public type is a wrapper, not a `#define`, so list operations do not compile against a `Set` and cannot break uniqueness.
+
 ## Structs
 
-`Set` is a linked list with set-based operations available
-
 ```c
-#define Set List
+typedef struct {
+    List impl;
+} Set;
 ```
+
+`match` is required at `set_init`. It returns `0` if two elements are equal (comparator convention, like `strcmp`). Equality is `==`, not `a - b` (signed overflow).
 
 ## Functions
 
 ### set_init
 
-Initializes the set. The user is responsible for creating the initial `Set` structure and freeing memory with `set_destroy()`. `match` is a comparison function that returns `0` if two elements are equal (comparator convention, like `strcmp`). `destroy` is an optional deallocation function for the members of `Set`, pass `NULL` if the memory is stack-allocated.
+Initializes the set. The user owns the `Set` handle. `match` is required; `destroy` is optional and is called on members only by `set_destroy`. Returns `0` on success, `-1` if `set` or `match` is NULL.
 
 ```c
-void set_init(Set *set, int (*match)(const void *a, const void *b),
-              void (*destroy)(void *data));
+int set_init(Set *set, int (*match)(const void *a, const void *b),
+             void (*destroy)(void *data));
 
 /* Usage */
 int int_match(const void *a, const void *b) {
-    return *(const int *)a - *(const int *)b;  /* 0 = equal */
+    return *(const int *)a == *(const int *)b ? 0 : 1;
 }
 
-Set *set = malloc(sizeof(Set));
-set_init(set, int_match, NULL);
+Set set;
+set_init(&set, int_match, NULL);
 ```
 
 ### set_destroy
@@ -34,8 +37,7 @@ Destroys the nodes inside a `Set` and calls the deallocation function on the dat
 void set_destroy(Set *set);
 
 /* Usage */
-set_destroy(set);
-free(set);
+set_destroy(&set);
 ```
 
 ### set_insert
@@ -48,8 +50,8 @@ int set_insert(Set *set, const void *data);
 /* Usage */
 int a = 1;
 int b = 1;
-set_insert(set, &a); // returns 0, inserted
-set_insert(set, &b); // returns 1, duplicate skipped
+set_insert(&set, &a); /* returns 0, inserted */
+set_insert(&set, &b); /* returns 1, duplicate skipped */
 ```
 
 ### set_remove
@@ -62,44 +64,27 @@ int set_remove(Set *set, void **data);
 /* Usage */
 int key = 1;
 void *removed = &key;
-set_remove(set, &removed);
+set_remove(&set, &removed);
 ```
 
-### set_union
+### Algebra (borrowed)
 
-Computes the union of sets `a` and `b`, storing the result in `setu`. `setu` must be an uninitialized `Set` (it will be initialized inside the function). The result contains all elements from both sets with no duplicates. Returns `0` on success, `-1` on error.
+`set_union`, `set_intersection`, and `set_difference` write a borrowed view into a caller-initialized destination. The destination must be empty, share `a` and `b`'s `match`, and have `destroy == NULL`. Result nodes alias the input payloads — do not destroy `a` or `b` while the view is live. `dest == a` and `dest == b` are rejected (that path used to leak `a`'s nodes). The functions never call `set_init` on a destination the caller already owns. Returns `0` on success, `-1` on error.
 
 ```c
-int set_union(Set *setu, const Set *a, const Set *b);
+int set_union(Set *dest, const Set *a, const Set *b);
+int set_intersection(Set *dest, const Set *a, const Set *b);
+int set_difference(Set *dest, const Set *a, const Set *b);
 
 /* Usage */
-Set *result = malloc(sizeof(Set));
-set_union(result, set1, set2);
+Set result;
+set_init(&result, int_match, NULL);
+set_union(&result, &set1, &set2);
+/* use result, then: */
+set_destroy(&result); /* nodes only; payloads still owned by set1/set2 */
 ```
 
-### set_intersection
-
-Computes the intersection of sets `a` and `b`, storing the result in `seti`. `seti` must be an uninitialized `Set`. The result contains only elements present in both sets. Returns `0` on success, `-1` on error.
-
-```c
-int set_intersection(Set *seti, const Set *a, const Set *b);
-
-/* Usage */
-Set *result = malloc(sizeof(Set));
-set_intersection(result, set1, set2);
-```
-
-### set_difference
-
-Computes the difference of sets `a` and `b` (elements in `a` that are not in `b`), storing the result in `setd`. `setd` must be an uninitialized `Set`. Returns `0` on success, `-1` on error.
-
-```c
-int set_difference(Set *setd, const Set *a, const Set *b);
-
-/* Usage */
-Set *result = malloc(sizeof(Set));
-set_difference(result, set1, set2);
-```
+Union contains every element from `a` or `b`. Intersection contains elements present in both. Difference is elements in `a` that are not in `b`.
 
 ### set_is_member
 
@@ -132,5 +117,5 @@ int set_is_equal(const Set *a, const Set *b);
 Returns the number of elements in the set.
 
 ```c
-#define set_size(s) ((s)->size)
+#define set_size(s) ((s)->impl.size)
 ```

@@ -1,52 +1,98 @@
 #include "lfset.h"
 
-void set_init(Set *set, int (*match)(const void *a, const void *b),
-              void (*destroy)(void *data)) {
-    ll_init(set, destroy, match);
+int set_init(Set *set, int (*match)(const void *a, const void *b),
+             void (*destroy)(void *data)) {
+    if (set == NULL || match == NULL) {
+        return -1;
+    }
+    ll_init(&set->impl, destroy, match);
+    return 0;
 }
 
 void set_destroy(Set *set) {
-    ll_destroy(set);
+    if (set == NULL) {
+        return;
+    }
+    ll_destroy(&set->impl);
 }
 
 int set_insert(Set *set, const void *data) {
+    if (set == NULL) {
+        return -1;
+    }
     if (set_is_member(set, data)) {
         return 1;
     }
-    return ll_ins_next(set, set->tail, data);
+    return ll_ins_next(&set->impl, set->impl.tail, data);
 }
 
 int set_remove(Set *set, void **data) {
-    if (data == NULL) {
+    if (set == NULL || data == NULL) {
         return -1;
     }
-    ListNode *node = ll_find(set, *data);
+    ListNode *node = ll_find(&set->impl, *data);
     if (node == NULL) {
         return -1;
     }
-    return ll_remove(set, node, data);
+    return ll_remove(&set->impl, node, data);
 }
 
-int set_union(Set *setu, const Set *a, const Set *b) {
-    ListNode *node;
-    void *data;
+static int algebra_ok(Set *dest, const Set *a, const Set *b) {
+    if (dest == NULL || a == NULL || b == NULL) {
+        return 0;
+    }
+    if (dest == a || dest == b) {
+        return 0;
+    }
+    if (a->impl.match == NULL || a->impl.match != b->impl.match) {
+        return 0;
+    }
+    if (dest->impl.match != a->impl.match) {
+        return 0;
+    }
+    if (dest->impl.destroy != NULL) {
+        return 0;
+    }
+    if (dest->impl.size != 0 || dest->impl.head != NULL) {
+        return 0;
+    }
+    return 1;
+}
 
-    set_init(setu, a->match, NULL);
-    for (node = a->head; node != NULL; node = node->next) {
-        data = node->data;
-        if (ll_ins_next(setu, setu->tail, data) != 0) {
-            set_destroy(setu);
+/* Drop borrowed nodes without touching payloads; dest stays initialized. */
+static void algebra_unwind(Set *dest) {
+    while (dest->impl.size > 0) {
+        void *dummy;
+        if (ll_remove(&dest->impl, dest->impl.tail, &dummy) != 0) {
+            break;
+        }
+    }
+}
+
+static int insert_alias(Set *dest, void *data) {
+    if (set_is_member(dest, data)) {
+        return 0;
+    }
+    return ll_ins_next(&dest->impl, dest->impl.tail, data);
+}
+
+int set_union(Set *dest, const Set *a, const Set *b) {
+    ListNode *node;
+
+    if (!algebra_ok(dest, a, b)) {
+        return -1;
+    }
+
+    for (node = a->impl.head; node != NULL; node = node->next) {
+        if (insert_alias(dest, node->data) != 0) {
+            algebra_unwind(dest);
             return -1;
         }
     }
 
-    for (node = b->head; node != NULL; node = node->next) {
-        if (set_is_member(a, node->data)) {
-            continue;
-        }
-        data = node->data;
-        if (ll_ins_next(setu, setu->tail, data) != 0) {
-            set_destroy(setu);
+    for (node = b->impl.head; node != NULL; node = node->next) {
+        if (insert_alias(dest, node->data) != 0) {
+            algebra_unwind(dest);
             return -1;
         }
     }
@@ -54,16 +100,17 @@ int set_union(Set *setu, const Set *a, const Set *b) {
     return 0;
 }
 
-int set_intersection(Set *seti, const Set *a, const Set *b) {
+int set_intersection(Set *dest, const Set *a, const Set *b) {
     ListNode *node;
-    void *data;
 
-    set_init(seti, a->match, NULL);
-    for (node = a->head; node != NULL; node = node->next) {
-        data = node->data;
-        if (set_is_member(b, data)) {
-            if (ll_ins_next(seti, seti->tail, data)) {
-                set_destroy(seti);
+    if (!algebra_ok(dest, a, b)) {
+        return -1;
+    }
+
+    for (node = a->impl.head; node != NULL; node = node->next) {
+        if (set_is_member(b, node->data)) {
+            if (insert_alias(dest, node->data) != 0) {
+                algebra_unwind(dest);
                 return -1;
             }
         }
@@ -72,16 +119,17 @@ int set_intersection(Set *seti, const Set *a, const Set *b) {
     return 0;
 }
 
-int set_difference(Set *setd, const Set *a, const Set *b) {
+int set_difference(Set *dest, const Set *a, const Set *b) {
     ListNode *node;
-    void *data;
 
-    set_init(setd, a->match, NULL);
-    for (node = a->head; node != NULL; node = node->next) {
-        data = node->data;
-        if (!set_is_member(b, data)) {
-            if (ll_ins_next(setd, setd->tail, data)) {
-                set_destroy(setd);
+    if (!algebra_ok(dest, a, b)) {
+        return -1;
+    }
+
+    for (node = a->impl.head; node != NULL; node = node->next) {
+        if (!set_is_member(b, node->data)) {
+            if (insert_alias(dest, node->data) != 0) {
+                algebra_unwind(dest);
                 return -1;
             }
         }
@@ -91,14 +139,20 @@ int set_difference(Set *setd, const Set *a, const Set *b) {
 }
 
 int set_is_member(const Set *set, const void *data) {
-    return ll_find(set, data) != NULL;
+    if (set == NULL) {
+        return 0;
+    }
+    return ll_find(&set->impl, data) != NULL;
 }
 
 int set_is_subset(const Set *a, const Set *b) {
-    if (a->size > b->size) {
+    if (a == NULL || b == NULL) {
         return 0;
     }
-    for (ListNode *node = a->head; node != NULL; node = node->next) {
+    if (a->impl.size > b->impl.size) {
+        return 0;
+    }
+    for (ListNode *node = a->impl.head; node != NULL; node = node->next) {
         if (!set_is_member(b, node->data)) {
             return 0;
         }
@@ -107,7 +161,10 @@ int set_is_subset(const Set *a, const Set *b) {
 }
 
 int set_is_equal(const Set *a, const Set *b) {
-    if (a->size != b->size) {
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+    if (a->impl.size != b->impl.size) {
         return 0;
     }
     return set_is_subset(a, b);

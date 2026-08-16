@@ -6,7 +6,7 @@
 - [[vector]] — Simple type-agnostic dynamic array
 - [[stack]] — LIFO (last in first out) stack
 - [[queue]] — FIFO (first in first out) queue
-- [[set]] — Set built on top of `List`. Ensures uniqueness using a user-provided match function
+- [[set]] — Small uniqueness-constrained set over a `List` wrapper. Membership is O(n)
 - [[binarytree]] — Binary tree with standard leaf operations
 - [[ringbuf]] — Fixed-size circular buffer for FIFO operations with no runtime allocations after init
 - [[bytering]] — Lock-free byte ring buffer for single-producer single-consumer use cases such as UART RX/TX buffers
