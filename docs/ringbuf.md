@@ -1,4 +1,7 @@
-Fixed-size circular buffer (ring buffer) for FIFO operations with no runtime allocations after initialization
+Fixed-size circular buffer (ring buffer) for FIFO operations with no runtime allocations after initialization.
+
+Use `Queue` when the collection must grow without a fixed bound. Use `RingBuffer` when the payload is `void *` and the size is known at init. Use `ByteRing` for a caller-owned byte buffer (UART/ISR-style bytes), not pointers.
+
 ## Structs
 
 ### RingBuffer
@@ -18,7 +21,7 @@ typedef struct {
 
 ### rb_init
 
-Initializes the ring buffer with a fixed capacity. The user is responsible for creating the initial `RingBuffer` structure and freeing memory with `rb_destroy()`. `destroy` is a deallocation function for the members of the buffer, pass `NULL` if the memory is stack-allocated. Returns `0` on success, `-1` on error (NULL pointer or zero capacity).
+Initializes the ring buffer with a fixed capacity. The user is responsible for creating the initial `RingBuffer` structure and freeing memory with `rb_destroy()`. `destroy` is a deallocation function for the members of the buffer, pass `NULL` if the memory is stack-allocated. Returns `0` on success, `-1` on error (NULL pointer, zero capacity, or allocation failure). Failed init zeros the handle so `rb_destroy` is safe.
 
 ```c
 int rb_init(RingBuffer *rb, size_t capacity, void (*destroy)(void *));
@@ -55,7 +58,7 @@ rb_push(rb, &a);
 
 ### rb_pop
 
-Removes the element at the front of the buffer and stores its data in `data`. Returns `0` on success, `-1` if the buffer is empty. The caller is responsible for freeing the popped element if it was heap-allocated.
+Removes the element at the front of the buffer and stores its data in `data`. Returns `0` on success, `-1` if the buffer is empty or `data` is `NULL` (the item is left in the buffer). The caller is responsible for freeing the popped element if it was heap-allocated.
 
 ```c
 int rb_pop(RingBuffer *rb, void **data);

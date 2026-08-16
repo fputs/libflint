@@ -1,6 +1,7 @@
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "lfcompat.h"
 #include "lflinkedlist.h"
 
 void ll_init(List *list, void (*destroy)(void *data),
@@ -226,7 +227,7 @@ void **ll_to_array(const List *list) {
     if (list == NULL || list->size == 0) {
         return NULL;
     }
-    void **arr = malloc(list->size * sizeof(void *));
+    void **arr = lf_reallocarray(NULL, list->size, sizeof(void *));
     if (arr == NULL) {
         return NULL;
     }

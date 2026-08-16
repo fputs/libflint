@@ -146,9 +146,29 @@ static void test_wrap() {
     rb = NULL;
 }
 
+static void test_init_and_pop_null(void) {
+    ASSERT_EQ(rb_init(NULL, 4, NULL), -1);
+
+    RingBuffer rb;
+    ASSERT_EQ(rb_init(&rb, 0, NULL), -1);
+    ASSERT_EQ(rb.capacity, (size_t)0);
+    ASSERT_NULL(rb.buf);
+    rb_destroy(&rb);
+
+    ASSERT_EQ(rb_init(&rb, 2, NULL), 0);
+    int a = 1, b = 2;
+    ASSERT_EQ(rb_push(&rb, &a), 0);
+    ASSERT_EQ(rb_push(&rb, &b), 0);
+    ASSERT_EQ(rb_pop(&rb, NULL), -1);
+    ASSERT_EQ(rb_count(&rb), 2);
+    ASSERT_EQ(*(int *)rb_peek(&rb), 1);
+    rb_destroy(&rb);
+}
+
 int main() {
     test_stackalloc();
     test_heapalloc();
     test_wrap();
+    test_init_and_pop_null();
     TEST_REPORT();
 }

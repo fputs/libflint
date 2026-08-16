@@ -245,7 +245,7 @@ ll_sort(list, cmp_int);
 
 ### ll_to_array
 
-Allocates and returns an array of `void *` pointers to the data in each node, in list order. The caller is responsible for freeing the returned array. Returns `NULL` if the list is empty or on allocation failure.
+Allocates and returns an array of `void *` pointers to the data in each node, in list order. The allocation is overflow-checked. The caller is responsible for freeing the returned array. Returns `NULL` if the list is empty or on allocation failure.
 
 ```c
 void **ll_to_array(const List *list);
