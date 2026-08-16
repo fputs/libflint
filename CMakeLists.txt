@@ -31,7 +31,6 @@ set(SOURCES
         src/vector.c
         src/utility.c
         src/crypto.c
-        src/parsing.c
         src/network.c
         src/memory.c
         src/ringbuf.c
@@ -76,7 +75,6 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         vector
         string
         crypto
-        parsing
         memory
         utility
         input

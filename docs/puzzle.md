@@ -1,4 +1,4 @@
-Cryptopals-style byte puzzles: repeating-key XOR and Hamming distance. This is not a cryptography library. Do not grow it into AES, SHA, or an RNG.
+Cryptopals-style byte puzzles: repeating-key XOR, Hamming distance, and a toy English-likelihood scorer. This is not a cryptography library. Do not grow it into AES, SHA, or an RNG.
 
 ## Functions
 
@@ -40,4 +40,12 @@ Hamming distance between two strings. Returns `-1` if the lengths differ.
 
 ```c
 int hamming_distance_s(const char *a, const char *b);
+```
+
+### simple_english_scoring
+
+Scores a string on a simple ETAOIN SHRDLU scale. A cheap way to guess whether a buffer looks like English (used with XOR ciphertext). Returns `-1` if input is `NULL`.
+
+```c
+int simple_english_scoring(const char *s);
 ```

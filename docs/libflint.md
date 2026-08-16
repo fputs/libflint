@@ -19,9 +19,8 @@
 - [[string]] — `lfstr_*` helpers and `LfStr` views
 - [[math]] — General math functions
 - [[codec]] — Hex and Base64 codecs (not cryptography)
-- [[puzzle]] — Repeating-key XOR and Hamming distance (Cryptopals-style, not cryptography)
+- [[puzzle]] — Repeating-key XOR, Hamming distance, English scoring (Cryptopals-style, not cryptography)
 - [[crypto]] — Compatibility include of codec + puzzle
-- [[parsing]] — String parsing tools
 - [[input]] — One-shot slurp of a regular, seekable file (`LfLines` owns the buffer)
 - [[process]] — `lf_capture_system` (`popen`, unsanitized)
 - [[utility]] — Utility code that does not fit anywhere else
