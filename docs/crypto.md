@@ -23,6 +23,9 @@ free(encoded);
 Decodes a base64 encoded set of bytes into an `unsigned char *`. User is responsible
 for freeing the `unsigned char *` that is returned. `decode_sz` is an optional argument
 in case you need to know the size of the decoded data, otherwise you can just pass `NULL`.
+Invalid characters, truncated input, and incomplete padding fail closed (`NULL`);
+a valid prefix of a corrupt string is not returned. The output is NUL-terminated
+but may contain interior NULs — use `decode_sz`, not `strlen`.
 
 ```c
 unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz);
@@ -55,9 +58,11 @@ free(s);
 ### hex_decode
 
 Decodes a string of characters representing hexadecimal bytes into an array of `unsigned char`.
-Characters can be in upper or lower case, and can start with a leading `0x` or not.
-For example, converts `"DEADBEEF"` into `[0xde, 0xad, 0xbe, 0xef]`. Returns `NULL` if `sz` is `NULL`. User is responsible for the
-freeing of the returned byte array
+Characters can be in upper or lower case, and can start with a leading `0x` or `0X`.
+For example, converts `"DEADBEEF"` into `[0xde, 0xad, 0xbe, 0xef]`. Odd-length input is
+padded with a leading nibble of `0`. Returns `NULL` if `sz` is `NULL` or if any
+character is not a hex digit. `*sz` is written only on success. User is responsible for the
+freeing of the returned byte array.
 
 ```c
 unsigned char *hex_decode(const char *orig, size_t *sz);

@@ -43,6 +43,12 @@ int main() {
     }
     free(us);
 
+    us = hex_decode("0Xf00f5", &s_sz);
+    for (size_t i = 0; i < 3; ++i) {
+        ASSERT_EQ(us[i], h2[i]);
+    }
+    free(us);
+
     char *enc_s = hex_encode(h, 4);
     ASSERT_STR_EQ(enc_s, "deadbeef");
     free(enc_s);
@@ -133,6 +139,48 @@ int main() {
     /* repeating_key_xor with zero-length key returns NULL */
     xor_s = repeating_key_xor((const unsigned char *)"test", 4, (const unsigned char *)"", 0);
     ASSERT_NULL(xor_s);
+
+    /* hex_decode fail-closed: bad digits, no uninit output */
+    size_t bad_sz = 99;
+    ASSERT_NULL(hex_decode("GG", &bad_sz));
+    ASSERT_EQ(bad_sz, (size_t)99);
+    ASSERT_NULL(hex_decode("0xzz", &s_sz));
+    ASSERT_NULL(hex_decode("abcg", &s_sz));
+    ASSERT_NULL(hex_decode("deadbeeg", &s_sz));
+    ASSERT_NULL(hex_decode(NULL, &s_sz));
+
+    /* b64_decode fail-closed: invalid chars are not a successful prefix */
+    const char *bad_b64 = "SGVs!!bG8=";
+    us = b64_decode(bad_b64, strlen(bad_b64), &s_sz);
+    ASSERT_NULL(us);
+
+    us = b64_decode("!!!!", 4, &s_sz);
+    ASSERT_NULL(us);
+
+    /* leftover single character is truncated */
+    us = b64_decode("S", 1, &s_sz);
+    ASSERT_NULL(us);
+
+    /* incomplete padding */
+    us = b64_decode("QlVUVA=", 7, &s_sz);
+    ASSERT_NULL(us);
+
+    /* extra junk after padding */
+    us = b64_decode("QlVUVA==x", 9, &s_sz);
+    ASSERT_NULL(us);
+
+    /* binary payload containing NUL — do not use ASSERT_STR_EQ */
+    unsigned char raw_nul[3] = { 0x00, 0x41, 0x00 };
+    cs = b64_encode(raw_nul, 3);
+    ASSERT_NOT_NULL(cs);
+    us = b64_decode(cs, strlen(cs), &s_sz);
+    ASSERT_NOT_NULL(us);
+    ASSERT_EQ(s_sz, (size_t)3);
+    ASSERT_EQ(us[0], (unsigned char)0x00);
+    ASSERT_EQ(us[1], (unsigned char)0x41);
+    ASSERT_EQ(us[2], (unsigned char)0x00);
+    free(cs);
+    free(us);
 
     TEST_REPORT();
 }

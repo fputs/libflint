@@ -1,9 +1,9 @@
-#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "lfcompat.h"
 #include "lfcrypto.h"
 
 #define B64_BUF_SZ 256
@@ -34,15 +34,59 @@ static int new_b64_buf(b64_buf *b) {
 }
 
 static int resize_b64_buf(b64_buf *b, size_t sz) {
-    if (sz > b->count * B64_BUF_SZ) {
-        while (sz > b->count * B64_BUF_SZ) {
-           b->count++;
-        }
-        b->ptr = realloc(b->ptr, B64_BUF_SZ * b->count);
-        if (b->ptr == NULL) {
+    size_t need = b->count;
+    while (need <= SIZE_MAX / B64_BUF_SZ && sz > need * B64_BUF_SZ) {
+        if (need == SIZE_MAX) {
             return 1;
         }
+        need++;
     }
+    if (need > SIZE_MAX / B64_BUF_SZ || sz > need * B64_BUF_SZ) {
+        return 1;
+    }
+    if (need == b->count) {
+        return 0;
+    }
+    void *tmp = lf_reallocarray(b->ptr, need, B64_BUF_SZ);
+    if (tmp == NULL) {
+        return 1;
+    }
+    b->ptr = tmp;
+    b->count = need;
+    return 0;
+}
+
+static int b64_val(unsigned char c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A';
+    }
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a' + 26;
+    }
+    if (c >= '0' && c <= '9') {
+        return c - '0' + 52;
+    }
+    if (c == '+') {
+        return 62;
+    }
+    if (c == '/') {
+        return 63;
+    }
+    return -1;
+}
+
+static int b64_decode_quartet(unsigned char tmp[4], unsigned char buf[3]) {
+    int v[4];
+    for (int i = 0; i < 4; ++i) {
+        v[i] = b64_val(tmp[i]);
+        if (v[i] < 0) {
+            return -1;
+        }
+        tmp[i] = (unsigned char)v[i];
+    }
+    buf[0] = (unsigned char)((tmp[0] << 2) + ((tmp[1] & 0x30) >> 4));
+    buf[1] = (unsigned char)(((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2));
+    buf[2] = (unsigned char)(((tmp[2] & 0x3) << 6) + tmp[3]);
     return 0;
 }
 
@@ -115,7 +159,11 @@ char *b64_encode(const unsigned char *s, size_t sz) {
 }
 
 unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
-    int i = 0, j = 0, l = 0;
+    if (s == NULL && sz != 0) {
+        return NULL;
+    }
+
+    int i = 0;
     size_t size = 0;
     b64_buf decbuf;
     unsigned char buf[3];
@@ -125,67 +173,71 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
         return NULL;
     }
 
-    while (sz--) {
-        if (s[j] == '=') {
+    size_t n = 0;
+    while (n < sz) {
+        unsigned char c = (unsigned char)s[n];
+        if (c == '=') {
             break;
         }
-        // Not base64 characters
-        if (!isalnum(s[j]) && s[j] != '+' && s[j] != '/') {
-            break;
+        if (b64_val(c) < 0) {
+            free(decbuf.ptr);
+            return NULL;
         }
 
-        tmp[i++] = s[j++];
+        tmp[i++] = c;
+        n++;
 
         if (i == 4) {
-            for (i = 0; i < 4; ++i) {
-                for (l = 0; l < 64; ++l) {
-                    if (tmp[i] == b64_table[l]) {
-                        tmp[i] = l;
-                        break;
-                    }
-                }
+            if (b64_decode_quartet(tmp, buf) != 0) {
+                free(decbuf.ptr);
+                return NULL;
             }
-
-            buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
-            buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
-            buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
-
             if (resize_b64_buf(&decbuf, size + 3) != 0) {
                 free(decbuf.ptr);
                 return NULL;
             }
-
             for (i = 0; i < 3; ++i) {
                 decbuf.ptr[size++] = buf[i];
             }
-
             i = 0;
         }
     }
 
-    if (i > 0) {
-        for (j = i; j < 4; ++j) {
-            tmp[j] = '\0';
-        }
-
-        for (j = 0; j < 4; ++j) {
-            for (l = 0; l < 64; ++l) {
-                if (tmp[j] == b64_table[l]) {
-                    tmp[j] = l;
-                    break;
-                }
-            }
-        }
-
-        buf[0] = (tmp[0] << 2) + ((tmp[1] & 0x30) >> 4);
-        buf[1] = ((tmp[1] & 0xf) << 4) + ((tmp[2] & 0x3c) >> 2);
-        buf[2] = ((tmp[2] & 0x3) << 6) + tmp[3];
-
-        if (resize_b64_buf(&decbuf, size + (i - 1)) != 0) {
+    if (n < sz && (unsigned char)s[n] == '=') {
+        if (i != 2 && i != 3) {
             free(decbuf.ptr);
             return NULL;
         }
-        for (j = 0; (j < i - 1); ++j) {
+        size_t pads = 4 - (size_t)i;
+        for (size_t p = 0; p < pads; ++p) {
+            if (n >= sz || (unsigned char)s[n] != '=') {
+                free(decbuf.ptr);
+                return NULL;
+            }
+            n++;
+        }
+        if (n != sz) {
+            free(decbuf.ptr);
+            return NULL;
+        }
+    } else if (i == 1) {
+        free(decbuf.ptr);
+        return NULL;
+    }
+
+    if (i > 0) {
+        for (int j = i; j < 4; ++j) {
+            tmp[j] = 'A';
+        }
+        if (b64_decode_quartet(tmp, buf) != 0) {
+            free(decbuf.ptr);
+            return NULL;
+        }
+        if (resize_b64_buf(&decbuf, size + (size_t)(i - 1)) != 0) {
+            free(decbuf.ptr);
+            return NULL;
+        }
+        for (int j = 0; j < i - 1; ++j) {
             decbuf.ptr[size++] = buf[j];
         }
     }
@@ -203,50 +255,61 @@ unsigned char *b64_decode(const char *s, size_t sz, size_t *decode_sz) {
     return decbuf.ptr;
 }
 
+static int hex_nibble(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return -1;
+}
+
 unsigned char *hex_decode(const char *orig, size_t *sz) {
-    if (sz == NULL) {
+    if (orig == NULL || sz == NULL) {
         return NULL;
     }
 
     const char *sptr = orig;
-    if (strncmp(orig, "0x", 2) == 0) {
+    if (sptr[0] == '0' && (sptr[1] == 'x' || sptr[1] == 'X')) {
         sptr += 2;
     }
+
     size_t slen = strlen(sptr);
-    size_t buf_sz = slen + 1;
+    int pad = (slen % 2 != 0);
+    size_t out_sz = (slen + (size_t)pad) / 2;
 
-    if (slen % 2 != 0) {
-        buf_sz += 1;
-    }
-
-    char *buf = malloc(sizeof(char) * buf_sz);
-    if (buf == NULL) {
-        return NULL;
-    }
-
-    if (strlen(sptr) % 2 != 0) {
-        memcpy(buf + 1, sptr, strlen(sptr));
-        buf[0] = '0';
-    } else {
-        memcpy(buf, sptr, strlen(sptr));
-    }
-    buf[buf_sz - 1] = '\0';
-
-    *sz = buf_sz / 2;
-    unsigned char *hex = malloc(sizeof(unsigned char) * *sz);
+    unsigned char *hex = malloc(out_sz == 0 ? 1 : out_sz);
     if (hex == NULL) {
-        free(buf);
         return NULL;
     }
 
-    const char *pos = buf;
-
-    for (size_t i = 0; i < *sz; ++i) {
-        sscanf(pos, "%2hhx", &hex[i]);
-        pos += 2;
+    size_t out_i = 0;
+    size_t in_i = 0;
+    if (pad) {
+        int lo = hex_nibble(sptr[0]);
+        if (lo < 0) {
+            free(hex);
+            return NULL;
+        }
+        hex[out_i++] = (unsigned char)lo;
+        in_i = 1;
     }
 
-    free(buf);
+    for (; in_i < slen; in_i += 2) {
+        int hi = hex_nibble(sptr[in_i]);
+        int lo = hex_nibble(sptr[in_i + 1]);
+        if (hi < 0 || lo < 0) {
+            free(hex);
+            return NULL;
+        }
+        hex[out_i++] = (unsigned char)((hi << 4) | lo);
+    }
+
+    *sz = out_sz;
     return hex;
 }
 
