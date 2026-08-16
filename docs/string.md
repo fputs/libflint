@@ -1,6 +1,6 @@
 C string helpers. Public names are `lfstr_*` — `str_*` is reserved by the C standard and is not aliased.
 
-Non-allocating predicates take an `LfStr` view (`{const char *p; size_t n}`). The C-string wrappers (`lfstr_starts_with`, `lfstr_contains`, `lfstr_trim`, …) stay for convenience. Constructors still allocate.
+Non-allocating predicates take an `LfStr` view (`{const char *p; size_t n}`). The C-string wrappers (`lfstr_starts_with`, `lfstr_contains`, `lfstr_trim`, …) stay for convenience. Constructors still allocate — from the heap, or from an `ArenaAllocator` via the `*_arena` variants. Arena results must not be passed to `free` or `lfstr_split_free`; they die with the arena.
 
 ## Types
 
@@ -38,6 +38,9 @@ Returns `0` on success, `1` if `substrings` is not `NULL` (already allocated), `
 ```c
 int lfstr_find(const char *haystack, const char *needle,
                size_t *num_substrings, size_t **substrings);
+int lfstr_find_arena(ArenaAllocator *arena, const char *haystack,
+                     const char *needle, size_t *num_substrings,
+                     size_t **substrings);
 
 /* Usage */
 const char *haystack = "One two three two";
@@ -58,6 +61,8 @@ Extracts a substring at a specific index and length. This function returns a cop
 
 ```c
 char *lfstr_substr(const char *str, size_t idx, size_t len);
+char *lfstr_substr_arena(ArenaAllocator *arena, const char *str,
+                         size_t idx, size_t len);
 
 /* Usage */
 const char *s = lfstr_substr("One two three", 4, 3);
@@ -71,6 +76,7 @@ Returns a new heap-allocated string with leading and trailing whitespace removed
 
 ```c
 char *lfstr_trim(const char *str);
+char *lfstr_trim_arena(ArenaAllocator *arena, const char *str);
 
 /* Usage */
 char *s = lfstr_trim("  hello  ");
@@ -84,6 +90,8 @@ Joins an array of strings with a separator. Returns a new heap-allocated string.
 
 ```c
 char *lfstr_join(const char **strs, size_t count, const char *sep);
+char *lfstr_join_arena(ArenaAllocator *arena, const char **strs,
+                       size_t count, const char *sep);
 
 /* Usage */
 const char *parts[] = {"foo", "bar", "baz"};
@@ -114,6 +122,8 @@ Replaces all occurrences of `old` with `replacement` in `str`. Returns a new hea
 
 ```c
 char *lfstr_replace(const char *str, const char *old, const char *replacement);
+char *lfstr_replace_arena(ArenaAllocator *arena, const char *str,
+                          const char *old, const char *replacement);
 
 /* Usage */
 char *s = lfstr_replace("foo bar foo", "foo", "baz");
@@ -127,6 +137,7 @@ Returns a new heap-allocated string with all characters converted to uppercase. 
 
 ```c
 char *lfstr_to_upper(const char *str);
+char *lfstr_to_upper_arena(ArenaAllocator *arena, const char *str);
 ```
 
 ### lfstr_to_lower
@@ -135,6 +146,7 @@ Returns a new heap-allocated string with all characters converted to lowercase. 
 
 ```c
 char *lfstr_to_lower(const char *str);
+char *lfstr_to_lower_arena(ArenaAllocator *arena, const char *str);
 ```
 
 ### lfstr_split / lfstr_split_free
@@ -143,6 +155,8 @@ Splits a string into an array of strings based on a delimiter. Returns a heap-al
 
 ```c
 char **lfstr_split(const char *str, const char *delim, size_t *count);
+char **lfstr_split_arena(ArenaAllocator *arena, const char *str,
+                         const char *delim, size_t *count);
 void lfstr_split_free(char **parts, size_t count);
 
 /* Usage */

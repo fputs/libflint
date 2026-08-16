@@ -17,8 +17,11 @@ typedef struct {
 
     size_t save_stack[LF_ARENA_MAX_SAVE_POINTS];
     size_t save_count;
+    int owns_buf;
 } ArenaAllocator;
 ```
+
+`owns_buf` is 1 when the arena malloc'd the slab (`arena_init`) and 0 when the caller provided it (`arena_init_buf`).
 
 ## Functions
 
@@ -34,8 +37,23 @@ ArenaAllocator a;
 arena_init(&a, 1024);
 ```
 
+### arena_init_buf
+
+Binds the arena to caller-owned storage (stack, static, or an existing mapping). The arena does not take ownership: `arena_free` detaches without freeing `storage`, and `arena_resize_buf` is rejected. `storage` must be non-NULL and `n` must be non-zero. Allocations are still aligned from the storage address. Returns `0` on success, `-1` on error.
+
+```c
+int arena_init_buf(ArenaAllocator *allocator, void *storage, size_t n);
+
+/* Usage */
+unsigned char buf[256];
+ArenaAllocator a;
+arena_init_buf(&a, buf, sizeof buf);
+int *i = arena_malloc(&a, sizeof(int));
+arena_free(&a); /* does not free buf */
+```
+
 ### arena_free
-Frees the underlying buffer and resets all fields in `allocator` to zero. Does not free the `allocator` struct itself, since the user is responsible for managing its lifetime (matching the behavior of `arena_init()`).
+If the arena owns its slab, frees it. Always resets the handle. Does not free the `allocator` struct itself, since the user is responsible for managing its lifetime (matching the behavior of `arena_init()`).
 ```c
 void arena_free(ArenaAllocator *allocator);
 
@@ -64,7 +82,7 @@ void *arena_malloc(ArenaAllocator* allocator, size_t size);
 
 ### arena_resize_buf
 
-Reallocates the underlying buffer in the arena to `new_sz`. You can grow or shrink the arena using this function. Rejects shrinking below the current allocation offset. Any pointers allocated out of the arena are invalid after using this function. Returns `0` on success, `-1` on error (shrink below offset or realloc failure).
+Reallocates the underlying buffer in the arena to `new_sz`. You can grow or shrink the arena using this function. Rejects shrinking below the current allocation offset, and rejects arenas created with `arena_init_buf` (the slab is not owned). Any pointers allocated out of the arena are invalid after using this function. Returns `0` on success, `-1` on error (external buffer, shrink below offset, or realloc failure).
 
 ```c
 int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz);

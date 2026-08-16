@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lftest.h"
 #include "lfmemory.h"
 
@@ -221,6 +222,27 @@ int main() {
     ASSERT_EQ(save_arena.offset_cur, outer_offset);
 
     arena_free(&save_arena);
+
+    /* caller-provided backing store */
+    unsigned char storage[256];
+    memset(storage, 0xaa, sizeof storage);
+    ArenaAllocator buf_arena;
+    ASSERT_EQ(arena_init_buf(&buf_arena, storage, sizeof storage), 0);
+    ASSERT_EQ(buf_arena.owns_buf, 0);
+    int *bp = arena_malloc(&buf_arena, sizeof(int));
+    ASSERT_NOT_NULL(bp);
+    *bp = 11;
+    ASSERT_TRUE((unsigned char *)bp >= storage);
+    ASSERT_TRUE((unsigned char *)bp < storage + sizeof storage);
+    ASSERT_EQ(arena_resize_buf(&buf_arena, 512), -1);
+    arena_free(&buf_arena);
+    ASSERT_NULL(buf_arena.buf);
+    ASSERT_EQ(buf_arena.owns_buf, 0);
+    ASSERT_EQ(*bp, 11);
+
+    ASSERT_EQ(arena_init_buf(NULL, storage, sizeof storage), -1);
+    ASSERT_EQ(arena_init_buf(&buf_arena, NULL, sizeof storage), -1);
+    ASSERT_EQ(arena_init_buf(&buf_arena, storage, 0), -1);
 
     /* size wrap: huge request must fail closed, not pass the bounds check */
     ArenaAllocator wrap_arena;

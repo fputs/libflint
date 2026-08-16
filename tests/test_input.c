@@ -3,6 +3,7 @@
 #include <string.h>
 #include "lftest.h"
 #include "lfinput.h"
+#include "lfmemory.h"
 #include "lfprocess.h"
 
 static void test_split_basic(void) {
@@ -186,6 +187,45 @@ static void test_get_ints_null(void) {
     ASSERT_NULL(inp_get_ints("/tmp/nonexistent_libflint", NULL));
 }
 
+static void test_arena_slurp(void) {
+    const char *tmppath = "/tmp/libflint_test_arena.txt";
+    FILE *f = fopen(tmppath, "w");
+    ASSERT_NOT_NULL(f);
+    fprintf(f, "10\n20\n");
+    fclose(f);
+
+    unsigned char storage[1024];
+    ArenaAllocator arena;
+    ASSERT_EQ(arena_init_buf(&arena, storage, sizeof storage), 0);
+
+    char *text = inp_get_input_arena(&arena, tmppath);
+    ASSERT_STR_EQ(text, "10\n20\n");
+
+    size_t fsz = 0;
+    unsigned char *raw = inp_get_binary_arena(&arena, tmppath, &fsz);
+    ASSERT_NOT_NULL(raw);
+    ASSERT_EQ(fsz, (size_t)6);
+
+    LfLines lines;
+    ASSERT_EQ(inp_get_lines_arena(&arena, tmppath, &lines), 0);
+    ASSERT_EQ(lines.heap, 0);
+    ASSERT_EQ(lines.n, 2);
+    ASSERT_STR_EQ(lines.lines[0], "10");
+    ASSERT_STR_EQ(lines.lines[1], "20");
+    inp_lines_free(&lines);
+    ASSERT_EQ(lines.n, (size_t)0);
+
+    size_t n = 0;
+    int *ints = inp_get_ints_arena(&arena, tmppath, &n);
+    ASSERT_NOT_NULL(ints);
+    ASSERT_EQ(n, 2);
+    ASSERT_EQ(ints[0], 10);
+    ASSERT_EQ(ints[1], 20);
+
+    arena_free(&arena);
+    remove(tmppath);
+}
+
 int main(void) {
     test_split_basic();
     test_split_single();
@@ -200,6 +240,7 @@ int main(void) {
     test_get_binary();
     test_get_ints();
     test_get_ints_null();
+    test_arena_slurp();
 
     TEST_REPORT();
 }

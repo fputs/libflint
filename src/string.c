@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lfcompat.h"
 #include "lfstring.h"
 
 static int size_add(size_t a, size_t b, size_t *out) {
@@ -20,6 +19,28 @@ static int size_mul(size_t a, size_t b, size_t *out) {
     }
     *out = a * b;
     return 0;
+}
+
+static void *str_alloc(ArenaAllocator *arena, size_t n) {
+    if (arena != NULL) {
+        return arena_malloc(arena, n);
+    }
+    return malloc(n);
+}
+
+static char *str_dup(ArenaAllocator *arena, const char *s) {
+    size_t n = strlen(s);
+    size_t alloc;
+    if (size_add(n, 1, &alloc) != 0) {
+        return NULL;
+    }
+    char *out = str_alloc(arena, alloc);
+    if (out == NULL) {
+        return NULL;
+    }
+    memcpy(out, s, n);
+    out[n] = '\0';
+    return out;
 }
 
 LfStr lfstr_from(const char *s) {
@@ -88,8 +109,9 @@ int lfstr_contains_view(LfStr s, LfStr needle) {
     return 0;
 }
 
-int lfstr_find(const char *haystack, const char *needle,
-               size_t *num_substrings, size_t **substrings) {
+int lfstr_find_arena(ArenaAllocator *arena, const char *haystack,
+                     const char *needle, size_t *num_substrings,
+                     size_t **substrings) {
     if (haystack == NULL || needle == NULL ||
         num_substrings == NULL || substrings == NULL) {
         return -1;
@@ -117,7 +139,12 @@ int lfstr_find(const char *haystack, const char *needle,
         return 0;
     }
 
-    *substrings = lf_reallocarray(NULL, *num_substrings, sizeof(size_t));
+    size_t bytes;
+    if (size_mul(*num_substrings, sizeof(size_t), &bytes) != 0) {
+        *num_substrings = 0;
+        return -1;
+    }
+    *substrings = str_alloc(arena, bytes);
     if (*substrings == NULL) {
         *num_substrings = 0;
         return -1;
@@ -133,7 +160,13 @@ int lfstr_find(const char *haystack, const char *needle,
     return 0;
 }
 
-char *lfstr_substr(const char *str, size_t idx, size_t len) {
+int lfstr_find(const char *haystack, const char *needle,
+               size_t *num_substrings, size_t **substrings) {
+    return lfstr_find_arena(NULL, haystack, needle, num_substrings, substrings);
+}
+
+char *lfstr_substr_arena(ArenaAllocator *arena, const char *str,
+                         size_t idx, size_t len) {
     if (str == NULL) {
         return NULL;
     }
@@ -147,7 +180,7 @@ char *lfstr_substr(const char *str, size_t idx, size_t len) {
     if (size_add(len, 1, &alloc) != 0) {
         return NULL;
     }
-    char *sub = malloc(alloc);
+    char *sub = str_alloc(arena, alloc);
     if (sub == NULL) {
         return NULL;
     }
@@ -158,7 +191,11 @@ char *lfstr_substr(const char *str, size_t idx, size_t len) {
     return sub;
 }
 
-char *lfstr_trim(const char *str) {
+char *lfstr_substr(const char *str, size_t idx, size_t len) {
+    return lfstr_substr_arena(NULL, str, idx, len);
+}
+
+char *lfstr_trim_arena(ArenaAllocator *arena, const char *str) {
     if (str == NULL) {
         return NULL;
     }
@@ -167,7 +204,7 @@ char *lfstr_trim(const char *str) {
     if (size_add(v.n, 1, &alloc) != 0) {
         return NULL;
     }
-    char *out = malloc(alloc);
+    char *out = str_alloc(arena, alloc);
     if (out == NULL) {
         return NULL;
     }
@@ -176,12 +213,17 @@ char *lfstr_trim(const char *str) {
     return out;
 }
 
-char *lfstr_join(const char **strs, size_t count, const char *sep) {
+char *lfstr_trim(const char *str) {
+    return lfstr_trim_arena(NULL, str);
+}
+
+char *lfstr_join_arena(ArenaAllocator *arena, const char **strs,
+                       size_t count, const char *sep) {
     if (sep == NULL || (count != 0 && strs == NULL)) {
         return NULL;
     }
     if (count == 0) {
-        char *out = malloc(1);
+        char *out = str_alloc(arena, 1);
         if (out != NULL) {
             out[0] = '\0';
         }
@@ -209,7 +251,7 @@ char *lfstr_join(const char **strs, size_t count, const char *sep) {
     if (size_add(total, 1, &alloc) != 0) {
         return NULL;
     }
-    char *out = malloc(alloc);
+    char *out = str_alloc(arena, alloc);
     if (out == NULL) {
         return NULL;
     }
@@ -227,6 +269,10 @@ char *lfstr_join(const char **strs, size_t count, const char *sep) {
     return out;
 }
 
+char *lfstr_join(const char **strs, size_t count, const char *sep) {
+    return lfstr_join_arena(NULL, strs, count, sep);
+}
+
 int lfstr_starts_with(const char *str, const char *prefix) {
     if (str == NULL || prefix == NULL) {
         return 0;
@@ -241,14 +287,15 @@ int lfstr_ends_with(const char *str, const char *suffix) {
     return lfstr_ends_with_view(lfstr_from(str), lfstr_from(suffix));
 }
 
-char *lfstr_replace(const char *str, const char *old, const char *replacement) {
+char *lfstr_replace_arena(ArenaAllocator *arena, const char *str,
+                          const char *old, const char *replacement) {
     if (str == NULL || old == NULL || replacement == NULL) {
         return NULL;
     }
     size_t old_len = strlen(old);
     size_t new_len = strlen(replacement);
     if (old_len == 0) {
-        return strdup(str);
+        return str_dup(arena, str);
     }
 
     /* count occurrences */
@@ -281,7 +328,7 @@ char *lfstr_replace(const char *str, const char *old, const char *replacement) {
     if (size_add(out_len, 1, &alloc) != 0) {
         return NULL;
     }
-    char *out = malloc(alloc);
+    char *out = str_alloc(arena, alloc);
     if (out == NULL) {
         return NULL;
     }
@@ -301,7 +348,11 @@ char *lfstr_replace(const char *str, const char *old, const char *replacement) {
     return out;
 }
 
-char *lfstr_to_upper(const char *str) {
+char *lfstr_replace(const char *str, const char *old, const char *replacement) {
+    return lfstr_replace_arena(NULL, str, old, replacement);
+}
+
+char *lfstr_to_upper_arena(ArenaAllocator *arena, const char *str) {
     if (str == NULL) {
         return NULL;
     }
@@ -310,7 +361,7 @@ char *lfstr_to_upper(const char *str) {
     if (size_add(len, 1, &alloc) != 0) {
         return NULL;
     }
-    char *out = malloc(alloc);
+    char *out = str_alloc(arena, alloc);
     if (out == NULL) {
         return NULL;
     }
@@ -321,7 +372,11 @@ char *lfstr_to_upper(const char *str) {
     return out;
 }
 
-char *lfstr_to_lower(const char *str) {
+char *lfstr_to_upper(const char *str) {
+    return lfstr_to_upper_arena(NULL, str);
+}
+
+char *lfstr_to_lower_arena(ArenaAllocator *arena, const char *str) {
     if (str == NULL) {
         return NULL;
     }
@@ -330,7 +385,7 @@ char *lfstr_to_lower(const char *str) {
     if (size_add(len, 1, &alloc) != 0) {
         return NULL;
     }
-    char *out = malloc(alloc);
+    char *out = str_alloc(arena, alloc);
     if (out == NULL) {
         return NULL;
     }
@@ -341,7 +396,19 @@ char *lfstr_to_lower(const char *str) {
     return out;
 }
 
-char **lfstr_split(const char *str, const char *delim, size_t *count) {
+char *lfstr_to_lower(const char *str) {
+    return lfstr_to_lower_arena(NULL, str);
+}
+
+static void split_unwind(ArenaAllocator *arena, char **result, size_t n) {
+    if (arena != NULL) {
+        return;
+    }
+    lfstr_split_free(result, n);
+}
+
+char **lfstr_split_arena(ArenaAllocator *arena, const char *str,
+                         const char *delim, size_t *count) {
     if (str == NULL || delim == NULL || count == NULL) {
         return NULL;
     }
@@ -349,13 +416,13 @@ char **lfstr_split(const char *str, const char *delim, size_t *count) {
     size_t delim_len = strlen(delim);
 
     if (delim_len == 0) {
-        char **result = lf_reallocarray(NULL, 1, sizeof(char *));
+        char **result = str_alloc(arena, sizeof(char *));
         if (result == NULL) {
             return NULL;
         }
-        result[0] = strdup(str);
+        result[0] = str_dup(arena, str);
         if (result[0] == NULL) {
-            free(result);
+            split_unwind(arena, result, 0);
             return NULL;
         }
         *count = 1;
@@ -373,7 +440,11 @@ char **lfstr_split(const char *str, const char *delim, size_t *count) {
         p += delim_len;
     }
 
-    char **result = lf_reallocarray(NULL, n, sizeof(char *));
+    size_t table_bytes;
+    if (size_mul(n, sizeof(char *), &table_bytes) != 0) {
+        return NULL;
+    }
+    char **result = str_alloc(arena, table_bytes);
     if (result == NULL) {
         return NULL;
     }
@@ -385,12 +456,12 @@ char **lfstr_split(const char *str, const char *delim, size_t *count) {
         size_t seg_len = (size_t)(next - p);
         size_t alloc;
         if (size_add(seg_len, 1, &alloc) != 0) {
-            lfstr_split_free(result, i);
+            split_unwind(arena, result, i);
             return NULL;
         }
-        result[i] = malloc(alloc);
+        result[i] = str_alloc(arena, alloc);
         if (result[i] == NULL) {
-            lfstr_split_free(result, i);
+            split_unwind(arena, result, i);
             return NULL;
         }
         memcpy(result[i], p, seg_len);
@@ -400,13 +471,17 @@ char **lfstr_split(const char *str, const char *delim, size_t *count) {
     }
 
     /* last segment */
-    result[i] = strdup(p);
+    result[i] = str_dup(arena, p);
     if (result[i] == NULL) {
-        lfstr_split_free(result, i);
+        split_unwind(arena, result, i);
         return NULL;
     }
     *count = n;
     return result;
+}
+
+char **lfstr_split(const char *str, const char *delim, size_t *count) {
+    return lfstr_split_arena(NULL, str, delim, count);
 }
 
 void lfstr_split_free(char **parts, size_t count) {

@@ -38,20 +38,34 @@ static FILE *inp_open_file(const char *path, size_t *fsz, const char *mode) {
     return fp;
 }
 
-unsigned char *inp_get_binary(const char *path, size_t *fsz) {
+static void *inp_alloc(ArenaAllocator *arena, size_t n) {
+    if (arena != NULL) {
+        return arena_malloc(arena, n);
+    }
+    return malloc(n);
+}
+
+static void inp_alloc_fail(ArenaAllocator *arena, void *p) {
+    if (arena == NULL) {
+        free(p);
+    }
+}
+
+unsigned char *inp_get_binary_arena(ArenaAllocator *arena, const char *path,
+                                    size_t *fsz) {
     FILE *fp = inp_open_file(path, fsz, "rb");
     if (fp == NULL) {
         return NULL;
     }
 
-    unsigned char *buf = malloc(*fsz == 0 ? 1 : *fsz);
+    unsigned char *buf = inp_alloc(arena, *fsz == 0 ? 1 : *fsz);
     if (buf == NULL) {
         fclose(fp);
         return NULL;
     }
 
     if (*fsz > 0 && fread(buf, 1, *fsz, fp) != *fsz) {
-        free(buf);
+        inp_alloc_fail(arena, buf);
         fclose(fp);
         return NULL;
     }
@@ -60,21 +74,30 @@ unsigned char *inp_get_binary(const char *path, size_t *fsz) {
     return buf;
 }
 
-char *inp_get_input(const char *path) {
+unsigned char *inp_get_binary(const char *path, size_t *fsz) {
+    return inp_get_binary_arena(NULL, path, fsz);
+}
+
+char *inp_get_input_arena(ArenaAllocator *arena, const char *path) {
     size_t fsz = 0;
     FILE *fp = inp_open_file(path, &fsz, "r");
     if (fp == NULL) {
         return NULL;
     }
 
-    char *buf = malloc(fsz + 1);
+    if (fsz == SIZE_MAX) {
+        fclose(fp);
+        return NULL;
+    }
+
+    char *buf = inp_alloc(arena, fsz + 1);
     if (buf == NULL) {
         fclose(fp);
         return NULL;
     }
 
     if (fsz > 0 && fread(buf, 1, fsz, fp) != fsz) {
-        free(buf);
+        inp_alloc_fail(arena, buf);
         fclose(fp);
         return NULL;
     }
@@ -84,10 +107,20 @@ char *inp_get_input(const char *path) {
     return buf;
 }
 
-static int split_into(char *s, const char *delim, LfLines *out, int own_base, int strip_cr) {
+char *inp_get_input(const char *path) {
+    return inp_get_input_arena(NULL, path);
+}
+
+static int split_into(char *s, const char *delim, LfLines *out, int own_base,
+                      int strip_cr, ArenaAllocator *arena) {
     size_t n = 0;
     size_t cap = 8;
-    char **lines = lf_reallocarray(NULL, cap, sizeof(char *));
+    char **lines;
+    if (arena != NULL) {
+        lines = arena_malloc(arena, cap * sizeof(char *));
+    } else {
+        lines = lf_reallocarray(NULL, cap, sizeof(char *));
+    }
     if (lines == NULL) {
         return -1;
     }
@@ -102,14 +135,23 @@ static int split_into(char *s, const char *delim, LfLines *out, int own_base, in
         }
         if (n == cap) {
             if (cap > SIZE_MAX / 2) {
-                free(lines);
+                inp_alloc_fail(arena, lines);
                 return -1;
             }
             size_t ncap = cap * 2;
-            char **tmp = lf_reallocarray(lines, ncap, sizeof(char *));
-            if (tmp == NULL) {
-                free(lines);
-                return -1;
+            char **tmp;
+            if (arena != NULL) {
+                tmp = arena_malloc(arena, ncap * sizeof(char *));
+                if (tmp == NULL) {
+                    return -1;
+                }
+                memcpy(tmp, lines, n * sizeof(char *));
+            } else {
+                tmp = lf_reallocarray(lines, ncap, sizeof(char *));
+                if (tmp == NULL) {
+                    free(lines);
+                    return -1;
+                }
             }
             lines = tmp;
             cap = ncap;
@@ -119,13 +161,14 @@ static int split_into(char *s, const char *delim, LfLines *out, int own_base, in
     }
 
     if (n == 0) {
-        free(lines);
+        inp_alloc_fail(arena, lines);
         lines = NULL;
     }
 
     out->base = own_base ? s : NULL;
     out->lines = lines;
     out->n = n;
+    out->heap = (arena == NULL);
     return 0;
 }
 
@@ -133,37 +176,50 @@ int inp_split(char *s, const char *delim, LfLines *out) {
     if (s == NULL || delim == NULL || out == NULL) {
         return -1;
     }
-    return split_into(s, delim, out, 0, 0);
+    return split_into(s, delim, out, 0, 0, NULL);
 }
 
-int inp_get_lines(const char *path, LfLines *out) {
+int inp_get_lines_arena(ArenaAllocator *arena, const char *path, LfLines *out) {
     if (path == NULL || out == NULL) {
         return -1;
     }
 
-    char *s = inp_get_input(path);
+    char *s = inp_get_input_arena(arena, path);
     if (s == NULL) {
         return -1;
     }
 
-    if (split_into(s, "\n", out, 1, 1) != 0) {
-        free(s);
+    if (split_into(s, "\n", out, 1, 1, arena) != 0) {
+        inp_alloc_fail(arena, s);
         return -1;
     }
     return 0;
 }
 
-int *inp_get_ints(const char *path, size_t *sz) {
+int inp_get_lines(const char *path, LfLines *out) {
+    return inp_get_lines_arena(NULL, path, out);
+}
+
+int *inp_get_ints_arena(ArenaAllocator *arena, const char *path, size_t *sz) {
     if (path == NULL || sz == NULL) {
         return NULL;
     }
 
     LfLines lines;
-    if (inp_get_lines(path, &lines) != 0) {
+    if (inp_get_lines_arena(arena, path, &lines) != 0) {
         return NULL;
     }
 
-    int *i = lf_reallocarray(NULL, lines.n == 0 ? 1 : lines.n, sizeof(int));
+    size_t n = lines.n == 0 ? 1 : lines.n;
+    int *i;
+    if (arena != NULL) {
+        if (n > SIZE_MAX / sizeof(int)) {
+            return NULL;
+        }
+        i = arena_malloc(arena, n * sizeof(int));
+    } else {
+        i = lf_reallocarray(NULL, n, sizeof(int));
+    }
     if (i == NULL) {
         inp_lines_free(&lines);
         return NULL;
@@ -171,13 +227,13 @@ int *inp_get_ints(const char *path, size_t *sz) {
 
     for (size_t idx = 0; idx < lines.n; idx++) {
         const char *errstr;
-        int n = (int)strtonum(lines.lines[idx], INT_MIN, INT_MAX, &errstr);
+        int val = (int)strtonum(lines.lines[idx], INT_MIN, INT_MAX, &errstr);
         if (errstr) {
-            free(i);
+            inp_alloc_fail(arena, i);
             inp_lines_free(&lines);
             return NULL;
         }
-        i[idx] = n;
+        i[idx] = val;
     }
 
     *sz = lines.n;
@@ -185,13 +241,20 @@ int *inp_get_ints(const char *path, size_t *sz) {
     return i;
 }
 
+int *inp_get_ints(const char *path, size_t *sz) {
+    return inp_get_ints_arena(NULL, path, sz);
+}
+
 void inp_lines_free(LfLines *lines) {
     if (lines == NULL) {
         return;
     }
-    free(lines->lines);
-    free(lines->base);
+    if (lines->heap) {
+        free(lines->lines);
+        free(lines->base);
+    }
     lines->lines = NULL;
     lines->base = NULL;
     lines->n = 0;
+    lines->heap = 0;
 }

@@ -15,12 +15,28 @@ int arena_init(ArenaAllocator *allocator, size_t buf_sz) {
 
     allocator->buf = malloc(sizeof(unsigned char) * buf_sz);
     if (allocator->buf == NULL) {
+        allocator->owns_buf = 0;
         return -1;
     }
     allocator->buf_sz = buf_sz;
     allocator->offset_cur = 0;
     allocator->offset_prev = 0;
     allocator->save_count = 0;
+    allocator->owns_buf = 1;
+    return 0;
+}
+
+int arena_init_buf(ArenaAllocator *allocator, void *storage, size_t n) {
+    if (allocator == NULL || storage == NULL || n == 0) {
+        return -1;
+    }
+
+    allocator->buf = storage;
+    allocator->buf_sz = n;
+    allocator->offset_cur = 0;
+    allocator->offset_prev = 0;
+    allocator->save_count = 0;
+    allocator->owns_buf = 0;
     return 0;
 }
 
@@ -28,12 +44,15 @@ void arena_free(ArenaAllocator *allocator) {
     if (allocator == NULL) {
         return;
     }
-    free(allocator->buf);
+    if (allocator->owns_buf) {
+        free(allocator->buf);
+    }
     allocator->buf = NULL;
     allocator->buf_sz = 0;
     allocator->offset_cur = 0;
     allocator->offset_prev = 0;
     allocator->save_count = 0;
+    allocator->owns_buf = 0;
 }
 
 void arena_clear(ArenaAllocator *allocator) {
@@ -130,6 +149,9 @@ static void *arena_resize_align(ArenaAllocator *allocator, void *mem, const size
 }
 
 int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz) {
+    if (allocator == NULL || !allocator->owns_buf) {
+        return -1;
+    }
     if (new_sz < allocator->offset_cur) {
         return -1;
     }
@@ -143,10 +165,16 @@ int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz) {
 }
 
 void *arena_malloc(ArenaAllocator *allocator, const size_t size) {
+    if (allocator == NULL || allocator->buf == NULL) {
+        return NULL;
+    }
     return arena_malloc_align(allocator, size, LF_DEFAULT_ALIGNMENT);
 }
 
 void *arena_resize(ArenaAllocator *allocator, void *mem, const size_t old_sz, const size_t new_sz) {
+    if (allocator == NULL || allocator->buf == NULL) {
+        return NULL;
+    }
     return arena_resize_align(allocator, mem, old_sz, new_sz, LF_DEFAULT_ALIGNMENT);
 }
 

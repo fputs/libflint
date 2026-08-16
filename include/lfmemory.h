@@ -19,9 +19,11 @@ typedef struct {
 
     size_t save_stack[LF_ARENA_MAX_SAVE_POINTS];
     size_t save_count;
+    int owns_buf;
 } ArenaAllocator;
 
 int arena_init(ArenaAllocator *allocator, size_t buf_sz);
+int arena_init_buf(ArenaAllocator *allocator, void *storage, size_t n);
 void arena_free(ArenaAllocator *allocator);
 void *arena_malloc(ArenaAllocator* allocator, size_t size);
 int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz);

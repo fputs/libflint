@@ -1,6 +1,8 @@
 One-shot slurp of a regular, seekable file. All slurp functions use `fseek`/`ftell`, so pipes and other non-seekable paths are not supported.
 
-`LfLines` is the explicit lines result. `base` is the slurped buffer when the function owns it (`inp_get_lines`), or `NULL` when the caller owns the mutable string (`inp_split`). `lines` points into that buffer. One destructor, `inp_lines_free`, frees both fields — there is no hidden `lines[-1]` pointer and no pair of `char **` destructors to swap.
+`LfLines` is the explicit lines result. `base` is the slurped buffer when the function owns it (`inp_get_lines`), or `NULL` when the caller owns the mutable string (`inp_split`). `lines` points into that buffer. `heap` is 1 when those pointers were malloc'd. One destructor, `inp_lines_free`, frees both fields when `heap` is set — there is no hidden `lines[-1]` pointer and no pair of `char **` destructors to swap.
+
+`*_arena` variants allocate the slurp and the line table from an `ArenaAllocator`. `heap` is then 0, so `inp_lines_free` only zeros the struct. Do not `free()` arena results.
 
 `inp_get_lines` strips a trailing `\r` from each line so `\r\n` and `\n` both work. Bare `\r` line endings are not treated as breaks. An empty file succeeds with `n == 0`. A missing file returns `-1`.
 
@@ -11,6 +13,7 @@ typedef struct {
     char *base;
     char **lines;
     size_t n;
+    int heap;
 } LfLines;
 ```
 
@@ -22,6 +25,8 @@ Reads a file at `path` and returns the contents as an `unsigned char *` buffer. 
 
 ```c
 unsigned char *inp_get_binary(const char *path, size_t *fsz);
+unsigned char *inp_get_binary_arena(ArenaAllocator *arena, const char *path,
+                                    size_t *fsz);
 
 /* Usage */
 size_t fsz = 0;
@@ -35,6 +40,7 @@ Reads a file at `path` and returns the contents as a single NUL-terminated strin
 
 ```c
 char *inp_get_input(const char *path);
+char *inp_get_input_arena(ArenaAllocator *arena, const char *path);
 
 /* Usage */
 char *str = inp_get_input("/home/evan/textfile");
@@ -47,6 +53,7 @@ Reads a regular file at `path` and splits on `\n` into `out`. Trailing `\r` is s
 
 ```c
 int inp_get_lines(const char *path, LfLines *out);
+int inp_get_lines_arena(ArenaAllocator *arena, const char *path, LfLines *out);
 
 /* Usage */
 LfLines lines;
@@ -60,7 +67,7 @@ if (inp_get_lines("/home/evan/textfile", &lines) == 0) {
 
 ### inp_lines_free
 
-Frees `lines->lines` and `lines->base` and zeros the struct. Safe on NULL. The same function is used after `inp_get_lines` and `inp_split`.
+If `heap` is set, frees `lines->lines` and `lines->base`. Always zeros the struct. Safe on NULL. The same function is used after `inp_get_lines` and `inp_split`. Arena-backed results have `heap == 0`.
 
 ```c
 void inp_lines_free(LfLines *lines);
@@ -72,6 +79,7 @@ Reads a newline-separated list of integers. The caller frees the returned array 
 
 ```c
 int *inp_get_ints(const char *path, size_t *sz);
+int *inp_get_ints_arena(ArenaAllocator *arena, const char *path, size_t *sz);
 
 /* Usage */
 size_t sz = 0;

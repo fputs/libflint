@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lftest.h"
+#include "lfmemory.h"
 #include "lfstring.h"
 
 int main() {
@@ -299,6 +300,40 @@ int main() {
     LfStr empty = lfstr_from(NULL);
     ASSERT_NULL(empty.p);
     ASSERT_EQ(empty.n, 0);
+
+    /* Arena constructors: results live in the slab, not the heap */
+    ArenaAllocator str_arena;
+    ASSERT_EQ(arena_init(&str_arena, 2048), 0);
+
+    char *as = lfstr_substr_arena(&str_arena, "hello world", 6, 5);
+    ASSERT_STR_EQ(as, "world");
+    as = lfstr_trim_arena(&str_arena, "  hi  ");
+    ASSERT_STR_EQ(as, "hi");
+    const char *join_parts[] = {"a", "b"};
+    as = lfstr_join_arena(&str_arena, join_parts, 2, "-");
+    ASSERT_STR_EQ(as, "a-b");
+    as = lfstr_replace_arena(&str_arena, "foo bar foo", "foo", "x");
+    ASSERT_STR_EQ(as, "x bar x");
+    as = lfstr_to_upper_arena(&str_arena, "ab");
+    ASSERT_STR_EQ(as, "AB");
+    as = lfstr_to_lower_arena(&str_arena, "AB");
+    ASSERT_STR_EQ(as, "ab");
+
+    size_t acount = 0;
+    char **asplit = lfstr_split_arena(&str_arena, "x,y", ",", &acount);
+    ASSERT_EQ(acount, 2);
+    ASSERT_STR_EQ(asplit[0], "x");
+    ASSERT_STR_EQ(asplit[1], "y");
+
+    size_t *aindx = NULL;
+    size_t an = 0;
+    ASSERT_EQ(lfstr_find_arena(&str_arena, "ababa", "ba", &an, &aindx), 0);
+    ASSERT_EQ(an, 2);
+    ASSERT_EQ(aindx[0], 1);
+    ASSERT_EQ(aindx[1], 3);
+
+    ASSERT_NULL(lfstr_substr_arena(&str_arena, NULL, 0, 0));
+    arena_free(&str_arena);
 
     TEST_REPORT();
 }
