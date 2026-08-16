@@ -43,6 +43,4 @@ A C99 compiler and CMake. Linux needs `libbsd` (`strtonum` in the input module).
 
 ## Libraries
 
-`libflint` includes [uthash](https://github.com/troydhanson/uthash) for a hash table implementation. `uthash` is a single header file included in the source code of `libflint`. See the top of `include/uthash.h` for license information.
-
 Overflow-checked array allocation is provided as `lf_reallocarray` in `lfcompat.h` on every platform.
