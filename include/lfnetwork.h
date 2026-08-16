@@ -1,28 +1,17 @@
 #ifndef LIBFLINT_NET_H
 #define LIBFLINT_NET_H
 
-#include <netdb.h>
+#include <sys/socket.h>
 
-typedef enum ServerType {
-    SERVERTYPE_TCP,
-    SERVERTYPE_UDP
-} ServerType;
+/*
+ * Bind helpers. There is no Server runloop, no thread-per-connection
+ * echo, and no process-global SIGCHLD handler. IPv4 only.
+ * host == NULL binds INADDR_ANY (AI_PASSIVE).
+ */
 
-typedef struct Server {
-    ServerType server_type;
-    int fd;
-    int port;
-    void (*handler)(struct Server *s);
-} Server;
-
-#define DEFAULT_BACKLOG 5
-
-Server *new_server(ServerType type, const char *port, void(handler)(Server *s));
-void delete_server(Server *s);
-int serve(Server *s, int backlog_size);
+int lf_listen_tcp(const char *host, const char *port);
+int lf_bind_udp(const char *host, const char *port);
+void lf_close(int fd);
 void *get_in_addr(struct sockaddr *sa);
 
-// Example handlers
-void handler_tcp_echo(Server *s);
-
-#endif //LIBFLINT_NET_H
+#endif /* LIBFLINT_NET_H */

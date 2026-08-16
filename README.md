@@ -30,7 +30,7 @@ the `flint` target and are not injected into the parent project.
 cmake -B build && cmake --build build
 ctest --test-dir build                # run all tests
 ctest --test-dir build --parallel     # run in parallel
-ctest --test-dir build --label-exclude slow  # skip slow tests (network, macos)
+ctest --test-dir build --label-exclude slow  # skip slow tests (macos)
 
 # AddressSanitizer + UndefinedBehaviorSanitizer
 cmake -B build -DCMAKE_BUILD_TYPE=Debug -DFLINT_SANITIZE=ON

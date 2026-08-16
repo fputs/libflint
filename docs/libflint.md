@@ -29,7 +29,7 @@
 - [[bitops]] — Bit manipulation macros for setting, clearing, toggling, testing, extracting, and inserting bit fields
 
 ### Platform
-- [[network]] — Generic `Server` type that abstracts away socket setup and teardown
+- [[network]] — IPv4 `lf_listen_tcp` / `lf_bind_udp` / `lf_close` (no Server runloop)
 - [[macos]] — Platform-specific code for macOS (conditionally compiled)
 - [[compat]] — Overflow-checked `lf_reallocarray` for every platform
 

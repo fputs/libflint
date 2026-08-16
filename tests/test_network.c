@@ -1,96 +1,147 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
-#include <pthread.h>
+#include <sys/time.h>
 #include "lftest.h"
 #include "lfnetwork.h"
-#include "lfprocess.h"
 
 #define NET_MSG "TEST SEND"
 
-static void tcp_test_handler(Server *s) {
-    struct sockaddr_storage client_addr;
-    socklen_t client_addr_sz = sizeof(client_addr);
-    int new_fd = accept(s->fd, (struct sockaddr *) &client_addr, &client_addr_sz);
-    ASSERT_NEQ(new_fd, -1);
-    ASSERT_NEQ((int)send(new_fd, NET_MSG, 10, 0), -1);
-    close(new_fd);
+static int set_timeout(int fd) {
+    struct timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv) != 0) {
+        return -1;
+    }
+    return setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
 }
 
-static void *tcp_server_thread(void *vargp) {
-    (void)vargp;
-    Server *server = new_server(SERVERTYPE_TCP, "18632", tcp_test_handler);
-    serve(server, DEFAULT_BACKLOG);
-    delete_server(server);
-    return NULL;
+static int bound_port(int fd) {
+    struct sockaddr_in addr;
+    socklen_t len = sizeof addr;
+    if (getsockname(fd, (struct sockaddr *)&addr, &len) != 0) {
+        return -1;
+    }
+    return ntohs(addr.sin_port);
 }
 
-static void udp_test_handler(Server *s) {
-    struct sockaddr_storage client_addr;
-    socklen_t client_addr_sz = sizeof(client_addr);
+static int connect_tcp(const char *host, int port) {
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) {
+        return -1;
+    }
+    if (set_timeout(fd) != 0) {
+        close(fd);
+        return -1;
+    }
+    struct sockaddr_in a;
+    memset(&a, 0, sizeof a);
+    a.sin_family = AF_INET;
+    a.sin_port = htons((uint16_t)port);
+    if (inet_pton(AF_INET, host, &a.sin_addr) != 1) {
+        close(fd);
+        return -1;
+    }
+    if (connect(fd, (struct sockaddr *)&a, sizeof a) != 0) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+static void test_bad_args(void) {
+    ASSERT_EQ(lf_listen_tcp("127.0.0.1", "notaport"), -1);
+    ASSERT_EQ(lf_listen_tcp("127.0.0.1", NULL), -1);
+    ASSERT_EQ(lf_bind_udp("127.0.0.1", "notaport"), -1);
+    ASSERT_EQ(lf_bind_udp("127.0.0.1", NULL), -1);
+    lf_close(-1);
+}
+
+static void test_get_in_addr(void) {
+    struct sockaddr_in in;
+    memset(&in, 0, sizeof in);
+    in.sin_family = AF_INET;
+    inet_pton(AF_INET, "127.0.0.1", &in.sin_addr);
+    ASSERT_EQ(get_in_addr((struct sockaddr *)&in), (void *)&in.sin_addr);
+    ASSERT_NULL(get_in_addr(NULL));
+}
+
+static void test_tcp(void) {
+    int srv = lf_listen_tcp("127.0.0.1", "0");
+    ASSERT_TRUE(srv >= 0);
+    ASSERT_EQ(set_timeout(srv), 0);
+    int port = bound_port(srv);
+    ASSERT_TRUE(port > 0);
+
+    int cli = connect_tcp("127.0.0.1", port);
+    ASSERT_TRUE(cli >= 0);
+
+    int acc = accept(srv, NULL, NULL);
+    ASSERT_TRUE(acc >= 0);
+    ASSERT_EQ(set_timeout(acc), 0);
+
+    size_t msg_len = strlen(NET_MSG);
+    ASSERT_EQ((size_t)send(acc, NET_MSG, msg_len, 0), msg_len);
+
+    char buf[32];
+    memset(buf, 0, sizeof buf);
+    ssize_t n = recv(cli, buf, sizeof buf - 1, 0);
+    ASSERT_EQ((size_t)n, msg_len);
+    buf[n] = '\0';
+    ASSERT_STR_EQ(buf, NET_MSG);
+
+    lf_close(acc);
+    lf_close(cli);
+    lf_close(srv);
+}
+
+static void test_udp(void) {
+    int srv = lf_bind_udp("127.0.0.1", "0");
+    ASSERT_TRUE(srv >= 0);
+    ASSERT_EQ(set_timeout(srv), 0);
+    int port = bound_port(srv);
+    ASSERT_TRUE(port > 0);
+
+    int cli = socket(AF_INET, SOCK_DGRAM, 0);
+    ASSERT_TRUE(cli >= 0);
+    ASSERT_EQ(set_timeout(cli), 0);
+
+    struct sockaddr_in dest;
+    memset(&dest, 0, sizeof dest);
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons((uint16_t)port);
+    ASSERT_EQ(inet_pton(AF_INET, "127.0.0.1", &dest.sin_addr), 1);
+
+    size_t msg_len = strlen(NET_MSG);
+    ASSERT_EQ((size_t)sendto(cli, NET_MSG, msg_len, 0,
+                             (struct sockaddr *)&dest, sizeof dest),
+              msg_len);
+
     char recv_buf[128];
-
-    int r = (int) recvfrom(s->fd, recv_buf, 128, 0, (struct sockaddr *) &client_addr, &client_addr_sz);
+    memset(recv_buf, 0, sizeof recv_buf);
+    struct sockaddr_storage from;
+    socklen_t from_len = sizeof from;
+    ssize_t r = recvfrom(srv, recv_buf, sizeof recv_buf - 1, 0,
+                         (struct sockaddr *)&from, &from_len);
     ASSERT_TRUE(r > 0);
+    ASSERT_EQ((size_t)r, msg_len);
+    recv_buf[r] = '\0';
     ASSERT_STR_EQ(recv_buf, NET_MSG);
+
+    lf_close(cli);
+    lf_close(srv);
 }
 
-static void *udp_server_thread(void *vargp) {
-    (void)vargp;
-    Server *server = new_server(SERVERTYPE_UDP, "18633", udp_test_handler);
-    serve(server, DEFAULT_BACKLOG);
-    delete_server(server);
-    return NULL;
-}
-
-static void dummy_handler(Server *s) {
-    (void)s;
-}
-
-int main() {
-    /* Test new_server with bad port returns NULL */
-    Server *bad = new_server(SERVERTYPE_TCP, "notaport", dummy_handler);
-    ASSERT_NULL(bad);
-
-    /* Test new_server creates valid TCP server and delete_server cleans up */
-    Server *tcp = new_server(SERVERTYPE_TCP, "18640", dummy_handler);
-    ASSERT_NOT_NULL(tcp);
-    ASSERT_EQ(tcp->server_type, SERVERTYPE_TCP);
-    ASSERT_EQ(tcp->port, 18640);
-    ASSERT_TRUE(tcp->fd >= 0);
-    delete_server(tcp);
-
-    /* Test new_server creates valid UDP server and delete_server cleans up */
-    Server *udp = new_server(SERVERTYPE_UDP, "18641", dummy_handler);
-    ASSERT_NOT_NULL(udp);
-    ASSERT_EQ(udp->server_type, SERVERTYPE_UDP);
-    ASSERT_EQ(udp->port, 18641);
-    ASSERT_TRUE(udp->fd >= 0);
-    delete_server(udp);
-
-    /* Test delete_server with NULL doesn't crash */
-    delete_server(NULL);
-
-    /* TCP echo test */
-    pthread_t srv_tid;
-    pthread_create(&srv_tid, NULL, tcp_server_thread, NULL);
-
-    sleep(1);
-    char *s = lf_capture_system("echo hello | nc localhost 18632", 0);
-    ASSERT_STR_EQ(s, NET_MSG);
-    free(s);
-
-    pthread_join(srv_tid, NULL);
-
-    /* UDP test */
-    pthread_create(&srv_tid, NULL, udp_server_thread, NULL);
-    sleep(1);
-    system("echo hello | nc localhost 18633");
-
-    pthread_join(srv_tid, NULL);
-
+int main(void) {
+    test_bad_args();
+    test_get_in_addr();
+    test_tcp();
+    test_udp();
     TEST_REPORT();
 }

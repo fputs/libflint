@@ -56,9 +56,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_compile_definitions(flint PRIVATE _DEFAULT_SOURCE _GNU_SOURCE)
 endif()
 
-find_package(Threads REQUIRED)
-target_link_libraries(flint PRIVATE Threads::Threads)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # input.c uses strtonum from libbsd
     target_link_libraries(flint PRIVATE bsd)
@@ -87,6 +84,7 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         bytering
         statemachine
         bitops
+        network
     )
 
     foreach(t ${TESTS})
@@ -98,16 +96,6 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         flint_apply_c_flags(test_${t})
         add_test(NAME ${t} COMMAND test_${t})
     endforeach()
-
-    # Network test (slow, uses sleep + sockets)
-    add_executable(test_network tests/test_network.c)
-    target_link_libraries(test_network PRIVATE flint)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        target_compile_definitions(test_network PRIVATE _DEFAULT_SOURCE)
-    endif()
-    flint_apply_c_flags(test_network)
-    add_test(NAME network COMMAND test_network)
-    set_tests_properties(network PROPERTIES LABELS "slow")
 
     if(APPLE)
         add_executable(test_macos tests/test_macos.c)
