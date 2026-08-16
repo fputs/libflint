@@ -14,29 +14,41 @@ int br_init(ByteRing *br, uint8_t *buf, const size_t capacity) {
     br->buf = buf;
     br->capacity = capacity;
     br->mask = capacity - 1;
-    br->head = 0;
-    br->tail = 0;
+    atomic_store_explicit(&br->head, 0, memory_order_relaxed);
+    atomic_store_explicit(&br->tail, 0, memory_order_relaxed);
 
     return 0;
 }
 
 int br_read(ByteRing *br, uint8_t *byte) {
-    if (br == NULL || byte == NULL || br_available(br) == 0) {
+    if (br == NULL || byte == NULL) {
         return -1;
     }
 
-    *byte = br->buf[br->head];
-    br->head = (br->head + 1) & br->mask;
+    size_t head = atomic_load_explicit(&br->head, memory_order_relaxed);
+    size_t tail = atomic_load_explicit(&br->tail, memory_order_acquire);
+    if (((tail - head) & br->mask) == 0) {
+        return -1;
+    }
+
+    *byte = br->buf[head];
+    atomic_store_explicit(&br->head, (head + 1) & br->mask, memory_order_release);
     return 0;
 }
 
 int br_write(ByteRing *br, uint8_t byte) {
-    if (br == NULL || br_free_space(br) == 0) {
+    if (br == NULL) {
         return -1;
     }
 
-    br->buf[br->tail] = byte;
-    br->tail = (br->tail + 1) & br->mask;
+    size_t tail = atomic_load_explicit(&br->tail, memory_order_relaxed);
+    size_t head = atomic_load_explicit(&br->head, memory_order_acquire);
+    if (br->capacity - 1u - ((tail - head) & br->mask) == 0) {
+        return -1;
+    }
+
+    br->buf[tail] = byte;
+    atomic_store_explicit(&br->tail, (tail + 1) & br->mask, memory_order_release);
     return 0;
 }
 
@@ -44,17 +56,20 @@ size_t br_bulk_read(ByteRing *br, const size_t n, uint8_t *dest) {
     if (br == NULL || dest == NULL) {
         return 0;
     }
-    size_t a = br_available(br);
-    const size_t available = a > n ? n : a;
-    const size_t to_end = br->capacity - br->head;
-    size_t chunk_sz = to_end > available ? available : to_end;
-    memcpy(dest, br->buf + br->head, chunk_sz);
 
-    /* needs to wrap */
+    size_t head = atomic_load_explicit(&br->head, memory_order_relaxed);
+    size_t tail = atomic_load_explicit(&br->tail, memory_order_acquire);
+    size_t a = (tail - head) & br->mask;
+    const size_t available = a > n ? n : a;
+    const size_t to_end = br->capacity - head;
+    size_t chunk_sz = to_end > available ? available : to_end;
+    memcpy(dest, br->buf + head, chunk_sz);
+
     if (chunk_sz < available) {
         memcpy(dest + chunk_sz, br->buf, available - chunk_sz);
     }
-    br->head = (br->head + available) & br->mask;
+    atomic_store_explicit(&br->head, (head + available) & br->mask,
+                          memory_order_release);
     return available;
 }
 
@@ -62,29 +77,42 @@ size_t br_bulk_write(ByteRing *br, const size_t n, const uint8_t *src) {
     if (br == NULL || src == NULL) {
         return 0;
     }
-    size_t a = br_free_space(br);
-    const size_t fs = a > n ? n : a;
-    const size_t to_end = br->capacity - br->tail;
-    size_t chunk_sz = to_end > fs ? fs : to_end;
-    memcpy(br->buf + br->tail, src, chunk_sz);
 
-    /* needs to wrap */
+    size_t tail = atomic_load_explicit(&br->tail, memory_order_relaxed);
+    size_t head = atomic_load_explicit(&br->head, memory_order_acquire);
+    size_t a = br->capacity - 1u - ((tail - head) & br->mask);
+    const size_t fs = a > n ? n : a;
+    const size_t to_end = br->capacity - tail;
+    size_t chunk_sz = to_end > fs ? fs : to_end;
+    memcpy(br->buf + tail, src, chunk_sz);
+
     if (chunk_sz < fs) {
         memcpy(br->buf, src + chunk_sz, fs - chunk_sz);
     }
-    br->tail = (br->tail + fs) & br->mask;
+    atomic_store_explicit(&br->tail, (tail + fs) & br->mask,
+                          memory_order_release);
     return fs;
 }
 
 int br_peek(ByteRing *br, uint8_t *byte) {
-    if (br == NULL || byte == NULL || br_available(br) == 0) {
+    if (br == NULL || byte == NULL) {
         return -1;
     }
-    *byte = br->buf[br->head];
+
+    size_t head = atomic_load_explicit(&br->head, memory_order_relaxed);
+    size_t tail = atomic_load_explicit(&br->tail, memory_order_acquire);
+    if (((tail - head) & br->mask) == 0) {
+        return -1;
+    }
+    *byte = br->buf[head];
     return 0;
 }
 
 void br_reset(ByteRing *br) {
-    br->head = 0;
-    br->tail = 0;
+    if (br == NULL) {
+        return;
+    }
+    /* Quiescent only: both producer and consumer must be idle. */
+    atomic_store_explicit(&br->head, 0, memory_order_relaxed);
+    atomic_store_explicit(&br->tail, 0, memory_order_relaxed);
 }

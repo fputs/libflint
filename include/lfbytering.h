@@ -3,13 +3,21 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdatomic.h>
 
+/*
+ * Lock-free SPSC byte ring. One producer thread (or ISR) may write;
+ * one consumer thread (or main loop) may read. head and tail are
+ * atomic: the owner publishes its index with release after touching
+ * the buffer, and the other side observes that index with acquire.
+ * br_reset is quiescent-only — both sides must be idle.
+ */
 typedef struct {
     uint8_t *buf;
     size_t capacity;
     size_t mask;
-    volatile size_t head;
-    volatile size_t tail;
+    atomic_size_t head;
+    atomic_size_t tail;
 } ByteRing;
 
 int br_init(ByteRing *br, uint8_t *buf, size_t capacity);
@@ -21,7 +29,16 @@ int br_peek(ByteRing *br, uint8_t *byte);
 void br_reset(ByteRing *br);
 
 #define br_capacity(br) ((br)->capacity)
-#define br_available(br) (((br)->tail - (br)->head) & (br)->mask)
-#define br_free_space(br) ((br)->capacity - 1 - br_available(br))
 
-#endif //LIBFLINT_BYTE_RING_H
+/* Observer snapshot: acquire both indices once. */
+static inline size_t br_available(const ByteRing *br) {
+    size_t tail = atomic_load_explicit(&br->tail, memory_order_acquire);
+    size_t head = atomic_load_explicit(&br->head, memory_order_acquire);
+    return (tail - head) & br->mask;
+}
+
+static inline size_t br_free_space(const ByteRing *br) {
+    return br->capacity - 1u - br_available(br);
+}
+
+#endif /* LIBFLINT_BYTE_RING_H */
