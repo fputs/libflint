@@ -23,7 +23,6 @@
 - [[crypto]] — Compatibility include of codec + puzzle
 - [[input]] — One-shot slurp of a regular, seekable file (`LfLines` owns the buffer)
 - [[process]] — `lf_capture_system` (`popen`, unsanitized)
-- [[bool]] — Macro representation of truthy values
 - [[bitops]] — Bit manipulation macros for setting, clearing, toggling, testing, extracting, and inserting bit fields
 
 ### Platform
