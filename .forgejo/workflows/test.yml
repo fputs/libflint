@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: docker
-    container: alpine
+    container: alpine:3.24
     steps:
       - run: apk add --no-cache build-base cmake libbsd-dev nodejs
       - uses: actions/checkout@v6
@@ -22,7 +22,7 @@ jobs:
 
   sanitize:
     runs-on: docker
-    container: alpine
+    container: alpine:3.24
     steps:
       - run: apk add --no-cache build-base cmake libbsd-dev nodejs
       - uses: actions/checkout@v6
