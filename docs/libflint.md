@@ -29,6 +29,7 @@
 - [[crypto]]: Includes [[codec]] and [[puzzle]]
 - [[input]]: Read a regular, seekable file into memory
 - [[process]]: `lf_capture_system` (`popen`; the command is not sanitized)
+- [[bitset]]: Runtime-sized compact bit array
 - [[bitops]]: Macros to set, clear, toggle, test, extract, and insert bit fields
 
 ### Platform
