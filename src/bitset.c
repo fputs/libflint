@@ -25,21 +25,18 @@ int lf_bitset_init(LfBitSet *s, size_t nbits) {
 int lf_bitset_set(LfBitSet *s, size_t index) {
     if (!s || index >= s->nbits) return -1;
     s->words[index / 64] |= UINT64_C(1) << (index % 64);
-    mask_tail(s);
     return 0;
 }
 
 int lf_bitset_clear(LfBitSet *s, size_t index) {
     if (!s || index >= s->nbits) return -1;
     s->words[index / 64] &= ~(UINT64_C(1) << (index % 64));
-    mask_tail(s);
     return 0;
 }
 
 int lf_bitset_toggle(LfBitSet *s, size_t index) {
     if (!s || index >= s->nbits) return -1;
     s->words[index / 64] ^= UINT64_C(1) << (index % 64);
-    mask_tail(s);
     return 0;
 }
 

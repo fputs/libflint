@@ -109,6 +109,20 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         add_test(NAME ${t} COMMAND test_${t})
     endforeach()
 
+    # Redirect allocations only in these test copies; the library and test
+    # harness retain their normal allocators. No platform-specific linker hooks.
+    add_library(flint_alloc_fail OBJECT
+        src/compat.c src/hashmap.c src/heap.c src/strbuf.c src/bitset.c)
+    target_include_directories(flint_alloc_fail PRIVATE include)
+    target_compile_definitions(flint_alloc_fail PRIVATE
+        malloc=lf_test_malloc realloc=lf_test_realloc)
+    flint_apply_c_flags(flint_alloc_fail)
+    add_executable(test_alloc_fail tests/test_alloc_fail.c
+        $<TARGET_OBJECTS:flint_alloc_fail>)
+    target_include_directories(test_alloc_fail PRIVATE include)
+    flint_apply_c_flags(test_alloc_fail)
+    add_test(NAME alloc_fail COMMAND test_alloc_fail)
+
     if(APPLE)
         add_executable(test_macos tests/test_macos.c)
         target_link_libraries(test_macos PRIVATE flint)
