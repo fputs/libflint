@@ -37,6 +37,7 @@ set(SOURCES
         src/statemachine.c
         src/compat.c
         src/bst.c
+        src/heap.c
         src/hashmap.c
         src/hashset.c
 )
@@ -85,6 +86,7 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         bitops
         network
         bst
+        heap
         hashmap
         hashset
     )

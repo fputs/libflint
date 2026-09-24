@@ -6,6 +6,7 @@
 - [[linkedlist]]: Doubly-linked list of `void *`. Foundation for stack, queue, and set
 - [[vector]]: Growable array of `void *`
 - [[stack]]: LIFO stack of `void *`
+- [[heap]]: Comparator-ordered pointer priority queue
 - [[queue]]: Unbounded FIFO queue
 - [[set]]: Small unique collection. Membership is linear
 - [[hashmap]]: Generic key/value map with independent key and value ownership
