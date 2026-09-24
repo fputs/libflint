@@ -22,6 +22,7 @@
 
 ### Utilities
 - [[strbuf]]: Owned growable string builder
+- [[parse]]: Integer and token parsing from borrowed string views
 - [[string]]: `lfstr_*` helpers and `LfStr` views
 - [[math]]: Integer helpers, `LfPoint`, and Bresenham
 - [[bytebuf]]: Bounded binary cursor with explicit byte order
