@@ -24,6 +24,7 @@
 - [[strbuf]]: Owned growable string builder
 - [[string]]: `lfstr_*` helpers and `LfStr` views
 - [[math]]: Integer helpers, `LfPoint`, and Bresenham
+- [[bytebuf]]: Bounded binary cursor with explicit byte order
 - [[codec]]: Hex and Base64 (encoding, not cryptography)
 - [[puzzle]]: Repeating-key XOR, Hamming distance, English scoring
 - [[crypto]]: Includes [[codec]] and [[puzzle]]

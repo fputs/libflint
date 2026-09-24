@@ -37,6 +37,7 @@ set(SOURCES
         src/statemachine.c
         src/compat.c
         src/bst.c
+        src/bytebuf.c
         src/bitset.c
         src/strbuf.c
         src/heap.c
@@ -88,6 +89,7 @@ if(CMAKE_PROJECT_NAME STREQUAL flint)
         bitops
         network
         bst
+        bytebuf
         bitset
         strbuf
         heap
