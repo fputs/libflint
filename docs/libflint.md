@@ -21,6 +21,7 @@
 - [[memory]]: Arena (bump allocation with save/restore) and pool (fixed-size chunks)
 
 ### Utilities
+- [[strbuf]]: Owned growable string builder
 - [[string]]: `lfstr_*` helpers and `LfStr` views
 - [[math]]: Integer helpers, `LfPoint`, and Bresenham
 - [[codec]]: Hex and Base64 (encoding, not cryptography)
