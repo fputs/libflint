@@ -8,6 +8,7 @@
 - [[stack]]: LIFO stack of `void *`
 - [[queue]]: Unbounded FIFO queue
 - [[set]]: Small unique collection. Membership is linear
+- [[hashmap]]: Generic key/value map with independent key and value ownership
 - [[hashset]]: Unique collection with hashed membership
 - [[binarytree]]: Binary tree you build by attaching left and right children
 - [[bst]]: Ordered binary search tree (`insert`, `find`, `remove`)
