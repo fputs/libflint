@@ -1,4 +1,4 @@
-[libflint](https://git.burkey.co/eburk/libflint) is a C library of containers and helpers. Container handles are generally caller-owned; pointer containers store `void *` payloads. Each module page covers ownership, return codes, and examples.
+[libflint](https://git.burkey.co/fputs/libflint) is a C library of containers and helpers for Linux, macOS, OpenBSD, and FreeBSD. Container handles are generally caller-owned; pointer containers store `void *` payloads. Each module page covers ownership, return codes, and examples.
 
 ## Modules
 
@@ -13,9 +13,9 @@
 - [[hashmap]]: Generic key/value map with independent key and value ownership
 - [[hashset]]: Unique collection with hashed membership
 - [[binarytree]]: Binary tree you build by attaching left and right children
-- [[bst]]: Ordered binary search tree (`insert`, `find`, `remove`)
+- [[bst]]: Unbalanced ordered binary search tree (`insert`, `find`, `remove`)
 - [[ringbuf]]: Fixed-capacity FIFO of `void *`. No allocation after init
-- [[bytering]]: Lock-free byte ring for one producer and one consumer
+- [[bytering]]: Byte ring with caller-provided storage and atomic indices for one producer and one consumer. Lock-free operation depends on the target
 - [[statemachine]]: Table-driven finite state machine with guards and entry/exit callbacks
 
 ### Allocators
@@ -45,7 +45,40 @@
 
 ## Requirements
 
-A C99 compiler and CMake 3.17 or newer. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
+CMake 3.17 or newer and a C compiler. The build selects C99, but [[bytering]] also requires support for C11 atomics (`<stdatomic.h>` and `atomic_size_t`). The compiler must support those in the selected language mode.
+
+Linux needs the `libbsd` headers and library (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
+
+## Building and Testing
+
+From the repository root:
+
+```sh
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+The root `Makefile` is a thin wrapper around CMake. Tests are built when libflint is the top-level project; the files under `tests/` also provide usage examples. Use `ctest --test-dir build --parallel` to run tests in parallel, or add `--label-exclude slow` to skip the slow macOS sampling test.
+
+Compiler warnings are enabled by default for GCC and Clang (`FLINT_ENABLE_WARNINGS=ON`). To run with AddressSanitizer and UndefinedBehaviorSanitizer on a compiler that supports them:
+
+```sh
+cmake -S . -B build-sanitize -DCMAKE_BUILD_TYPE=Debug -DFLINT_SANITIZE=ON
+cmake --build build-sanitize
+ctest --test-dir build-sanitize --output-on-failure --label-exclude slow
+```
+
+## Using libflint with CMake
+
+If the library is checked out at `lib/libflint` inside your project:
+
+```cmake
+add_subdirectory(lib/libflint)
+target_link_libraries(your_target PRIVATE flint)
+```
+
+Replace `your_target` with an existing CMake target. The `flint` target exports its `include/` directory; include the headers for the modules you use, such as `lfvector.h` or `lfhashmap.h`. Its private compile definitions do not propagate to your project.
 
 ## Memory Management
 
