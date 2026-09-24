@@ -39,7 +39,7 @@ cmake --build build && ctest --test-dir build --output-on-failure -LE slow
 
 ## Requirements
 
-A C99 compiler and CMake. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
+A C99 compiler and CMake 3.17 or newer. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
 
 ## Libraries
 

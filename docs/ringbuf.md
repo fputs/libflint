@@ -2,6 +2,25 @@ Fixed-size circular buffer (ring buffer) for FIFO operations with no runtime all
 
 Use `Queue` when the collection must grow without a fixed bound. Use `RingBuffer` when the payload is `void *` and the size is known at init. Use `ByteRing` for a caller-owned byte buffer (UART/ISR-style bytes), not pointers.
 
+## Usage
+
+Include `lfringbuf.h` and initialize a caller-owned `RingBuffer`. Pass `NULL` for the destroy callback when payloads are stack allocated. For heap allocations, pass `free` or your own deallocation function.
+
+```c
+RingBuffer rb;
+if (rb_init(&rb, 16, NULL) == 0) {
+    int value = 1;
+    rb_push(&rb, &value);
+    void *data;
+    if (rb_pop(&rb, &data) == 0) {
+        /* data points to value */
+    }
+    rb_destroy(&rb);
+}
+```
+
+Destroy the buffer before initializing it again. `rb_destroy` releases its internal storage and any remaining payloads through the callback; the `RingBuffer` handle remains yours.
+
 ## Structs
 
 ### RingBuffer
@@ -21,19 +40,11 @@ typedef struct {
 
 ### rb_init
 
-Initializes the ring buffer with a fixed capacity. The user is responsible for creating the initial `RingBuffer` structure and freeing memory with `rb_destroy()`. `destroy` is a deallocation function for the members of the buffer, pass `NULL` if the memory is stack-allocated. Returns `0` on success, `-1` on error (NULL pointer, zero capacity, or allocation failure). Failed init zeros the handle so `rb_destroy` is safe.
+Initializes the ring buffer with a fixed capacity. The user is responsible for creating the initial `RingBuffer` structure and freeing memory with `rb_destroy()`. `destroy` is a deallocation function for the members of the buffer, pass `NULL` if the memory is stack-allocated. Returns `0` on success, `-1` on error (NULL pointer, zero capacity, or allocation failure, or allocation size overflow). Failed init zeros the handle so `rb_destroy` is safe.
 
 ```c
 int rb_init(RingBuffer *rb, size_t capacity, void (*destroy)(void *));
 
-/* Usage */
-RingBuffer *rb = malloc(sizeof(RingBuffer));
-
-// Pass NULL for stack-allocated memory
-rb_init(rb, 16, NULL);
-
-// Pass free or a custom freeing function for heap allocated memory
-rb_init(rb, 16, free);
 ```
 
 ### rb_destroy
@@ -46,14 +57,14 @@ void rb_destroy(RingBuffer *rb);
 
 ### rb_push
 
-Adds an element to the back of the buffer. Returns `0` on success, `-1` if the buffer is full.
+Adds an element to the back of the buffer. Returns `0` on success, `-1` if the buffer is full, `rb` is `NULL`, or the buffer is not initialized.
 
 ```c
 int rb_push(RingBuffer *rb, void *data);
 
 /* Usage */
 int a = 1;
-rb_push(rb, &a);
+rb_push(&rb, &a);
 ```
 
 ### rb_force_push
@@ -66,7 +77,7 @@ int rb_force_push(RingBuffer *rb, void *data);
 
 ### rb_pop
 
-Removes the element at the front of the buffer and stores its data in `data`. Returns `0` on success, `-1` if the buffer is empty or `data` is `NULL` (the item is left in the buffer). The caller is responsible for freeing the popped element if it was heap-allocated.
+Removes the element at the front of the buffer and stores its data in `data`. Returns `0` on success, `-1` if the buffer is empty or either argument is `NULL` (the item is left in the buffer). The caller is responsible for freeing the popped element if it was heap-allocated.
 
 ```c
 int rb_pop(RingBuffer *rb, void **data);
@@ -74,21 +85,21 @@ int rb_pop(RingBuffer *rb, void **data);
 /* Usage */
 // buffer: 1 2 3
 void *data;
-rb_pop(rb, &data);
+rb_pop(&rb, &data);
 assert(*(int *)data == 1);
 // buffer: 2 3
 ```
 
 ### rb_peek
 
-Returns a `void *` to the front element of the buffer without removing it. Returns `NULL` if the buffer is empty.
+Returns a `void *` to the front element of the buffer without removing it. Returns `NULL` if `rb` is `NULL`, the buffer is empty, or the front payload is itself `NULL`.
 
 ```c
 void *rb_peek(RingBuffer *rb);
 
 /* Usage */
 // buffer: 1 2 3
-int *t = (int *)rb_peek(rb);
+int *t = (int *)rb_peek(&rb);
 assert(*t == 1);
 // buffer: 1 2 3
 ```
@@ -100,8 +111,6 @@ Calls the deallocation function on all remaining elements and resets the buffer 
 ```c
 void rb_clear(RingBuffer *rb);
 ```
-
-## Macros
 
 ### rb_count
 

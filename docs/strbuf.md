@@ -2,7 +2,24 @@ A growable owned string builder. Include `lfstrbuf.h`. Complements the borrowed
 `LfStr` views in [[string]]. Length excludes the trailing NUL; views may append
 embedded NUL bytes. Handles are caller-owned; the buffer owns its allocation.
 
+## Usage
+
+Initialize a caller-owned `LfStrBuf`, then append strings or formatted text. Destroy the buffer when you are finished with its contents.
+
+```c
+LfStrBuf buf;
+if (lf_strbuf_init(&buf) == 0) {
+    if (lf_strbuf_append(&buf, "count: ") == 0 &&
+        lf_strbuf_appendf(&buf, "%d", 42) == 0) {
+        /* buf.data is "count: 42", buf.len is 9 */
+    }
+    lf_strbuf_destroy(&buf);
+}
+```
+
 ## Structs
+
+### LfStrBuf
 
 ```c
 typedef struct {
@@ -21,7 +38,7 @@ contents unchanged. Borrowed pointers may be invalidated by reserve or append.
 
 ### lf_strbuf_init / lf_strbuf_reserve
 
-Return 0 on success, -1 on invalid arguments, overflow, or allocation failure.
+Returns `0` on success, -1 on invalid arguments, overflow, or allocation failure.
 Init allocates an empty string; failed init leaves a destroyable handle. Reserve
 ensures space for the requested total text length plus a terminator.
 
@@ -29,20 +46,11 @@ ensures space for the requested total text length plus a terminator.
 int lf_strbuf_init(LfStrBuf *buf);
 int lf_strbuf_reserve(LfStrBuf *buf, size_t length);
 
-/* Usage */
-LfStrBuf buf;
-if (lf_strbuf_init(&buf) == 0) {
-    if (lf_strbuf_append(&buf, "count: ") == 0 &&
-        lf_strbuf_appendf(&buf, "%d", 42) == 0) {
-        /* buf.data is "count: 42", buf.len is 9 */
-    }
-    lf_strbuf_destroy(&buf);
-}
 ```
 
 ### lf_strbuf_append / lf_strbuf_append_view
 
-Append a C string or counted view. Return 0 on success, -1 on error. The source
+Append a C string or counted view. Returns `0` on success, -1 on error. The source
 may be a valid view into the buffer itself, even when appending requires growth.
 NULL C strings are invalid; a NULL view pointer is valid only with zero length.
 
@@ -53,7 +61,7 @@ int lf_strbuf_append_view(LfStrBuf *buf, LfStr text);
 
 ### lf_strbuf_appendf / lf_strbuf_vappendf
 
-Append using C99 `vsnprintf` formatting. Return 0 on success, -1 on allocation,
+Append using C99 `vsnprintf` formatting. Returns `0` on success, -1 on allocation,
 size, argument, or formatting error. Formatting uses a temporary allocation, so
 format strings and string arguments may refer to the existing buffer. The
 supplied `va_list` is not consumed. Follow printf argument/type rules; do not use
@@ -66,7 +74,7 @@ int lf_strbuf_vappendf(LfStrBuf *buf, const char *format, va_list args);
 
 ### lf_strbuf_clear
 
-Set length to zero, retaining allocation. Accepts NULL.
+Sets length to zero, retaining allocation. Accepts NULL.
 
 ```c
 void lf_strbuf_clear(LfStrBuf *buf);
@@ -84,7 +92,7 @@ char *lf_strbuf_detach(LfStrBuf *buf);
 
 ### lf_strbuf_destroy
 
-Free storage and zero the handle. Accepts NULL and repeated destruction.
+Frees storage and zeros the handle. Accepts NULL and repeated destruction.
 
 ```c
 void lf_strbuf_destroy(LfStrBuf *buf);

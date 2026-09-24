@@ -1,12 +1,40 @@
-Custom allocators and memory functions
-# Arena Allocator
+Arena and pool allocators. An arena allocates variable-sized blocks from one buffer; a pool reuses fixed-sized chunks.
 
-A simple arena-style allocator
+## Usage
+
+Include `lfmemory.h` and create the allocator handle. The handle belongs to you. Initialize it before allocating, and free its storage when you are finished.
+
+```c
+ArenaAllocator arena = {0};
+if (arena_init(&arena, 1024) == 0) {
+    int *value = arena_malloc(&arena, sizeof(*value));
+    if (value != NULL) {
+        *value = 42;
+    }
+    arena_free(&arena);
+}
+```
+
+Arena allocations start zeroed and are aligned to `LF_DEFAULT_ALIGNMENT`. Do not call `free` on individual allocations. Clearing or freeing the arena invalidates all of them.
+
+Use a pool when each allocation needs the same amount of space. Return individual chunks with `pool_free` so they can be reused.
+
+```c
+PoolAllocator pool = {0};
+if (pool_init(&pool, 1024, 32, LF_DEFAULT_ALIGNMENT) == 0) {
+    void *chunk = pool_alloc(&pool);
+    pool_free(&pool, chunk);
+    pool_destroy(&pool);
+}
+```
+
+Do not initialize a live allocator again before releasing its storage. Zero-initialize handles if you need cleanup after a failed initialization.
+
 ## Structs
 
 ### ArenaAllocator
 
-Represents an arena allocator. `ArenaAllocator` holds its own buffer. The handle may be stack- or heap-allocated.
+Stores the arena buffer and allocation offsets. The buffer is owned or borrowed, depending on the initializer. The handle may be stack- or heap-allocated.
 
 ```c
 typedef struct {
@@ -22,6 +50,19 @@ typedef struct {
 ```
 
 `owns_buf` is 1 when the arena malloc'd the slab (`arena_init`) and 0 when the caller provided it (`arena_init_buf`).
+
+### PoolAllocator
+
+```c
+typedef struct {
+    unsigned char *buf;
+    size_t buf_sz;
+    size_t chunk_size;
+    size_t aligned_start;
+    size_t free_count;
+    void *free_head;
+} PoolAllocator;
+```
 
 ## Functions
 
@@ -58,14 +99,12 @@ If the arena owns its slab, frees it. Always resets the handle. Does not free th
 void arena_free(ArenaAllocator *allocator);
 
 /* Usage */
-arena_free(a);
-free(a); // if heap-allocated
-a = NULL;
+arena_free(&a); /* a is a stack-allocated handle */
 ```
 
 ### arena_clear
 
-Resets the offset markers of the arena to `0` and clears all save points, but does not wipe the underlying buffer.
+Resets the offset markers of the arena to `0` and clears all save points, but does not wipe the underlying buffer. All previous allocations become invalid. Requires a non-NULL initialized handle.
 
 ```c
 void arena_clear(ArenaAllocator *allocator);
@@ -74,7 +113,7 @@ void arena_clear(ArenaAllocator *allocator);
 
 ### arena_malloc
 
-Request memory of `size` bytes in length from the arena. Returns `NULL` if the assignment failed.
+Allocates and zeros `size` bytes, aligned to `LF_DEFAULT_ALIGNMENT`. Returns `NULL` for a NULL handle, missing storage, or insufficient space.
 
 ```c
 void *arena_malloc(ArenaAllocator* allocator, size_t size);
@@ -90,21 +129,26 @@ int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz);
 
 ### arena_resize
 
-Resize an allocated pointer from the arena. Returns `NULL` if the arena doesn't have enough space or if `mem` doesn't belong to the arena. When growing, the new bytes are zeroed. See the example below for a simple use case.
+Resizes an allocation, preserving the first `min(old_sz, new_sz)` bytes. Pass the allocation's actual size as `old_sz`; this function does not track block sizes. A NULL `mem` or zero `old_sz` requests a new allocation. Returns `NULL` if the arena doesn't have enough space or if `mem` doesn't belong to the arena. When growing, the new bytes are zeroed. See the example below for a simple use case.
 
 ```c
 void *arena_resize(ArenaAllocator *allocator, void *mem, size_t old_sz, size_t new_sz);
 
 /* Usage */
-int *i = arena_malloc(a, sizeof(int));
-*i = 1;
-long *l = arena_resize(a, i, sizeof(int), sizeof(long));
-assert(*l == 1);
+int *items = arena_malloc(&a, sizeof(int));
+if (items != NULL) {
+    items[0] = 1;
+    int *grown = arena_resize(&a, items, sizeof(int), 2 * sizeof(int));
+    if (grown != NULL) {
+        items = grown;
+        /* items[0] == 1, items[1] == 0 */
+    }
+}
 ```
 
 ### arena_save
 
-Saves the current allocation offset onto an internal stack, allowing temporary allocations to be made and later discarded with `arena_restore()`. Supports nesting up to `LF_ARENA_MAX_SAVE_POINTS` (default 32). Returns `0` on success, `-1` if the save stack is full.
+Saves the current allocation offset onto an internal stack, allowing temporary allocations to be made and later discarded with `arena_restore()`. Requires a non-NULL initialized handle. Supports nesting up to `LF_ARENA_MAX_SAVE_POINTS` (default 32). Returns `0` on success, `-1` if the save stack is full.
 
 ```c
 int arena_save(ArenaAllocator *allocator);
@@ -112,28 +156,24 @@ int arena_save(ArenaAllocator *allocator);
 
 ### arena_restore
 
-Restores the arena offset to the most recent save point, effectively freeing all allocations made since the last `arena_save()` call. Does nothing if no save points exist. Permanent allocations made before the save point are unaffected.
+Restores the arena offset to the most recent save point, effectively freeing all allocations made since the last `arena_save()` call. Does nothing if no save points exist. Allocations made before the save point are unaffected, provided they were not resized during the saved scope. Requires a non-NULL initialized handle.
 
 ```c
 void arena_restore(ArenaAllocator *allocator);
 
 /* Usage */
-int *permanent = arena_malloc(a, sizeof(int));
-*permanent = 42;
-
-arena_save(a);
-int *tmp = arena_malloc(a, sizeof(int));
-*tmp = 999;  // temporary work
-arena_restore(a);  // tmp is now invalid, permanent is intact
-
-int *next = arena_malloc(a, sizeof(int));  // reuses tmp's space
+if (arena_save(&a) == 0) {
+    int *tmp = arena_malloc(&a, sizeof(int));
+    if (tmp != NULL) {
+        *tmp = 999;
+    }
+    arena_restore(&a);  /* tmp is now invalid */
+}
 ```
-
-## Macros
 
 ### LF_ARENA_MAX_SAVE_POINTS
 
-Maximum number of nested save points for `arena_save()`/`arena_restore()`. Can be overridden by defining before including the header. Defaults to 32.
+Maximum number of nested save points for `arena_save()`/`arena_restore()`. Can be overridden when building the library and its callers; use the same value in both because it changes the handle layout. Defaults to 32.
 
 ```c
 #ifndef LF_ARENA_MAX_SAVE_POINTS
@@ -141,30 +181,10 @@ Maximum number of nested save points for `arena_save()`/`arena_restore()`. Can b
 #endif
 ```
 
-# Pool Allocator
-
-A pool of same-sized chunks carved from one buffer. Free chunks keep a next pointer in their first word, so `pool_alloc` and `pool_free` do not call the system allocator.
-
-The handle may be stack- or heap-allocated. `chunk_align` must be a non-zero power of two. A second `pool_free` of the same live chunk is ignored.
-
-## Structs
-
-### PoolAllocator
-
-```c
-typedef struct {
-    unsigned char *buf;
-    size_t buf_sz;
-    size_t chunk_size;
-    size_t aligned_start;
-    size_t free_count;
-    void *free_head;
-} PoolAllocator;
-```
-
-## Functions
 
 ### pool_init
+
+Creates a pool of equally sized chunks. Free chunks store a next pointer in their first word; allocation and return do not call the system allocator.
 
 Initializes the `PoolAllocator`. Returns `0` on success, `-1` on error (NULL allocator, zero sizes, non-power-of-two or unsatisfiable `chunk_align`, malloc failure, or buffer too small for one aligned chunk).
 
@@ -212,8 +232,6 @@ Frees the underlying buffer and zeros the handle. Does not free the `allocator` 
 void pool_destroy(PoolAllocator *allocator);
 ```
 
-## Macros
-
 ### pool_count_available
 
 Returns the number of chunks left available in the pool.
@@ -224,7 +242,7 @@ Returns the number of chunks left available in the pool.
 
 ### LF_DEFAULT_ALIGNMENT
 
-The default alignment for allocators. Use this as a simple default (defaults to 16 bytes on amd64 systems) when storing basic types
+The alignment used by arena allocations, and a suggested alignment for pool chunks. Defaults to twice the pointer size (16 bytes on amd64). It must be a nonzero power of two. To change arena alignment, define it when building the library.
 
 ```c
 #ifndef LF_DEFAULT_ALIGNMENT

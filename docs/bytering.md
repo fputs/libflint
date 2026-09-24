@@ -1,6 +1,24 @@
-Lock-free byte ring with no dynamic allocation. One producer and one consumer may run concurrently (for example UART RX/TX, sensor streams, or DMA staging). Capacity must be a power of two. One slot is reserved, so a capacity of N holds N-1 bytes.
+A byte ring for one producer and one consumer, with no dynamic allocation. One producer and one consumer may run concurrently. The implementation uses C11 atomics; whether those atomics are lock-free depends on the target. Capacity must be a power of two. One slot is reserved, so a capacity of N holds N-1 bytes.
 
 You provide the backing buffer. `ByteRing` does not allocate or free it. Use `br_write` / `br_bulk_write` from the producer only, and `br_read` / `br_bulk_read` from the consumer only. Call `br_reset` only when both sides are idle.
+
+## Usage
+
+Include `lfbytering.h`. Provide the backing storage and initialize a caller-owned `ByteRing`. The storage must outlive the ring. No destroy function is needed.
+
+```c
+uint8_t storage[64];
+ByteRing ring;
+if (br_init(&ring, storage, sizeof(storage)) == 0) {
+    br_write(&ring, 0xAA);
+    uint8_t byte;
+    if (br_read(&ring, &byte) == 0) {
+        /* byte == 0xAA */
+    }
+}
+```
+
+Use the ring only after successful initialization. Bulk source and destination buffers must not overlap the backing storage.
 
 ## Structs
 
@@ -35,7 +53,7 @@ br_init(&br, buf, 64);
 
 ### br_write
 
-Writes a single byte to the buffer. Producer-only. Returns `0` on success, `-1` if the buffer is full.
+Writes a single byte to the buffer. Producer-only. Returns `0` on success, `-1` if the buffer is full or `br` is `NULL`.
 
 ```c
 int br_write(ByteRing *br, uint8_t byte);
@@ -46,7 +64,7 @@ br_write(&br, 0xAA);
 
 ### br_read
 
-Reads and removes the oldest byte from the buffer, storing it in `byte`. Consumer-only. Returns `0` on success, `-1` if the buffer is empty.
+Reads and removes the oldest byte from the buffer, storing it in `byte`. Consumer-only. Returns `0` on success, `-1` if the buffer is empty or either pointer is `NULL`.
 
 ```c
 int br_read(ByteRing *br, uint8_t *byte);
@@ -58,7 +76,7 @@ br_read(&br, &byte);
 
 ### br_peek
 
-Reads the oldest byte without removing it, storing it in `byte`. Consumer-only. Returns `0` on success, `-1` if the buffer is empty.
+Reads the oldest byte without removing it, storing it in `byte`. Consumer-only. Returns `0` on success, `-1` if the buffer is empty or either pointer is `NULL`.
 
 ```c
 int br_peek(ByteRing *br, uint8_t *byte);
@@ -100,8 +118,6 @@ Resets the buffer to empty by setting head and tail to 0. Does not zero the back
 void br_reset(ByteRing *br);
 ```
 
-## Macros / inlines
-
 ### br_capacity
 
 Returns the backing-buffer length `N`. Usable storage is `N - 1`.
@@ -112,7 +128,7 @@ Returns the backing-buffer length `N`. Usable storage is `N - 1`.
 
 ### br_available
 
-Returns the number of bytes available to read. Snapshots both indices with acquire.
+Returns the number of bytes available to read. Loads both indices with acquire ordering. With concurrent activity this is an observation, not a reservation of bytes. Requires a non-NULL initialized ring.
 
 ```c
 static inline size_t br_available(const ByteRing *br);

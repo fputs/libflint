@@ -1,6 +1,12 @@
-This header is not a cryptography API. It includes the codec and puzzle helpers:
+A compatibility header for the codec and puzzle helpers.
 
-- Hex and Base64: [[codec]] (`lfcodec.h`)
-- Repeating-key XOR, Hamming distance, and English scoring: [[puzzle]] (`lfpuzzle.h`)
+## Usage
 
-`#include "lfcrypto.h"` pulls in both.
+Include `lfcrypto.h` to get both sets of functions. For new code, include the header for the functions you use:
+
+```c
+#include "lfcodec.h"
+#include "lfpuzzle.h"
+```
+
+See [[codec]] for Hex and Base64, and [[puzzle]] for repeating-key XOR, Hamming distance, and English scoring. These helpers are not cryptographic primitives.

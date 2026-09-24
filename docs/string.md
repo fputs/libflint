@@ -1,8 +1,30 @@
 C string helpers. All public names start with `lfstr_`.
 
-Predicates that do not allocate take an `LfStr` view (`{const char *p; size_t n}`). The C-string wrappers (`lfstr_starts_with`, `lfstr_contains`, `lfstr_trim`, and so on) call those views for you. Functions that build a new string allocate from the heap, or from an `ArenaAllocator` if you use the `*_arena` variant. Free heap results with `free` or `lfstr_split_free`. Do not free arena results; they are released when the arena is cleared or freed.
+Non-allocating view helpers take an `LfStr` view (`{const char *p; size_t n}`). The C-string wrappers (`lfstr_starts_with`, `lfstr_contains`, `lfstr_trim`, and so on) call those views for you. Functions that build a new string allocate from the heap, or from an `ArenaAllocator` if you use the `*_arena` variant. Free heap results with `free` or `lfstr_split_free`. Do not free arena results; they are released when the arena is cleared, restored past their allocation, or freed. Passing `NULL` as the arena uses heap allocation, so those results must be freed.
 
-## Types
+## Usage
+
+Include `lfstring.h`. Use a view to borrow text without allocating. A view stores a pointer and length; it does not add a NUL terminator.
+
+```c
+LfStr text = lfstr_trim_view(lfstr_from("  hello  "));
+/* text.p points to "hello  "; text.n is 5 */
+int matches = lfstr_starts_with_view(text, lfstr_from("he"));
+```
+
+Functions that return a new string leave the input unchanged. Check the result before using it, then free heap allocations when you are finished.
+
+```c
+char *text = lfstr_trim("  hello  ");
+if (text != NULL) {
+    /* text is "hello" */
+    free(text);
+}
+```
+
+## Structs
+
+### LfStr
 
 ```c
 typedef struct {
@@ -11,7 +33,13 @@ typedef struct {
 } LfStr;
 ```
 
-`LfStr` does not own `p`. `lfstr_from(NULL)` is `{NULL, 0}`.
+`LfStr` does not own `p`. Keep its storage alive while using the view. `n` counts bytes, which may include embedded NUL bytes.
+
+## Functions
+
+### lfstr_from / lfstr_trim_view / view predicates
+
+`lfstr_from` borrows a C string; `lfstr_from(NULL)` is `{NULL, 0}`.
 
 ```c
 LfStr lfstr_from(const char *s);
@@ -23,17 +51,15 @@ int lfstr_contains_view(LfStr s, LfStr needle);
 
 `lfstr_trim_view` returns a slice of the same buffer. An empty needle / prefix / suffix matches.
 
-## Functions
-
 ### lfstr_find
 
-Finds the indices of all locations of the given needle in the haystack. `substrings` is an array of `size_t` indices that the substring is found at. This function allocates the memory for `substrings` and memory cleanup is managed by the user. `substrings` must be initialized to `NULL` before calling. `num_substrings` is a pointer to a pre-allocated `size_t` that will be modified to contain the number of found substrings and subsequently the size of `substrings`.
+Finds every byte index where `needle` occurs in `haystack`, including overlapping matches. `substrings` is an array of `size_t` indices that the substring is found at. This function allocates the memory for `substrings` and memory cleanup is managed by the user. `substrings` must be initialized to `NULL` before calling. `num_substrings` is a pointer to a pre-allocated `size_t` that will be modified to contain the number of found substrings and subsequently the size of `substrings`.
 
 If no substrings are found, `substrings` will not be allocated and left set to `NULL`, `num_substrings` will be `0`, and the function will return `0`.
 
 An empty needle matches every position, including one past the last character (`"abc"` + `""` yields `{0, 1, 2, 3}`).
 
-Returns `0` on success, `1` if `substrings` is not `NULL` (already allocated), `-1` on allocation failure or if any pointer argument is `NULL`.
+Returns `0` on success, `1` if `substrings` is not `NULL` (already allocated), `-1` on allocation failure or if a required pointer argument is `NULL`. The arena argument is optional.
 
 ```c
 int lfstr_find(const char *haystack, const char *needle,
@@ -57,7 +83,7 @@ free(subs);
 
 ### lfstr_substr
 
-Extracts a substring at a specific index and length. This function returns a copy of the substring in a heap allocated buffer that the user is responsible for freeing. Returns `NULL` if there is an error, including when `idx + len` would wrap `size_t`.
+Extracts a substring at a specific index and length. This function returns a copy of the substring in a heap allocated buffer that the user is responsible for freeing. Returns `NULL` for a NULL input, allocation failure, or a range extending past the string. An empty substring at the end is valid.
 
 ```c
 char *lfstr_substr(const char *str, size_t idx, size_t len);
@@ -65,7 +91,7 @@ char *lfstr_substr_arena(ArenaAllocator *arena, const char *str,
                          size_t idx, size_t len);
 
 /* Usage */
-const char *s = lfstr_substr("One two three", 4, 3);
+char *s = lfstr_substr("One two three", 4, 3);
 assert(strcmp(s, "two") == 0);
 free(s);
 ```
@@ -86,7 +112,7 @@ free(s);
 
 ### lfstr_join
 
-Joins an array of strings with a separator. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. Returns an empty string if `count` is 0. Returns `NULL` if length math would wrap `size_t`.
+Joins an array of strings with a separator. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. Returns an empty string if `count` is 0. Returns `NULL` on invalid arguments, allocation failure, or size overflow.
 
 ```c
 char *lfstr_join(const char **strs, size_t count, const char *sep);
@@ -110,7 +136,7 @@ int lfstr_starts_with(const char *str, const char *prefix);
 
 ### lfstr_ends_with
 
-Returns `1` if `str` ends with `suffix`, `0` otherwise.
+Returns `1` if `str` ends with `suffix`, `0` otherwise. NULL arguments return `0`.
 
 ```c
 int lfstr_ends_with(const char *str, const char *suffix);
@@ -118,7 +144,7 @@ int lfstr_ends_with(const char *str, const char *suffix);
 
 ### lfstr_replace
 
-Replaces all occurrences of `old` with `replacement` in `str`. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. If `old` is not found, returns a copy of the original string. Returns `NULL` if length math would wrap `size_t`. The replacement parameter is named `replacement` so the header can be included from C++.
+Replaces non-overlapping occurrences of `old` with `replacement` in `str`. Returns a new heap-allocated string. The caller is responsible for freeing the returned string. If `old` is empty or not found, returns a copy of the original string. Returns `NULL` on invalid arguments, allocation failure, or size overflow.
 
 ```c
 char *lfstr_replace(const char *str, const char *old, const char *replacement);
@@ -133,7 +159,7 @@ free(s);
 
 ### lfstr_to_upper
 
-Returns a new heap-allocated string with all characters converted to uppercase. The caller is responsible for freeing the returned string.
+Returns a new heap-allocated string with all characters converted to uppercase using the current C locale. Returns `NULL` on NULL input or allocation failure. The caller is responsible for freeing the returned string.
 
 ```c
 char *lfstr_to_upper(const char *str);
@@ -142,7 +168,7 @@ char *lfstr_to_upper_arena(ArenaAllocator *arena, const char *str);
 
 ### lfstr_to_lower
 
-Returns a new heap-allocated string with all characters converted to lowercase. The caller is responsible for freeing the returned string.
+Returns a new heap-allocated string with all characters converted to lowercase using the current C locale. Returns `NULL` on NULL input or allocation failure. The caller is responsible for freeing the returned string.
 
 ```c
 char *lfstr_to_lower(const char *str);
@@ -151,7 +177,7 @@ char *lfstr_to_lower_arena(ArenaAllocator *arena, const char *str);
 
 ### lfstr_split / lfstr_split_free
 
-Splits a string into an array of strings based on a delimiter. Returns a heap-allocated array of heap-allocated strings. Free the result with `lfstr_split_free`. `count` is set to the number of parts.
+Splits a string into an array of strings based on a delimiter. Returns a heap-allocated array of heap-allocated strings. Free the result with `lfstr_split_free`. `count` is set to the number of parts. The delimiter is a whole string, not a set of characters. Leading, trailing, and adjacent delimiters produce empty parts. An empty delimiter returns one copy of the input. The array has `count` entries and no NULL sentinel. Returns `NULL` on invalid arguments, allocation failure, or size overflow.
 
 ```c
 char **lfstr_split(const char *str, const char *delim, size_t *count);
@@ -168,7 +194,7 @@ lfstr_split_free(parts, count);
 
 ### lfstr_contains
 
-Returns `1` if `substr` is found within `str`, `0` otherwise.
+Returns `1` if `substr` is found within `str`, `0` otherwise. NULL arguments return `0`.
 
 ```c
 int lfstr_contains(const char *str, const char *substr);

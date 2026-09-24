@@ -1,8 +1,9 @@
-[libflint](https://git.burkey.co/eburk/libflint) is a C library of containers and helpers. Handles are caller-owned; payloads are `void *`. Each module page covers ownership, return codes, and examples.
+[libflint](https://git.burkey.co/eburk/libflint) is a C library of containers and helpers. Container handles are generally caller-owned; pointer containers store `void *` payloads. Each module page covers ownership, return codes, and examples.
 
 ## Modules
 
 ### Data Structures
+
 - [[linkedlist]]: Doubly-linked list of `void *`. Foundation for stack, queue, and set
 - [[vector]]: Growable array of `void *`
 - [[stack]]: LIFO stack of `void *`
@@ -18,9 +19,11 @@
 - [[statemachine]]: Table-driven finite state machine with guards and entry/exit callbacks
 
 ### Allocators
+
 - [[memory]]: Arena (bump allocation with save/restore) and pool (fixed-size chunks)
 
 ### Utilities
+
 - [[strbuf]]: Owned growable string builder
 - [[parse]]: Integer and token parsing from borrowed string views
 - [[string]]: `lfstr_*` helpers and `LfStr` views
@@ -35,15 +38,19 @@
 - [[bitops]]: Macros to set, clear, toggle, test, extract, and insert bit fields
 
 ### Platform
+
 - [[network]]: IPv4 `lf_listen_tcp`, `lf_bind_udp`, and `lf_close`
 - [[macos]]: Process CPU and memory sampling (Apple only)
 - [[compat]]: Overflow-checked `lf_reallocarray` on every platform
 
 ## Requirements
-A C99 compiler and CMake. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
+
+A C99 compiler and CMake 3.17 or newer. Linux needs `libbsd` (`strtonum` in the input module). macOS, OpenBSD, and FreeBSD need no extra libraries.
+
 ## Memory Management
 
-You allocate the handle (`List`, `Vector`, and so on). The library allocates internal nodes and buffers. A `destroy` callback, if you pass one, runs when the container is destroyed or cleared, not when you pop or remove an item.
+You allocate the handle (`List`, `Vector`, and so on). The library allocates internal nodes and buffers. A `destroy` callback, if you pass one, frees owned payloads when the container is destroyed or cleared. Most pop and remove functions transfer the payload to you without calling that callback. Binary tree subtree removal also destroys payloads, and hash map replacement can destroy the old key and value; check the module page for the operation you use.
+
 ## Why the name 'libflint'?
 
 `libflint` is named after my dog Flint, who passed away in 2021. I miss you buddy.

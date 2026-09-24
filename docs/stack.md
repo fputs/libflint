@@ -1,6 +1,27 @@
-LIFO stack of `void *`. List functions do not compile against a `Stack`.
+LIFO stack of `void *`. Use the stack functions to maintain its ordering.
+
+## Usage
+
+Create and initialize a `Stack`. Pass `NULL` for stack allocated payloads, or a destructor such as `free` for payloads the stack should free when destroyed.
+
+```c
+Stack stack;
+stack_init(&stack, NULL);
+int value = 42;
+if (stack_push(&stack, &value) == 0) {
+    void *data;
+    if (stack_pop(&stack, &data) == 0) {
+        /* data points to value. */
+    }
+}
+stack_destroy(&stack);
+```
+
+Removal returns the payload without calling the destructor. Destroy frees the remaining nodes and runs the destructor on their payloads. It does not free the `Stack` handle.
 
 ## Structs
+
+### Stack
 
 ```c
 typedef struct {
@@ -14,7 +35,7 @@ The top of the stack is the most recently pushed element.
 
 ### stack_init
 
-Initializes the stack. The user is responsible for creating the initial `Stack` structure and freeing memory with `stack_destroy()`. `destroy` is a deallocation function for the members of `Stack`, pass `NULL` if the memory is stack-allocated
+Initializes an empty stack. You own the `Stack` handle. `destroy` is an optional deallocation function for payloads remaining at destruction; pass `NULL` for borrowed data.
 
 ```c
 void stack_init(Stack *stack, void (*destroy)(void *data));
@@ -65,15 +86,16 @@ assert(*t == 3);
 
 ### stack_pop
 
-Pops the top element of the stack and stores its data in `data`. Returns `0` on success, `-1` on error. `data` must not be `NULL`; a null out-param does not drop the item.
+Pops the top element of the stack and stores its data in `data`. Returns `0` on success, `-1` if the stack is empty or `data` is `NULL`. The destructor is not called. A `NULL` output does not remove the item.
 
 ```c
 int stack_pop(Stack *stack, void **data);
 
 /* Usage */
 // stack: 1 2 3
-int *t;
-stack_pop(stack, (void **)&t);
+void *data;
+stack_pop(stack, &data);
+int *t = data;
 assert(*t == 3);
 // stack: 1 2
 ```

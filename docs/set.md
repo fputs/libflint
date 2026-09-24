@@ -1,6 +1,29 @@
-A small collection of unique `void *` values. Membership is linear in the size of the set. List functions do not compile against a `Set`. For hashed membership, see [[hashset]].
+A small collection of unique `void *` values. Membership is linear in the size of the set. Use the set functions to preserve uniqueness. For hashed membership, see [[hashset]].
+
+## Usage
+
+Initialize the set with an equality callback and an optional payload destructor. The equality callback returns `0` for equal values. This example passes `NULL` for the destructor because its payloads are stack allocated.
+
+```c
+int int_match(const void *a, const void *b) {
+    return *(const int *)a == *(const int *)b ? 0 : 1;
+}
+
+Set set;
+if (set_init(&set, int_match, NULL) == 0) {
+    int value = 1;
+    int duplicate = 1;
+    set_insert(&set, &value);
+    set_insert(&set, &duplicate); /* Keeps value if the first insert succeeded. */
+    set_destroy(&set);
+}
+```
+
+`set_destroy` frees the nodes and calls the destructor on remaining payloads. It does not free the `Set` handle. Keep values unchanged in ways that affect equality while stored.
 
 ## Structs
+
+### Set
 
 ```c
 typedef struct {
@@ -42,7 +65,7 @@ set_destroy(&set);
 
 ### set_insert
 
-Inserts `data` into the set. If `data` is already a member (determined by the `match` function), the insertion is skipped and `1` is returned. Returns `0` on successful insertion, `-1` on error.
+Inserts `data` into the set. If `data` is already a member (determined by the `match` function), the insertion is skipped and `1` is returned. Returns `0` on successful insertion, `-1` on error. Duplicate and failed inserts leave the payload with the caller.
 
 ```c
 int set_insert(Set *set, const void *data);
@@ -56,7 +79,7 @@ set_insert(&set, &b); /* returns 1, duplicate skipped */
 
 ### set_remove
 
-Removes the element matching `*data` from the set. `data` is updated to point to the removed element's data so the user can manage its memory. Returns `0` on success, `-1` if the element is not found or if `data` is `NULL`.
+Removes the element matching `*data` from the set. `data` is updated to point to the removed element's data so the user can manage its memory. The destructor is not called. Returns `0` on success, `-1` if the element is not found or if `data` is `NULL`.
 
 ```c
 int set_remove(Set *set, void **data);
@@ -69,7 +92,7 @@ set_remove(&set, &removed);
 
 ### Algebra (borrowed)
 
-`set_union`, `set_intersection`, and `set_difference` write into a destination you initialize. The destination must be empty, use the same `match` as `a` and `b`, and have `destroy == NULL`. Result members alias the payloads in `a` and `b`. Do not destroy `a` or `b` while the result is in use. `dest` cannot be `a` or `b`. Returns `0` on success, `-1` on error.
+`set_union`, `set_intersection`, and `set_difference` write into a destination you initialize. The destination must be empty, use the same `match` as `a` and `b`, and have `destroy == NULL`. Result members alias the payloads in `a` and `b`. Do not destroy `a` or `b` while the result is in use. `dest` cannot be `a` or `b`. Returns `0` on success, `-1` on error. Allocation failure leaves the destination empty and initialized.
 
 ```c
 int set_union(Set *dest, const Set *a, const Set *b);

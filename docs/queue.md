@@ -1,6 +1,27 @@
-FIFO queue of `void *`. List functions do not compile against a `Queue`.
+FIFO queue of `void *`. Use the queue functions to maintain its ordering.
+
+## Usage
+
+Create and initialize a `Queue`. Pass `NULL` for stack allocated payloads, or a destructor such as `free` for payloads the queue should free when destroyed.
+
+```c
+Queue queue;
+queue_init(&queue, NULL);
+int value = 42;
+if (queue_enqueue(&queue, &value) == 0) {
+    void *data;
+    if (queue_dequeue(&queue, &data) == 0) {
+        /* data points to value. */
+    }
+}
+queue_destroy(&queue);
+```
+
+Removal returns the payload without calling the destructor. Destroy frees the remaining nodes and runs the destructor on their payloads. It does not free the `Queue` handle.
 
 ## Structs
+
+### Queue
 
 ```c
 typedef struct {
@@ -14,7 +35,7 @@ Enqueue adds at the back. Dequeue and peek read the front.
 
 ### queue_init
 
-Initializes the queue. The user is responsible for creating the initial `Queue` structure and freeing memory with `queue_destroy()`. `destroy` is a deallocation function for the members of `Queue`, pass `NULL` if the memory is stack-allocated
+Initializes an empty queue. You own the `Queue` handle. `destroy` is an optional deallocation function for payloads remaining at destruction; pass `NULL` for borrowed data.
 
 ```c
 void queue_init(Queue *queue, void (*destroy)(void *data));
@@ -51,15 +72,16 @@ queue_enqueue(queue, &a);
 
 ### queue_dequeue
 
-Removes the element at the front of the queue and stores its data in `data`. Returns `0` on success, `-1` if the queue is empty or `data` is `NULL`. A null out-param does not drop the item.
+Removes the element at the front of the queue and stores its data in `data`. Returns `0` on success, `-1` if the queue is empty or `data` is `NULL`. The destructor is not called. A `NULL` output does not remove the item.
 
 ```c
 int queue_dequeue(Queue *queue, void **data);
 
 /* Usage */
 // queue: 1 2 3
-int *t;
-queue_dequeue(queue, (void **)&t);
+void *data;
+queue_dequeue(queue, &data);
+int *t = data;
 assert(*t == 1);
 // queue: 2 3
 ```

@@ -1,4 +1,5 @@
-A dual sided linked list structure. Used as the foundation for many other modules in `libflint`
+A doubly linked list of `void *` values. Used as the foundation for several other modules in `libflint`.
+
 ## Usage
 
 Create the list. The user is responsible for memory management of the `List` struct.
@@ -12,7 +13,7 @@ with signature `void (*destroy)(void *data)`. Use `free()` from the stdlib if yo
 If allocation of your data is more complex, you can pass your own memory deallocation function as long as it fits the
 signature. The third argument is an optional `match` callback used by `ll_find()`. Pass `NULL` if not needed.
 
-In this example, we are passing `NULL` for both because all memory will be stack allocated and we don't need find.
+In this example, we are passing `NULL` for both because the payloads are stack allocated and we don't need find.
 
 ```c
 ll_init(list, NULL, NULL);
@@ -59,7 +60,7 @@ printf("Removed: %d\n", *((int *) data));
 ```
 
 To destroy the list, first call `ll_destroy()` to free the nodes in the list and optionally run the destroy function
-against the data stored in the list. Since this example is stack allocated and we passed `NULL` when creating the
+against the data stored in the list. Since this example uses stack allocated payloads and we passed `NULL` when creating the
 list, no destroy function is run against the memory in the nodes. The list itself must be deleted with `free()`
 
 ```c
@@ -93,7 +94,7 @@ free(list);
 
 ### List
 
-Double ended linked list struct
+Doubly linked list struct
 
 ```c
 typedef struct {
@@ -163,7 +164,7 @@ void ll_destroy(List *list);
 
 ### ll_ins_next
 
-Creates a new node containing `data` and inserts it after `node`.
+Creates a new node containing `data` and inserts it after `node`. Pass `NULL` for an empty list; otherwise `node` must belong to the list. Returns `0` on success, `-1` on allocation failure or a `NULL` node in a nonempty list.
 
 ```c
 int ll_ins_next(List *list, ListNode *node, const void *data);
@@ -171,7 +172,7 @@ int ll_ins_next(List *list, ListNode *node, const void *data);
 
 ### ll_ins_prev
 
-Creates a new node containing `data` and inserts it before `node`.
+Creates a new node containing `data` and inserts it before `node`. Pass `NULL` for an empty list; otherwise `node` must belong to the list. Returns `0` on success, `-1` on allocation failure or a `NULL` node in a nonempty list.
 
 ```c
 int ll_ins_prev(List *list, ListNode *node, const void *data);
@@ -201,7 +202,7 @@ int ll_pop_tail(List *list, void **data);
 
 ### ll_remove
 
-Removes and deallocates the node pointed to by `node`. Returns `-1` if `node` or `data` is `NULL` or the list is empty. The user is responsible for managing the contained data's memory,
+Removes and deallocates the node pointed to by `node`, which must belong to the list. Writes the payload to `*data` and returns `0` on success. Returns `-1` if `node` or `data` is `NULL` or the list is empty. The user is responsible for managing the contained data's memory,
 as such the `destroy` function is **not** run by `ll_remove()`
 
 ```c
@@ -210,7 +211,7 @@ int ll_remove(List *list, ListNode *node, void **data);
 
 ### ll_remove_next
 
-Removes and deallocates the node after `node` (via its `next` pointer). Returns `-1` if `node` is `NULL` or has no next node. The user is responsible for managing the contained data's memory,
+Removes and deallocates the node after `node` (via its `next` pointer). Returns `-1` if `node` or `data` is `NULL`, or there is no next node. Returns `0` on success and writes the payload to `*data`. The node must belong to the list. The user is responsible for managing the contained data's memory,
 as such the `destroy` function is **not** run by `ll_remove_next()`
 
 ```c
@@ -219,7 +220,7 @@ int ll_remove_next(List *list, ListNode *node, void **data);
 
 ### ll_remove_prev
 
-Removes and deallocates the node before `node` (via its `prev` pointer). Returns `-1` if `node` is `NULL` or has no previous node. The user is responsible for managing the contained data's memory,
+Removes and deallocates the node before `node` (via its `prev` pointer). Returns `-1` if `node` or `data` is `NULL`, or there is no previous node. Returns `0` on success and writes the payload to `*data`. The node must belong to the list. The user is responsible for managing the contained data's memory,
 as such the `destroy` function is **not** run by `ll_remove_prev()`
 
 ```c
@@ -269,15 +270,17 @@ ll_sort(list, cmp_int);
 
 ### ll_to_array
 
-Allocates and returns an array of `void *` pointers to the data in each node, in list order. The allocation is overflow-checked. The caller is responsible for freeing the returned array. Returns `NULL` if the list is empty or on allocation failure.
+Allocates and returns an array of `void *` pointers to the data in each node, in list order. The allocation is overflow-checked. The caller is responsible for freeing the returned array. The payloads are borrowed from the list; freeing the array does not free them. Returns `NULL` if the list is empty or on allocation failure.
 
 ```c
 void **ll_to_array(const List *list);
 
 /* Usage */
 void **arr = ll_to_array(list);
-for (size_t i = 0; i < list->size; i++) {
-    printf("%d\n", *(int *)arr[i]);
+if (arr != NULL) {
+    for (size_t i = 0; i < list->size; i++) {
+        printf("%d\n", *(int *)arr[i]);
+    }
 }
 free(arr);
 ```

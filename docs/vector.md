@@ -1,4 +1,24 @@
-Simple type-agnostic dynamic array
+A dynamic array of `void *` values.
+
+## Usage
+
+Initialize a `Vector` with an optional payload destructor. Pass `NULL` for stack allocated data. The vector stores pointers without copying the payloads.
+
+```c
+Vector vec;
+if (vec_init(&vec, NULL) == 0) {
+    int value = 42;
+    if (vec_push(&vec, &value) == 0) {
+        int *stored = vec_safe_at(&vec, 0);
+        /* stored points to value. */
+        (void)stored;
+    }
+    vec_destroy(&vec);
+}
+```
+
+`vec_destroy` frees the backing array and calls the destructor on remaining payloads. The `Vector` handle is yours to free if you allocated it. Removing or popping a payload transfers it to the caller without running the destructor.
+
 ## Structs
 
 ### Vector
@@ -7,25 +27,25 @@ Vector struct
 
 ```c
 typedef struct Vector {
-size_t capacity;
-size_t length;
-void **elements;
-void (*destroy)(void *data);
+    size_t capacity;
+    size_t length;
+    void **elements;
+    void (*destroy)(void *data);
 } Vector;
 ```
 
 Members:
 
-- `capacity`: The size of `elements` in memory
+- `capacity`: The number of pointer slots allocated in `elements`
 - `length`: The number of real elements stored in the backing `elements` array
 - `elements`: The dynamic array of `void *` that holds the vector's members
-- `destroy`: Optional deallocation function for data inside a node. Typical usage is `NULL` for stack allocated data and `free()` for data created with `malloc()`
+- `destroy`: Optional deallocation function for each stored payload. Typical usage is `NULL` for stack allocated data and `free()` for data created with `malloc()`
 
 ## Functions
 
 ### vec_init
 
-Initialize the vector with a default capacity of 2. User is responsible for freeing elements of the vector with `vec_destroy()`. Returns a non-zero integer if there is an error
+Initialize the vector with a default capacity of 2. Call `vec_destroy()` when finished. Returns `0` on success, `-1` on error.
 
 ```c
 int vec_init(Vector *vec, void (*destroy)(void *data));
@@ -33,7 +53,7 @@ int vec_init(Vector *vec, void (*destroy)(void *data));
 
 ### vec_init_with_capacity
 
-Initialize the vector with a user-specified capacity. `capacity == 0` is allowed: `elements` is `NULL` and the first insert grows from the default capacity. Failed init leaves a destroyable empty vector (`capacity == 0`, `elements == NULL`). Returns a non-zero integer if there is an error.
+Initialize the vector with a user-specified capacity. `capacity == 0` is allowed: `elements` is `NULL` and the first insert grows from the default capacity. Failed init leaves a destroyable empty vector (`capacity == 0`, `elements == NULL`). Returns `0` on success, `-1` on error.
 
 ```c
 int vec_init_with_capacity(Vector *vec, void (*destroy)(void *data), size_t cap);
@@ -61,7 +81,7 @@ int vec_clear(Vector *vec);
 
 ### vec_grow_to
 
-Grows the capacity of the vector to `new_cap`. Returns `-1` if `new_cap` is less than the current capacity. Returns `0` without reallocating when `new_cap` equals the current capacity.
+Grows the capacity of the vector to `new_cap`. Returns `-1` if `new_cap` is less than the current capacity. Returns `0` without reallocating when `new_cap` equals the current capacity. Returns `-1` on allocation failure, overflow, or a `NULL` vector. Failure leaves the vector unchanged.
 
 ```c
 int vec_grow_to(Vector *vec, const size_t new_cap);
@@ -69,7 +89,7 @@ int vec_grow_to(Vector *vec, const size_t new_cap);
 
 ### vec_reserve
 
-Ensure the vector can hold at least `n` elements. No-op (returns `0`) when `n` is already within capacity.
+Ensure the vector can hold at least `n` elements. Returns `0` when `n` is already within capacity or growth succeeds, `-1` on a `NULL` vector, overflow, or allocation failure. Failure leaves the vector unchanged.
 
 ```c
 int vec_reserve(Vector *vec, size_t n);
@@ -77,7 +97,7 @@ int vec_reserve(Vector *vec, size_t n);
 
 ### vec_insert
 
-Insert `data` into the vector at a specified index. Any elements at that array and beyond will be moved up to make room. Returns a non-zero integer if there is an error
+Insert `data` into the vector at a specified index. The index may range from `0` through the current length, inclusive. Elements at that index and beyond move up to make room. Returns `0` on success, `-1` on invalid arguments or allocation failure.
 
 ```c
 int vec_insert(Vector *vec, void *data, size_t index);
@@ -92,7 +112,7 @@ vec_insert(vec, &i, 2);
 
 ### vec_push
 
-Insert `data` at the end of the vector. Returns a non-zero integer if there is an error
+Insert `data` at the end of the vector. Returns `0` on success, `-1` on error.
 
 ```c
 int vec_push(Vector *vec, void *data);
@@ -100,15 +120,14 @@ int vec_push(Vector *vec, void *data);
 /* Usage */
 
 // vec: 1 2 3
-int *i = malloc(sizeof(int));
-*i = 4;
-vec_push(vec, i);
+int i = 4;
+vec_push(vec, &i); /* Keep i alive while stored; use a NULL destructor. */
 // vec: 1 2 3 4
 ```
 
 ### vec_safe_at
 
-Gets the stored data at a specified index. Uses safety checks to make sure `index` is not out of bounds. Returns `NULL` if there is an error
+Gets the stored data at a specified index. Uses safety checks to make sure `index` is not out of bounds. Returns `NULL` if the index is out of bounds or the stored payload is `NULL`. The vector must be non-`NULL`.
 
 ```c
 void *vec_safe_at(Vector *vec, size_t index);
@@ -116,7 +135,7 @@ void *vec_safe_at(Vector *vec, size_t index);
 
 ### vec_remove
 
-Removes an element from the array and returns the pointer, then moves elements to shrink the array accordingly. Returns `NULL` if the index is not valid
+Removes an element from the array and returns the pointer, then shifts later elements down to close the gap. Does not call the destructor or change capacity. Returns `NULL` if the index is not valid or the removed payload is `NULL`.
 
 ```c
 void *vec_remove(Vector *vec, size_t index);
@@ -131,7 +150,7 @@ assert(*t == 3);
 
 ### vec_shrink
 
-Shrinks the capacity of the vector down to the current length. Returns a non-zero integer if there is an error
+Shrinks capacity to the current length. An empty vector releases its backing array. Returns `0` on success, `-1` on allocation failure.
 
 ```c
 int vec_shrink(Vector *vec);
@@ -139,7 +158,7 @@ int vec_shrink(Vector *vec);
 
 ### vec_min
 
-Finds the smallest value in the vector and returns a void pointer to the underlying data. Returns `NULL` if the vector is empty. Requires a comparison function to compare the data in the vector. This function must return `1` if `a > b`, `-1` if `a < b`, or `0` if `a == b`. See the supplied comparison functions below for reference
+Finds the smallest value in the vector and returns a void pointer to the underlying data. Returns `NULL` if the vector is empty. Requires a comparison function to compare the data in the vector. The comparator receives payload pointers directly and must return a positive value if `a > b`, a negative value if `a < b`, or `0` if equal. See the supplied comparison functions below for reference.
 
 ```c
 const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b));
@@ -147,7 +166,7 @@ const void *vec_min(const Vector *vec, int(*cmp)(const void *a, const void *b));
 
 ### vec_max
 
-Finds the largest value in the vector and returns a void pointer to the underlying data. Returns `NULL` if the vector is empty. Requires a comparison function to compare the data in the vector. This function must return `1` if `a > b`, `-1` if `a < b`, or `0` if `a == b`. See the supplied comparison functions below for reference
+Finds the largest value in the vector and returns a void pointer to the underlying data. Returns `NULL` if the vector is empty. Requires a comparison function to compare the data in the vector. The comparator receives payload pointers directly and must return a positive value if `a > b`, a negative value if `a < b`, or `0` if equal. See the supplied comparison functions below for reference.
 
 ```c
 const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b));
@@ -155,7 +174,7 @@ const void *vec_max(const Vector *vec, int(*cmp)(const void *a, const void *b));
 
 ### vec_pop
 
-Removes and returns the last element of the vector. Returns `NULL` if the vector is empty.
+Removes and returns the last element of the vector. Does not call the destructor. Returns `NULL` if the vector is empty or the removed payload is `NULL`.
 
 ```c
 void *vec_pop(Vector *vec);
@@ -177,7 +196,7 @@ void vec_reverse(Vector *vec);
 
 ### vec_sort
 
-Sorts the vector in-place using `qsort_r` (thread-safe). Requires a comparator function that returns a negative value if `a < b`, `0` if `a == b`, or a positive value if `a > b`. See the supplied comparison functions below for reference.
+Sorts the vector in-place using `qsort_r`. The comparator receives payload pointers directly, not pointers to array slots. Concurrent mutation of the same vector is not supported. Requires a comparator function that returns a negative value if `a < b`, `0` if `a == b`, or a positive value if `a > b`. See the supplied comparison functions below for reference.
 
 ```c
 void vec_sort(Vector *vec, int (*cmp)(const void *a, const void *b));
@@ -201,7 +220,7 @@ int *found = (int *)vec_bsearch(vec, &key, vec_cmp_int);
 
 ## Comparison Functions
 
-Comparison functions to compare data in a vector. These functions must return `1` if `a > b`, `-1` if `a < b`, or `0` if `a == b`.
+Comparison functions to compare data in a vector. The supplied functions return `1` if `a > b`, `-1` if `a < b`, or `0` if equal. Custom comparators may return any positive or negative value.
 
 ```c
 int vec_cmp_int(const void *a, const void *b);

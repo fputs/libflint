@@ -1,8 +1,21 @@
 Bit manipulation macros for setting, clearing, toggling, testing, extracting, and inserting bit fields. Header-only module.
 
-Masks use `uint64_t`, so `LF_BIT_EXTRACT(x, 0, 32)` and `width == 64` are defined. Bit index `i` must be in `0..63`. Every argument is evaluated more than once. Do not pass `arr[i++]`.
+Masks use `uint64_t`, so `LF_BIT_EXTRACT(x, 0, 32)` and `width == 64` are defined. Bit index `i` must be in `0..63`. Some arguments to `LF_BIT_INSERT` are evaluated more than once. Do not pass `arr[i++]`.
 
-## Macros
+## Usage
+
+Include `lfbitops.h` and use an unsigned integer for the bits. Set and clear macros modify that integer in place.
+
+```c
+uint64_t flags = 0;
+LF_BIT_SET(flags, 3);
+LF_BIT_INSERT(flags, 8, 4, 0xA);
+uint64_t field = LF_BIT_EXTRACT(flags, 8, 4);  /* field == 0xA */
+```
+
+Keep `start` in `0..63` and choose a field that fits the destination: `width <= 64 - start`. Use `start == 0` for a 64-bit field. Bits above the width of a smaller destination are discarded on assignment.
+
+## Functions
 
 ### LF_BIT_SET
 
@@ -84,6 +97,14 @@ LF_BIT_INSERT(reg, 4, 4, 0xB);   // reg == 0xBA
 /* Oversized value is clipped */
 reg = 0;
 LF_BIT_INSERT(reg, 0, 3, 0xFF);  // reg == 0x07 (only low 3 bits)
+```
+
+### lf_bit_mask
+
+Returns a mask with the lowest `width` bits set. Zero returns zero; widths of 64 or more return all 64 bits set.
+
+```c
+static inline uint64_t lf_bit_mask(unsigned width);
 ```
 
 ### lf_is_pow2

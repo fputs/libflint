@@ -1,4 +1,31 @@
-Table-driven finite state machine with guards, entry/exit callbacks, and transition actions
+A table-driven finite state machine with guards, entry and exit callbacks, and transition actions.
+
+## Usage
+
+Define the states and transitions, then initialize a `StateMachine` handle. The machine borrows both tables and the optional context pointer; keep them alive while the machine is in use. It performs no allocation and needs no destroy call.
+
+```c
+enum { ST_IDLE, ST_RUNNING };
+enum { EV_START, EV_STOP };
+
+const SmState states[] = {
+    { ST_IDLE, NULL, NULL },
+    { ST_RUNNING, NULL, NULL },
+};
+const SmTransition transitions[] = {
+    { ST_IDLE, EV_START, ST_RUNNING, NULL, NULL },
+    { ST_RUNNING, EV_STOP, ST_IDLE, NULL, NULL },
+};
+
+StateMachine sm;
+if (sm_init(&sm, states, 2, ST_IDLE, transitions, 2, NULL) == 0) {
+    sm_handle_event(&sm, EV_START);
+    /* sm_current_state(&sm) == ST_RUNNING */
+}
+```
+
+Add callbacks to the tables when states need entry or exit work, or when a transition needs a guard or action. Callbacks receive the context pointer and the event passed to `sm_handle_event`. They must not call `sm_handle_event` on the same machine.
+
 ## Structs
 
 ### SmState
@@ -71,7 +98,7 @@ Members:
 
 ### sm_init
 
-Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. State IDs must be unique and cannot be `SM_ANY_STATE`. Every transition `source` must be a state id or `SM_ANY_STATE`. Every `destination` must name a real state; `SM_ANY_STATE` is not a valid destination. Validation runs before any write. A failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is not invoked. Returns `0` on success, `-1` on error (NULL arguments, zero counts, duplicate or reserved state IDs, or unknown state IDs).
+Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. States are looked up by ID, not by array index; IDs need not be contiguous. State IDs must be unique and cannot be `SM_ANY_STATE`. Every transition `source` must be a state id or `SM_ANY_STATE`. Every `destination` must name a real state; `SM_ANY_STATE` is not a valid destination. Validation runs before any write. A failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is not invoked. Returns `0` on success, `-1` on error (NULL machine or table pointers, zero counts, duplicate or reserved state IDs, or unknown state IDs).
 
 ```c
 int sm_init(
@@ -83,27 +110,6 @@ int sm_init(
     size_t transition_count,
     void *ctx
 );
-
-/* Usage */
-enum { ST_IDLE, ST_RUNNING, ST_ERROR, ST_COUNT };
-enum { EV_START, EV_STOP, EV_FAULT };
-
-const SmState states[] = {
-    { ST_IDLE,    on_enter_idle, NULL },
-    { ST_RUNNING, on_enter_run,  on_exit_run },
-    { ST_ERROR,   on_enter_err,  NULL },
-};
-
-const SmTransition transitions[] = {
-    { ST_IDLE,    EV_START, ST_RUNNING, NULL,          NULL },
-    { ST_RUNNING, EV_STOP,  ST_IDLE,    NULL,          NULL },
-    { ST_RUNNING, EV_FAULT, ST_ERROR,   NULL,          log_fault },
-    { ST_ERROR,   EV_STOP,  ST_IDLE,    guard_cleared, NULL },
-};
-
-StateMachine sm;
-sm_init(&sm, states, ST_COUNT, ST_IDLE,
-        transitions, 4, &my_context);
 ```
 
 ### sm_handle_event
@@ -114,6 +120,8 @@ Processes an event. Scans the transition table for the first entry matching the 
 2. Transition's `action` callback
 3. State change to `destination`
 4. Destination state's `entry` callback
+
+Self-transitions also run exit, action, and entry callbacks. The machine must have been initialized successfully before handling an event.
 
 Returns `0` if a transition was taken, `1` if no matching transition was found (state unchanged), `-1` if `sm` is NULL.
 
@@ -148,15 +156,3 @@ Returns the current state ID.
 ```c
 #define sm_current_state(sm) ((sm)->current_state)
 ```
-
-## Design Notes
-
-**Transition priority**: When multiple transitions match the same state and event (e.g., with different guards), the first match in the table wins. Order your transition table accordingly.
-
-**Self-transitions**: A transition whose `destination` equals `source` is still an external transition: `exit`, `action`, and `entry` all run.
-
-**No re-entry from callbacks**: `entry`, `exit`, `action`, and `guard` must not call `sm_handle_event` on the same machine.
-
-**Allocation-free**: The state machine performs no dynamic allocation. Both tables can be `const` and placed in flash/ROM on embedded targets. The `StateMachine` struct itself can live on the stack or in static memory.
-
-**State lookup**: States are looked up by `id`, not by array index. State IDs do not need to be contiguous or zero-based, though contiguous enums are recommended for simplicity.

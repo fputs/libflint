@@ -33,7 +33,8 @@ bintree_ins_right(tree, tree->root->right, &r2);
 bintree_ins_left(tree, tree->root->right, &l1);
 ```
 
-We can use `bintree_debug_print(tree, NULL)` to print a graphical representation of the tree to `stdout`
+We can use `bintree_debug_print(tree, NULL)` to print a graphical representation of the tree to `stdout`.
+
 ```plaintext
 └──0
     ├──1
@@ -83,7 +84,7 @@ tree = NULL;
 
 ### BinTree
 
-Binary tree struct
+The tree handle.
 
 ```c
 typedef struct {
@@ -101,7 +102,7 @@ Members:
 
 ### BinTreeNode
 
-Node of the tree
+A node in the tree.
 
 ```c
 typedef struct BinTreeNode {
@@ -112,64 +113,64 @@ typedef struct BinTreeNode {
 ```
 
 Members:
-- `data`: void pointer to data the node contains
-- `left`: left facing leaf of the node
-- `right`: right facing leaf of the node
+
+- `data`: Pointer to the data the node contains
+- `left`: Left child, or `NULL` if absent
+- `right`: Right child, or `NULL` if absent
 
 ## Functions
 
 ### bintree_init
 
-Initialize the binary tree. User is responsible for freeing memory with `bintree_destroy()`.
+Initializes an empty tree with an optional payload deallocation callback. Call `bintree_destroy()` when finished; the tree handle remains yours to free.
 
 ```c
-void bintree_init(BinTree *tree, void (*destroy)(void *data))
+void bintree_init(BinTree *tree, void (*destroy)(void *data));
 ```
 
 ### bintree_destroy
 
-Destroys the nodes inside a tree and calls the deallaction function on the data if one was provided. Does not deallocate
-the tree itself, that is left to the user.
+Frees every node and calls the deallocation callback on each payload if one was provided. Resets the tree to zero without freeing the tree handle.
 
 ```c
-void bintree_destroy(BinTree *tree)
+void bintree_destroy(BinTree *tree);
 ```
 
 ### bintree_ins_left
 
-Creates a new node containing `data` and inserts it as the left child of `node`.
+Creates a new node containing `data` and inserts it as the left child of `node`. Pass `NULL` as `node` to insert the root of an empty tree. Returns `0` on success, or `-1` if the position is occupied, allocation fails, or the node count would overflow. A non-NULL `node` must belong to this tree.
 
 ```c
-int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data)
+int bintree_ins_left(BinTree *tree, BinTreeNode *node, void *data);
 ```
 
 ### bintree_ins_right
 
-Creates a new node containing `data` and inserts it as the right child of `node`.
+Creates a new node containing `data` and inserts it as the right child of `node`. The root insertion rule, return values, and parent requirement are the same as `bintree_ins_left()`.
 
 ```c
-int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data)
+int bintree_ins_right(BinTree *tree, BinTreeNode *node, void *data);
 ```
 
 ### bintree_rem_left
 
-Removes and deallocates the left child node of `node`. Calls the deallocation function on the data if one was provided.
+Removes the entire subtree rooted at the left child of `node`. Calls the deallocation callback on each payload if one was provided. Pass `NULL` as `node` to remove the whole tree. A non-NULL `node` must belong to this tree.
 
 ```c
-void bintree_rem_left(BinTree *tree, BinTreeNode *node)
+void bintree_rem_left(BinTree *tree, BinTreeNode *node);
 ```
 
 ### bintree_rem_right
 
-Removes and deallocates the right child node of `node`. Calls the deallocation function on the data if one was provided.
+Removes the entire subtree rooted at the right child of `node`. Calls the deallocation callback on each payload if one was provided. Pass `NULL` as `node` to remove the whole tree. A non-NULL `node` must belong to this tree.
 
 ```c
-void bintree_rem_right(BinTree *tree, BinTreeNode *node)
+void bintree_rem_right(BinTree *tree, BinTreeNode *node);
 ```
 
 ### bintree_merge
 
-Merges two trees into `merge` with `data` at the root. `merge` must already be initialized and empty. `left` and `right` must be distinct from each other and from `merge`, and must share the same `destroy`. Returns `-1` if those contracts are broken or if `merge` already has nodes. The merged tree takes ownership of both subtrees.
+Merges two trees into `merge` with `data` at the root. `merge` must already be initialized and empty. `left` and `right` must be distinct from each other and from `merge`, and `left` and `right` must share the same `destroy` callback. Returns `0` on success, or `-1` for NULL handles, broken contracts, node-count overflow, or allocation failure. The merged tree adopts the source callback and takes ownership of both subtrees, leaving `left` and `right` empty.
 
 ```c
 int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data);
@@ -177,7 +178,7 @@ int bintree_merge(BinTree *merge, BinTree *left, BinTree *right, void *data);
 
 ### bintree_traverse
 
-Traverses the tree starting at `node` in the specified order, calling `visitor` on each node's data.
+Traverses the tree starting at `node` in the specified order, calling `visitor` on each node's data. A NULL node does nothing; `visitor` must be non-NULL when visiting nodes.
 
 ```c
 void bintree_traverse(BinTree *tree, BinTreeNode *node, int order,

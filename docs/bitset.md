@@ -2,7 +2,25 @@ A runtime-sized compact array of bits. Include `lfbitset.h`. Extends [[bitops]]
 from individual integers to dense integer sets. Handles are caller-owned; each
 set owns its word array. All bits start cleared.
 
+## Usage
+
+Initialize a caller-owned `LfBitSet` with the number of bits you need. All bits start cleared. Destroy the set to free its word array.
+
+```c
+LfBitSet visited;
+if (lf_bitset_init(&visited, 100) == 0) {
+    lf_bitset_set(&visited, 42);
+    int present;
+    if (lf_bitset_test(&visited, 42, &present) == 0) {
+        /* present == 1 */
+    }
+    lf_bitset_destroy(&visited);
+}
+```
+
 ## Structs
+
+### LfBitSet
 
 ```c
 typedef struct {
@@ -25,21 +43,11 @@ a destroyable empty handle. Do not initialize an already live set.
 ```c
 int lf_bitset_init(LfBitSet *set, size_t nbits);
 
-/* Usage */
-LfBitSet visited;
-if (lf_bitset_init(&visited, 100) == 0) {
-    lf_bitset_set(&visited, 42);
-    int present;
-    if (lf_bitset_test(&visited, 42, &present) == 0) {
-        /* present == 1 */
-    }
-    lf_bitset_destroy(&visited);
-}
 ```
 
 ### lf_bitset_set / lf_bitset_clear / lf_bitset_toggle
 
-Modify one bit. Return 0 on success, -1 for NULL handles or out-of-bounds indexes,
+Modify one bit. Returns `0` on success, -1 for NULL handles or out-of-bounds indexes,
 leaving the set unchanged on failure. These operations do not allocate.
 
 ```c
@@ -59,7 +67,7 @@ int lf_bitset_test(const LfBitSet *set, size_t index, int *value);
 
 ### lf_bitset_count
 
-Return the number of set bits; NULL returns zero. Unused tail bits are excluded.
+Returns the number of set bits; NULL returns zero. Unused tail bits are excluded.
 
 ```c
 size_t lf_bitset_count(const LfBitSet *set);
@@ -78,7 +86,7 @@ int lf_bitset_intersection(LfBitSet *dest, const LfBitSet *src);
 
 ### lf_bitset_destroy
 
-Free storage and zero the handle. NULL and repeated destruction are accepted.
+Frees storage and zeros the handle. NULL and repeated destruction are accepted.
 
 ```c
 void lf_bitset_destroy(LfBitSet *set);

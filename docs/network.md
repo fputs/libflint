@@ -1,26 +1,36 @@
-IPv4 bind helpers. `lf_listen_tcp` returns a listening TCP socket. `lf_bind_udp` returns a bound UDP socket. You own `accept`, `recv`, `send`, and shutdown.
+IPv4 socket helpers for listening over TCP and binding over UDP. You are responsible for accepting connections, sending and receiving data, and closing sockets.
 
-`host == NULL` binds `INADDR_ANY`. Port `"0"` lets the kernel pick an ephemeral port; use `getsockname` to read it back.
+## Usage
+
+Create a listening socket with `lf_listen_tcp()`. Pass `NULL` as the host to bind to all local IPv4 interfaces. Port `"0"` lets the kernel choose a port; use `getsockname()` to read it back.
+
+```c
+int fd = lf_listen_tcp("127.0.0.1", "8080");
+if (fd >= 0) {
+    int client = accept(fd, NULL, NULL);
+    if (client >= 0) {
+        /* Exchange data with the client. */
+        lf_close(client);
+    }
+    lf_close(fd);
+}
+```
+
+`accept()` blocks until a connection arrives or an error occurs. The returned sockets are yours to close.
 
 ## Functions
 
 ### lf_listen_tcp
 
-Creates an IPv4 TCP socket, binds it, and `listen`s. Returns the fd, or `-1` on error.
+Creates an IPv4 TCP socket, binds it, and starts listening. Returns the socket descriptor, or `-1` on error. `port` must be non-NULL.
 
 ```c
 int lf_listen_tcp(const char *host, const char *port);
-
-/* Usage */
-int fd = lf_listen_tcp("127.0.0.1", "8080");
-int client = accept(fd, NULL, NULL);
-lf_close(client);
-lf_close(fd);
 ```
 
 ### lf_bind_udp
 
-Creates an IPv4 UDP socket and binds it. Returns the fd, or `-1` on error.
+Creates an IPv4 UDP socket and binds it. Returns the socket descriptor, or `-1` on error. The host and port rules are the same as `lf_listen_tcp()`.
 
 ```c
 int lf_bind_udp(const char *host, const char *port);
@@ -28,7 +38,7 @@ int lf_bind_udp(const char *host, const char *port);
 
 ### lf_close
 
-Closes `fd` if it is `>= 0`. Safe with `-1`.
+Closes `fd` if it is nonnegative. A negative descriptor does nothing.
 
 ```c
 void lf_close(int fd);
@@ -36,17 +46,8 @@ void lf_close(int fd);
 
 ### get_in_addr
 
-Returns a pointer to the IPv4 or IPv6 address inside a `struct sockaddr`. Returns NULL if `sa` is NULL or has an unsupported address family.
+Returns a pointer to the IPv4 or IPv6 address inside `sa`. The pointer borrows storage from `sa`. Returns `NULL` if `sa` is NULL or has an unsupported address family. This helper accepts IPv6 addresses even though the bind helpers only create IPv4 sockets.
 
 ```c
 void *get_in_addr(struct sockaddr *sa);
-
-/* Usage */
-struct sockaddr_storage client_addr;
-socklen_t client_addr_sz = sizeof(client_addr);
-char buf[INET6_ADDRSTRLEN];
-int new_fd = accept(fd, (struct sockaddr *)&client_addr, &client_addr_sz);
-inet_ntop(client_addr.ss_family,
-          get_in_addr((struct sockaddr *)&client_addr),
-          buf, sizeof buf);
 ```

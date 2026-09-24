@@ -1,6 +1,27 @@
 Integer helpers, a 2D `LfPoint`, and Bresenham line generation.
 
-## Types
+## Usage
+
+Create points by value with `lf_point`. Use `bresenham_p` to generate a line between two points, including both endpoints. The caller frees the returned array.
+
+```c
+LfPoint start = lf_point(0, 0);
+LfPoint end = lf_point(3, 2);
+size_t count;
+LfPoint *line = bresenham_p(start, end, &count);
+if (line != NULL) {
+    for (size_t i = 0; i < count; i++) {
+        printf("%d,%d\n", line[i].x, line[i].y);
+    }
+    free(line);
+}
+```
+
+## Structs
+
+### LfPoint
+
+A point with integer coordinates.
 
 ```c
 typedef struct {
@@ -9,7 +30,7 @@ typedef struct {
 } LfPoint;
 ```
 
-`lf_point` constructs by value. `LfPoint_eq` and `LfPoint_eq_p` return `1` if equal. They are not `qsort` comparators. `LfPoint_match` returns `0` if equal and is the callback to pass to `List` or `Set`.
+`lf_point` constructs by value. `LfPoint_eq` and `LfPoint_eq_p` return `1` if equal. `LfPoint_eq_p` treats two NULL pointers as equal and one NULL pointer as unequal. They are not `qsort` comparators. `LfPoint_match` returns `0` if equal and is the callback to pass to `List` or `Set`.
 
 ```c
 LfPoint lf_point(int x, int y);
@@ -22,7 +43,7 @@ int LfPoint_match(const void *a, const void *b);
 
 ### max_int
 
-Return the maximum integer between `int a` and `int b`
+Returns the greater of `a` and `b`.
 
 ```c
 int max_int(int a, int b);
@@ -30,7 +51,7 @@ int max_int(int a, int b);
 
 ### min_int
 
-Return the minimum integer between `int a` and `int b`
+Returns the lesser of `a` and `b`.
 
 ```c
 int min_int(int a, int b);
@@ -38,7 +59,7 @@ int min_int(int a, int b);
 
 ### clamp_int
 
-Clamps an integer between a high and low value. If `low > high`, they are swapped
+Clamps an integer between a high and low value. If `low > high`, they are swapped.
 
 ```c
 int clamp_int(int i, int low, int high);
@@ -59,7 +80,7 @@ binstr_to_int(NULL);    // -1 (null)
 
 ### bresenham
 
-Uses bresenham's line algorithm to generate a line in 2D space. Returns a pointer to an array of `LfPoint`. The `sz` parameter holds the size of the array. Returns `NULL` if `sz` is `NULL` or if the span cannot be allocated. Deltas are computed without signed overflow.
+Uses Bresenham's line algorithm to generate an array of `LfPoint`, from the first endpoint to the second, including both. Identical endpoints produce one point. The caller frees the array. `sz` receives the number of points and is set to zero on failure. Returns `NULL` if `sz` is NULL or if the array cannot be allocated.
 
 ```c
 LfPoint *bresenham(int x0, int y0, int x1, int y1, size_t *sz);
@@ -75,7 +96,7 @@ LfPoint *bresenham_p(LfPoint p1, LfPoint p2, size_t *sz);
 
 ### abs_int
 
-Returns the absolute value of an integer. Clamps `INT_MIN` to `INT_MAX` (since `INT_MIN` has no positive representation in two's complement)
+Returns the absolute value of an integer. Clamps `INT_MIN` to `INT_MAX` (since `INT_MIN` has no positive representation in two's complement).
 
 ```c
 int abs_int(int a);
@@ -95,7 +116,7 @@ lf_gcd(7, 13);  // returns 1
 
 ### lf_lcm
 
-Returns the least common multiple of `a` and `b`. Returns `0` if either input is `0`. Handles negative inputs. Returns `-1` if the result does not fit in `int` (including any call involving `INT_MIN`).
+Returns the least common multiple of `a` and `b`. Returns `0` if either input is `0`. Handles negative inputs. Returns `-1` if the result does not fit in `int` (including nonzero inputs involving `INT_MIN`).
 
 ```c
 int lf_lcm(int a, int b);

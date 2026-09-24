@@ -4,7 +4,23 @@ The caller owns the views and underlying text; this module never allocates or
 modifies the text. Successful operations advance the input view, leaving the
 remaining input available to the caller.
 
+## Usage
+
+Create a view over the input, skip any leading whitespace, and parse a number. The view advances only when parsing succeeds.
+
+```c
+LfStr input = lfstr_from("  -42,tail");
+lf_parse_skip_whitespace(&input);
+int64_t value;
+if (lf_parse_i64(&input, 10, &value) == LF_PARSE_OK) {
+    /* value == -42; input is now ",tail" */
+    lf_parse_consume(&input, lfstr_from(","));
+}
+```
+
 ## Types
+
+### LfParseStatus
 
 ```c
 typedef enum {
@@ -14,8 +30,8 @@ typedef enum {
 } LfParseStatus;
 ```
 
-`LfStr` is defined in `lfstring.h`. NULL view pointers are valid only for empty
-views. Failed status-returning operations leave input and output unchanged.
+`LfStr` is defined in `lfstring.h`. An `LfStr` may have a NULL data pointer only when its length is zero.
+The `LfStr *input` handle itself must be non-NULL. Failed status-returning operations leave input and output unchanged.
 Outputs must not alias input handles or underlying text. Token views borrow the
 original storage, which must remain alive while they are used.
 
@@ -42,15 +58,6 @@ Embedded NUL is an ordinary non-digit, not an end-of-view marker.
 ```c
 LfParseStatus lf_parse_u64(LfStr *input, unsigned base, uint64_t *value);
 LfParseStatus lf_parse_i64(LfStr *input, unsigned base, int64_t *value);
-
-/* Usage */
-LfStr input = lfstr_from("  -42,tail");
-lf_parse_skip_whitespace(&input);
-int64_t value;
-if (lf_parse_i64(&input, 10, &value) == LF_PARSE_OK) {
-    /* value == -42; input is now ",tail" */
-    lf_parse_consume(&input, lfstr_from(","));
-}
 ```
 
 ### lf_parse_consume
