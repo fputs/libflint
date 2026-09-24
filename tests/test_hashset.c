@@ -56,6 +56,12 @@ int main(void) {
     ASSERT_EQ(lf_hashset_insert(&set, &d), 0);
     ASSERT_EQ(lf_hashset_insert(&set, &e), 0);
     ASSERT_EQ(lf_hashset_insert(&set, &f), 0);
+    /* A duplicate at the load limit must not allocate or grow the table. */
+    void **original_slots = set.slots;
+    int duplicate = a;
+    ASSERT_EQ(lf_hashset_insert(&set, &duplicate), 1);
+    ASSERT_EQ(set.cap, (size_t)8);
+    ASSERT_TRUE(set.slots == original_slots);
     ASSERT_EQ(lf_hashset_insert(&set, &g), 0);
     ASSERT_EQ(lf_hashset_insert(&set, &h), 0);
     ASSERT_EQ(lf_hashset_insert(&set, &i), 0);
@@ -66,6 +72,22 @@ int main(void) {
 
     lf_hashset_destroy(&set);
     ASSERT_EQ(set.cap, (size_t)0);
+
+    /* Deleted slots must be reclaimed without growing an almost-empty set. */
+    ASSERT_EQ(lf_hashset_init(&set, 8, int_match, int_hash, NULL), 0);
+    int survivor = -1;
+    ASSERT_EQ(lf_hashset_insert(&set, &survivor), 0);
+    for (int key = 0; key < 128; key++) {
+        ASSERT_EQ(lf_hashset_insert(&set, &key), 0);
+        ASSERT_TRUE(lf_hashset_is_member(&set, &survivor));
+        rm = &key;
+        ASSERT_EQ(lf_hashset_remove(&set, &rm), 0);
+        ASSERT_TRUE(rm == &key);
+        ASSERT_FALSE(lf_hashset_is_member(&set, &key));
+        ASSERT_EQ(lf_hashset_size(&set), (size_t)1);
+        ASSERT_EQ(set.cap, (size_t)8);
+    }
+    lf_hashset_destroy(&set);
 
     destroy_count = 0;
     LfHashSet owned;

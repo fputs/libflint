@@ -69,6 +69,16 @@ static void test_get_in_addr(void) {
     in.sin_family = AF_INET;
     inet_pton(AF_INET, "127.0.0.1", &in.sin_addr);
     ASSERT_EQ(get_in_addr((struct sockaddr *)&in), (void *)&in.sin_addr);
+    struct sockaddr_in6 in6;
+    memset(&in6, 0, sizeof in6);
+    in6.sin6_family = AF_INET6;
+    ASSERT_EQ(get_in_addr((struct sockaddr *)&in6), (void *)&in6.sin6_addr);
+    struct sockaddr unsupported;
+    memset(&unsupported, 0, sizeof unsupported);
+    unsupported.sa_family = AF_UNIX;
+    ASSERT_NULL(get_in_addr(&unsupported));
+    unsupported.sa_family = AF_UNSPEC;
+    ASSERT_NULL(get_in_addr(&unsupported));
     ASSERT_NULL(get_in_addr(NULL));
 }
 
@@ -93,8 +103,10 @@ static void test_tcp(void) {
     memset(buf, 0, sizeof buf);
     ssize_t n = recv(cli, buf, sizeof buf - 1, 0);
     ASSERT_EQ((size_t)n, msg_len);
-    buf[n] = '\0';
-    ASSERT_STR_EQ(buf, NET_MSG);
+    if (n >= 0) {
+        buf[n] = '\0';
+        ASSERT_STR_EQ(buf, NET_MSG);
+    }
 
     lf_close(acc);
     lf_close(cli);
@@ -131,8 +143,10 @@ static void test_udp(void) {
                          (struct sockaddr *)&from, &from_len);
     ASSERT_TRUE(r > 0);
     ASSERT_EQ((size_t)r, msg_len);
-    recv_buf[r] = '\0';
-    ASSERT_STR_EQ(recv_buf, NET_MSG);
+    if (r >= 0) {
+        recv_buf[r] = '\0';
+        ASSERT_STR_EQ(recv_buf, NET_MSG);
+    }
 
     lf_close(cli);
     lf_close(srv);

@@ -36,7 +36,7 @@ void lf_close(int fd);
 
 ### get_in_addr
 
-Returns a pointer to the IPv4 or IPv6 address inside a `struct sockaddr`. Returns NULL if `sa` is NULL.
+Returns a pointer to the IPv4 or IPv6 address inside a `struct sockaddr`. Returns NULL if `sa` is NULL or has an unsupported address family.
 
 ```c
 void *get_in_addr(struct sockaddr *sa);

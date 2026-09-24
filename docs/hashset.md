@@ -17,7 +17,7 @@ typedef struct {
 } LfHashSet;
 ```
 
-Capacity is a power of two, at least 8. The table grows when live entries plus the new insert would exceed a 3/4 load.
+Capacity is a power of two, at least 8. The table grows when live entries plus the new insert would exceed a 3/4 load. Deleted slots are reclaimed without increasing capacity. Duplicate inserts do not allocate or grow the table.
 
 ## Functions
 

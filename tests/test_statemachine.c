@@ -247,6 +247,21 @@ static void test_init_invalid(void) {
         ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
     }
 
+    /* Wildcard IDs cannot also name real states. */
+    {
+        const SmState reserved[] = {
+            { ST_IDLE, NULL, NULL },
+            { SM_ANY_STATE, NULL, NULL },
+        };
+        const SmTransition valid[] = {
+            { SM_ANY_STATE, EV_RESET, ST_IDLE, NULL, NULL },
+        };
+        ASSERT_EQ(sm_init(&sm, reserved, 2, SM_ANY_STATE, valid, 1, NULL), -1);
+        ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+        ASSERT_EQ(sm_init(&sm, reserved, 2, ST_IDLE, valid, 1, NULL), -1);
+        ASSERT_EQ(memcmp(&sm, &before, sizeof(sm)), 0);
+    }
+
     /* Destination ID with no state row */
     {
         const SmTransition bad_dest[] = {

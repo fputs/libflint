@@ -4,6 +4,7 @@
 #if defined(__APPLE__) || defined(__MACH__)
 
 #include <stdint.h>
+#include <sys/types.h>
 #include <time.h>
 
 typedef struct {
@@ -19,7 +20,7 @@ typedef struct {
     time_t last_timestamp;
 } ProcessData;
 
-ProcessData *new_ProcessData();
+ProcessData *new_ProcessData(void);
 void destroy_ProcessData(ProcessData *pd);
 int update_process(pid_t pid, ProcessData *proc);
 

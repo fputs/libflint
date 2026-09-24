@@ -149,7 +149,7 @@ static void *arena_resize_align(ArenaAllocator *allocator, void *mem, const size
 }
 
 int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz) {
-    if (allocator == NULL || !allocator->owns_buf) {
+    if (allocator == NULL || !allocator->owns_buf || new_sz == 0) {
         return -1;
     }
     if (new_sz < allocator->offset_cur) {
@@ -236,27 +236,28 @@ void pool_free(PoolAllocator *allocator, void *ptr) {
         return;
     }
 
-    unsigned char *start = allocator->buf + allocator->aligned_start;
-    unsigned char *end = start + allocator->buf_sz;
-    unsigned char *p = ptr;
+    uintptr_t start = (uintptr_t)(allocator->buf + allocator->aligned_start);
+    uintptr_t p = (uintptr_t)ptr;
 
-    if (p < start || p >= end) {
+    if (p < start || p - start >= allocator->buf_sz) {
         return;
     }
     size_t off = (size_t)(p - start);
-    if (allocator->chunk_size == 0 || off % allocator->chunk_size != 0) {
+    if (allocator->chunk_size == 0 || off % allocator->chunk_size != 0 ||
+        off / allocator->chunk_size >= allocator->buf_sz / allocator->chunk_size) {
         return;
     }
 
     size_t seen = 0;
-    for (void *n = allocator->free_head; n != NULL; n = *(void **)n) {
+    for (void *n = allocator->free_head; n != NULL;) {
         if (n == ptr || seen >= allocator->free_count) {
             return;
         }
         seen++;
+        memcpy(&n, n, sizeof(n));
     }
 
-    *(void **)ptr = allocator->free_head;
+    memcpy(ptr, &allocator->free_head, sizeof(allocator->free_head));
     allocator->free_head = ptr;
     allocator->free_count++;
 }
@@ -273,7 +274,7 @@ void pool_free_all(PoolAllocator *allocator) {
     for (size_t i = chunk_count; i > 0; --i) {
         void *chunk = &allocator->buf[allocator->aligned_start +
                                       (i - 1) * allocator->chunk_size];
-        *(void **)chunk = allocator->free_head;
+        memcpy(chunk, &allocator->free_head, sizeof(allocator->free_head));
         allocator->free_head = chunk;
         allocator->free_count++;
     }
@@ -285,7 +286,7 @@ void *pool_alloc(PoolAllocator *allocator) {
     }
 
     void *ptr = allocator->free_head;
-    allocator->free_head = *(void **)ptr;
+    memcpy(&allocator->free_head, ptr, sizeof(allocator->free_head));
     allocator->free_count--;
     return memset(ptr, 0, allocator->chunk_size);
 }

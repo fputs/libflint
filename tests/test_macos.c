@@ -1,13 +1,14 @@
+#include "lfmacos.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "lftest.h"
 
 #if defined(__APPLE__) || defined(__MACH__)
-#include "lfmacos.h"
 
 int main() {
     pid_t pid = getpid();
+    ASSERT_EQ(update_process(pid, NULL), -1);
 
     /* new_ProcessData returns zeroed memory with sentinel */
     ProcessData *pd = new_ProcessData();

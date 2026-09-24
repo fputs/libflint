@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include "lftest.h"
 #include "lfinput.h"
 #include "lfmemory.h"
@@ -78,6 +79,23 @@ static void test_capture_system_large(void) {
     char *out = lf_capture_system("seq 1 1000", 32);
     ASSERT_NOT_NULL(out);
     ASSERT_TRUE(strstr(out, "1000") != NULL);
+    free(out);
+}
+
+static void test_capture_system_reap_error(void) {
+    /* Ignoring SIGCHLD auto-reaps the child, so pclose cannot wait for it. */
+    struct sigaction ignore, previous;
+    memset(&ignore, 0, sizeof ignore);
+    ignore.sa_handler = SIG_IGN;
+    sigemptyset(&ignore.sa_mask);
+    int rc = sigaction(SIGCHLD, &ignore, &previous);
+    ASSERT_EQ(rc, 0);
+    if (rc != 0) {
+        return;
+    }
+    char *out = lf_capture_system("printf hello", 2);
+    ASSERT_EQ(sigaction(SIGCHLD, &previous, NULL), 0);
+    ASSERT_NULL(out);
     free(out);
 }
 
@@ -288,6 +306,7 @@ int main(void) {
     test_capture_system();
     test_capture_system_null();
     test_capture_system_large();
+    test_capture_system_reap_error();
     test_file_roundtrip();
     test_crlf();
     test_blank_lines();

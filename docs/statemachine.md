@@ -71,7 +71,7 @@ Members:
 
 ### sm_init
 
-Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. State IDs must be unique. Every transition `source` must be a state id or `SM_ANY_STATE`. Every `destination` must name a real state; `SM_ANY_STATE` is not a valid destination. Validation runs before any write. A failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is not invoked. Returns `0` on success, `-1` on error (NULL arguments, zero counts, duplicate state IDs, or unknown state IDs).
+Initializes the state machine with the given state and transition tables. The `initial_state` must match the `id` of a state in the `states` array. State IDs must be unique and cannot be `SM_ANY_STATE`. Every transition `source` must be a state id or `SM_ANY_STATE`. Every `destination` must name a real state; `SM_ANY_STATE` is not a valid destination. Validation runs before any write. A failed `sm_init` leaves `sm` untouched. The initial state's `entry` callback is not invoked. Returns `0` on success, `-1` on error (NULL arguments, zero counts, duplicate or reserved state IDs, or unknown state IDs).
 
 ```c
 int sm_init(

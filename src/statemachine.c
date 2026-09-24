@@ -17,6 +17,9 @@ static const SmState *find_state(const StateMachine *sm, int id) {
 
 static int states_unique(const SmState *states, size_t state_count) {
     for (size_t i = 0; i < state_count; i++) {
+        if (states[i].id == SM_ANY_STATE) {
+            return 0;
+        }
         for (size_t j = i + 1; j < state_count; j++) {
             if (states[i].id == states[j].id) {
                 return 0;

@@ -10,7 +10,7 @@
 #define NS_TO_SECONDS 1000000000.0
 #define NEW_PROCESS_SENTINEL (-1.0)
 
-ProcessData *new_ProcessData() {
+ProcessData *new_ProcessData(void) {
     ProcessData *pd = calloc(1, sizeof(ProcessData));
     if (!pd) return NULL;
     pd->last_total_consumed = NEW_PROCESS_SENTINEL;
@@ -22,17 +22,18 @@ void destroy_ProcessData(ProcessData *pd) {
 }
 
 int update_process(pid_t pid, ProcessData *proc) {
+    if (proc == NULL) {
+        return -1;
+    }
     struct proc_taskinfo taskinfo;
     const int r = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &taskinfo, PROC_PIDTASKINFO_SIZE);
     if (r != PROC_PIDTASKINFO_SIZE) {
         return -1;
     }
 
-    static mach_timebase_info_data_t info;
-    static int info_init = 0;
-    if (!info_init) {
-        mach_timebase_info(&info);
-        info_init = 1;
+    mach_timebase_info_data_t info;
+    if (mach_timebase_info(&info) != KERN_SUCCESS || info.denom == 0) {
+        return -1;
     }
     const double ns_per_tick = (double)info.numer / (double)info.denom;
 

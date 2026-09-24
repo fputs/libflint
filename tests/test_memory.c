@@ -255,5 +255,43 @@ int main() {
     ASSERT_EQ(*ok, 7);
     arena_free(&wrap_arena);
 
+    /* A zero-size realloc must not release the slab behind a live handle. */
+    ArenaAllocator empty_arena;
+    ASSERT_EQ(arena_init(&empty_arena, 64), 0);
+    unsigned char *empty_buf = empty_arena.buf;
+    ASSERT_EQ(arena_resize_buf(&empty_arena, 0), -1);
+    ASSERT_EQ(empty_arena.buf, empty_buf);
+    ASSERT_EQ(empty_arena.buf_sz, 64);
+    ASSERT_NOT_NULL(arena_malloc(&empty_arena, 16));
+    arena_free(&empty_arena);
+
+    /* The trailing bytes are not a chunk, even at a chunk boundary. */
+    PoolAllocator partial_pool;
+    ASSERT_EQ(pool_init(&partial_pool, 2 * sizeof(void *) + 1,
+                        sizeof(void *), 1), 0);
+    size_t partial_count = pool_count_available(&partial_pool);
+    pool_free(&partial_pool, partial_pool.buf + 2 * sizeof(void *));
+    ASSERT_EQ(pool_count_available(&partial_pool), partial_count);
+    pool_destroy(&partial_pool);
+
+    /* Byte-aligned, odd-size chunks must not require aligned pointer access. */
+    PoolAllocator byte_pool;
+    size_t byte_chunk = sizeof(void *) + 1;
+    ASSERT_EQ(pool_init(&byte_pool, 3 * byte_chunk, byte_chunk, 1), 0);
+    void *byte_chunks[3];
+    for (size_t j = 0; j < 3; ++j) {
+        byte_chunks[j] = pool_alloc(&byte_pool);
+        ASSERT_NOT_NULL(byte_chunks[j]);
+        memset(byte_chunks[j], 0xab, byte_chunk);
+    }
+    ASSERT_NULL(pool_alloc(&byte_pool));
+    pool_free(&byte_pool, byte_chunks[1]);
+    pool_free(&byte_pool, byte_chunks[0]);
+    pool_free(&byte_pool, byte_chunks[1]);
+    ASSERT_EQ(pool_count_available(&byte_pool), 2);
+    ASSERT_EQ(pool_alloc(&byte_pool), byte_chunks[0]);
+    ASSERT_EQ(pool_alloc(&byte_pool), byte_chunks[1]);
+    pool_destroy(&byte_pool);
+
     TEST_REPORT();
 }

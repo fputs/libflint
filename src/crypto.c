@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -423,6 +424,9 @@ int hamming_distance(const unsigned char *a, const unsigned char *b, size_t sz) 
         for (; c; count++) {
             c &= c - 1;
         }
+        if (hamming > INT_MAX - count) {
+            return -1;
+        }
         hamming += count;
     }
 
@@ -454,7 +458,11 @@ int simple_english_scoring(const char *s) {
     }
     int score = 0;
     for (const char *c = s; *c != '\0'; ++c) {
-        score += ses_score_sw(*c);
+        int weight = ses_score_sw(*c);
+        if (score > INT_MAX - weight) {
+            return -1;
+        }
+        score += weight;
     }
     return score;
 }

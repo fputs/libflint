@@ -18,7 +18,10 @@ void *get_in_addr(struct sockaddr *sa)
         return &(((struct sockaddr_in *)sa)->sin_addr);
     }
 
-    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+    if (sa->sa_family == AF_INET6) {
+        return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+    }
+    return NULL;
 }
 
 static int lf_bind_sock(const char *host, const char *port, int socktype, int do_listen) {

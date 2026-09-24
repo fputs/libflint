@@ -110,9 +110,12 @@ static int hs_grow_if_needed(LfHashSet *set) {
     if (set->cap == 0) {
         return -1;
     }
-    if ((set->len + 1) * 4 <= set->cap * 3 &&
-        set->len + set->tombs + 1 < set->cap) {
-        return 0;
+    if (set->len < set->cap - set->cap / 4) {
+        if (set->len + set->tombs + 1 < set->cap) {
+            return 0;
+        }
+        /* Only deleted entries are crowding the table; reclaim their slots. */
+        return hs_rehash(set, set->cap);
     }
     if (set->cap > SIZE_MAX / 2) {
         return -1;
@@ -123,6 +126,10 @@ static int hs_grow_if_needed(LfHashSet *set) {
 int lf_hashset_insert(LfHashSet *set, const void *data) {
     if (set == NULL || set->match == NULL || set->hash == NULL) {
         return -1;
+    }
+    /* A duplicate needs no allocation, even when the table is at its limit. */
+    if (lf_hashset_is_member(set, data)) {
+        return 1;
     }
     if (hs_grow_if_needed(set) != 0) {
         return -1;
@@ -145,9 +152,6 @@ int lf_hashset_insert(LfHashSet *set, const void *data) {
         }
         if (set->state[i] == HS_TOMB && tomb == SIZE_MAX) {
             tomb = i;
-        } else if (set->state[i] == HS_LIVE &&
-                   set->match(set->slots[i], data) == 0) {
-            return 1;
         }
         i = (i + 1) & mask;
     }

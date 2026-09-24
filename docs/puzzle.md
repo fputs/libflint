@@ -28,7 +28,7 @@ unsigned char *repeating_key_xor_s(const char *s, const char *key);
 
 ### hamming_distance
 
-Number of differing bits between two byte arrays of length `sz`.
+Number of differing bits between two byte arrays of length `sz`. Returns `-1` for invalid inputs or if the result exceeds `INT_MAX`.
 
 ```c
 int hamming_distance(const unsigned char *a, const unsigned char *b, size_t sz);
@@ -44,7 +44,7 @@ int hamming_distance_s(const char *a, const char *b);
 
 ### simple_english_scoring
 
-Scores a string on a simple ETAOIN SHRDLU scale. A cheap way to guess whether a buffer looks like English (used with XOR ciphertext). Returns `-1` if input is `NULL`.
+Scores a string on a simple ETAOIN SHRDLU scale. A cheap way to guess whether a buffer looks like English (used with XOR ciphertext). Returns `-1` if input is `NULL` or the score exceeds `INT_MAX`.
 
 ```c
 int simple_english_scoring(const char *s);

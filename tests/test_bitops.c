@@ -75,6 +75,8 @@ int main() {
 
     /* full-width extract is defined (1UL << 32 is UB on ILP32) */
     ASSERT_EQ(LF_BIT_EXTRACT(x, 0, 32), (uint32_t)0x80);
+    ASSERT_EQ(LF_BIT_EXTRACT(x, 32, 32), 0);
+    ASSERT_EQ(LF_BIT_EXTRACT(x, 63, 1), 0);
     {
         uint64_t y = ~0ULL;
         ASSERT_EQ(LF_BIT_EXTRACT(y, 0, 32), 0xFFFFFFFFULL);

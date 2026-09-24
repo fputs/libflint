@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "lftest.h"
@@ -41,6 +42,11 @@ int main() {
     ASSERT_EQ(lf_gcd(5, 0), 5);
     ASSERT_EQ(lf_gcd(-12, 8), 4);
     ASSERT_EQ(lf_gcd(-6, -9), 3);
+    ASSERT_EQ(lf_gcd(INT_MIN, 2), 2);
+    ASSERT_EQ(lf_gcd(2, INT_MIN), 2);
+    ASSERT_EQ(lf_gcd(INT_MIN, INT_MAX), 1);
+    ASSERT_EQ(lf_gcd(INT_MIN, 0), -1);
+    ASSERT_EQ(lf_gcd(INT_MIN, INT_MIN), -1);
 
     /* lcm */
     ASSERT_EQ(lf_lcm(4, 6), 12);
@@ -57,6 +63,11 @@ int main() {
     ASSERT_TRUE(lf_lerp(0.0f, 10.0f, 1.0f) == 10.0f);
     ASSERT_TRUE(lf_lerp(0.0f, 10.0f, 0.5f) == 5.0f);
     ASSERT_TRUE(lf_lerp(2.0f, 4.0f, 0.25f) == 2.5f);
+    ASSERT_TRUE(lf_lerp(-FLT_MAX, FLT_MAX, 0.0f) == -FLT_MAX);
+    ASSERT_TRUE(lf_lerp(-FLT_MAX, FLT_MAX, 1.0f) == FLT_MAX);
+    ASSERT_TRUE(lf_lerp(-FLT_MAX, FLT_MAX, 0.5f) == 0.0f);
+    ASSERT_TRUE(lf_lerp(FLT_MAX, -FLT_MAX, 0.5f) == 0.0f);
+    ASSERT_TRUE(lf_lerp(1.0f, 1.0e-20f, 1.0f) == 1.0e-20f);
 
     /* isqrt */
     ASSERT_EQ(lf_isqrt(0), 0);

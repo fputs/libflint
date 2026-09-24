@@ -35,7 +35,7 @@ typedef struct {
 Returns a pointer to a zero-initialized `ProcessData` struct. Returns `NULL` on allocation failure.
 
 ```c
-ProcessData *new_ProcessData();
+ProcessData *new_ProcessData(void);
 ```
 
 ### destroy_ProcessData
@@ -48,7 +48,7 @@ void destroy_ProcessData(ProcessData *pd);
 
 ### update_process
 
-Updates a `ProcessData` struct. This should be called in a loop or at specific intervals to measure proper usage data. Returns `0` on success, `-1` on error (e.g. invalid PID). An example is below
+Updates a `ProcessData` struct. This should be called in a loop or at specific intervals to measure proper usage data. Returns `0` on success, `-1` on error (e.g. invalid PID or NULL `proc`). An example is below
 
 ```c
 int update_process(pid_t pid, ProcessData *proc);

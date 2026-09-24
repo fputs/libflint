@@ -20,7 +20,7 @@ static inline uint64_t lf_bit_mask(unsigned width)
 #define LF_BIT_TEST(x, i) ((x) & (1ULL << (i)))
 
 #define LF_BIT_EXTRACT(x, start, width) \
-    (((x) >> (start)) & lf_bit_mask((unsigned)(width)))
+    (((uint64_t)(x) >> (start)) & lf_bit_mask((unsigned)(width)))
 
 #define LF_BIT_INSERT(x, start, width, val) \
     ((x) = ((x) & ~(lf_bit_mask((unsigned)(width)) << (start))) | \

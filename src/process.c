@@ -52,7 +52,12 @@ char *lf_capture_system(const char *cmd, size_t buf_sz) {
         }
     }
 
+    int read_error = ferror(tmp);
+    int close_status = pclose(tmp);
+    if (read_error || close_status == -1) {
+        free(buf);
+        return NULL;
+    }
     buf[total] = '\0';
-    pclose(tmp);
     return buf;
 }

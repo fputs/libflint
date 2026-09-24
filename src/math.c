@@ -155,14 +155,14 @@ LfPoint *bresenham_p(LfPoint p1, LfPoint p2, size_t *sz) {
 }
 
 int lf_gcd(int a, int b) {
-    a = abs_int(a);
-    b = abs_int(b);
-    while (b) {
-        int tmp = b;
-        b = a % b;
-        a = tmp;
+    unsigned int ua = a < 0 ? 0u - (unsigned int)a : (unsigned int)a;
+    unsigned int ub = b < 0 ? 0u - (unsigned int)b : (unsigned int)b;
+    while (ub) {
+        unsigned int tmp = ub;
+        ub = ua % ub;
+        ua = tmp;
     }
-    return a;
+    return ua > INT_MAX ? -1 : (int)ua;
 }
 
 int lf_lcm(int a, int b) {
@@ -183,6 +183,15 @@ int lf_lcm(int a, int b) {
 }
 
 float lf_lerp(float a, float b, float t) {
+    if (t == 0.0f) {
+        return a;
+    }
+    if (t == 1.0f) {
+        return b;
+    }
+    if ((a <= 0.0f && b >= 0.0f) || (a >= 0.0f && b <= 0.0f)) {
+        return (1.0f - t) * a + t * b;
+    }
     return a + t * (b - a);
 }
 

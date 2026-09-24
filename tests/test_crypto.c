@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -220,6 +221,36 @@ int main() {
     ASSERT_EQ(simple_english_scoring("the"), 30);
     ASSERT_EQ(simple_english_scoring(" "), 7);
     ASSERT_EQ(simple_english_scoring("!!!"), 0);
+
+    /* Opt in with LF_TEST_LARGE=1: these boundaries need ~512 MiB on 32-bit int. */
+    if (getenv("LF_TEST_LARGE") != NULL) {
+        size_t score_len = (size_t)INT_MAX / 13;
+        char *text = malloc(score_len + 2);
+        ASSERT_NOT_NULL(text);
+        if (text != NULL) {
+            memset(text, 'e', score_len + 1);
+            text[score_len] = '\0';
+            ASSERT_EQ(simple_english_scoring(text), (int)(score_len * 13));
+            text[score_len] = 'e';
+            text[score_len + 1] = '\0';
+            ASSERT_EQ(simple_english_scoring(text), -1);
+            free(text);
+        }
+
+        size_t distance_len = (size_t)INT_MAX / CHAR_BIT + 1;
+        unsigned char *a = calloc(distance_len, 1);
+        unsigned char *b = malloc(distance_len);
+        ASSERT_NOT_NULL(a);
+        ASSERT_NOT_NULL(b);
+        if (a != NULL && b != NULL) {
+            memset(b, UCHAR_MAX, distance_len);
+            ASSERT_EQ(hamming_distance(a, b, distance_len - 1),
+                      (int)((distance_len - 1) * CHAR_BIT));
+            ASSERT_EQ(hamming_distance(a, b, distance_len), -1);
+        }
+        free(a);
+        free(b);
+    }
 
     TEST_REPORT();
 }

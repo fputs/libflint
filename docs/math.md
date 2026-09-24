@@ -83,7 +83,7 @@ int abs_int(int a);
 
 ### lf_gcd
 
-Returns the greatest common divisor of `a` and `b` using the Euclidean algorithm. Handles negative inputs.
+Returns the greatest common divisor of `a` and `b` using the Euclidean algorithm. Handles negative inputs, including `INT_MIN`. Returns `-1` if the result does not fit in `int`.
 
 ```c
 int lf_gcd(int a, int b);

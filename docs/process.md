@@ -8,7 +8,7 @@ Runs a command through `/bin/sh` via `popen` and returns stdout as a heap string
 
 The command string is not sanitized. Do not pass untrusted input; `/bin/sh` interprets metacharacters.
 
-The caller frees the returned string. Returns `NULL` if `cmd` is NULL or on error.
+The caller frees the returned string. Returns `NULL` if `cmd` is NULL, `buf_sz` is 1, or allocation, reading, or waiting for the child fails. A nonzero command exit status still returns the captured stdout.
 
 ```c
 char *lf_capture_system(const char *cmd, size_t buf_sz);

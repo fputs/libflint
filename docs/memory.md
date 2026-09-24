@@ -82,7 +82,7 @@ void *arena_malloc(ArenaAllocator* allocator, size_t size);
 
 ### arena_resize_buf
 
-Reallocates the underlying buffer in the arena to `new_sz`. You can grow or shrink the arena using this function. Rejects shrinking below the current allocation offset, and rejects arenas created with `arena_init_buf` (the slab is not owned). Any pointers allocated out of the arena are invalid after using this function. Returns `0` on success, `-1` on error (external buffer, shrink below offset, or realloc failure).
+Reallocates the underlying buffer in the arena to `new_sz`. You can grow or shrink the arena using this function. Rejects zero size, shrinking below the current allocation offset, and arenas created with `arena_init_buf` (the slab is not owned). Any pointers allocated out of the arena are invalid after a successful resize. Returns `0` on success, `-1` on error (zero size, external buffer, shrink below offset, or realloc failure). Use `arena_free` to release the slab.
 
 ```c
 int arena_resize_buf(ArenaAllocator *allocator, const size_t new_sz);

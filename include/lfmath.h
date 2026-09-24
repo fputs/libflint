@@ -28,6 +28,7 @@ int clamp_int(int i, int low, int high);
 
 int binstr_to_int(const char *s);
 
+/* Nonnegative GCD, or -1 if the result cannot be represented as int. */
 int lf_gcd(int a, int b);
 
 int lf_lcm(int a, int b);
