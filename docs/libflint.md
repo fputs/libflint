@@ -1,4 +1,4 @@
-[libflint](https://git.burkey.co/fputs/libflint) is a C library of containers and helpers for Linux, macOS, OpenBSD, and FreeBSD. Container handles are generally caller-owned; pointer containers store `void *` payloads. Each module page covers ownership, return codes, and examples.
+[libflint](https://github.com/fputs/libflint) is a C library of containers and helpers for Linux, macOS, OpenBSD, and FreeBSD. Container handles are generally caller-owned; pointer containers store `void *` payloads. Each module page covers ownership, return codes, and examples.
 
 ## Modules
 
